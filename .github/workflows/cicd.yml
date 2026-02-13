@@ -1,0 +1,220 @@
+name: CI/CD pipeline
+ 
+on:
+  push:
+    branches:
+      - dev
+      - master
+  pull_request:
+    branches:
+      - dev 
+
+permissions:
+  contents: read
+
+jobs:
+  build-docker:
+    runs-on: ubuntu-latest
+    environment: 
+      name: ${{ github.ref_name == 'dev' && 'development' || (github.ref_name == 'main' || github.ref_name == 'master') && 'production' || 'development' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          token: ${{ secrets.GH_SUBMODULE_TOKEN }}
+
+      - name: Set image tag
+        id: prep
+        run: |
+          COMMIT_DATE=$(git --no-pager log -1 --pretty=%cd_%h --date=format:%Y%m%dT%H%M%S)
+          echo "IMAGE_TAG=${COMMIT_DATE}" >> $GITHUB_ENV
+          if [ "${GITHUB_REF_NAME:-${GITHUB_REF##*/}}" = "dev" ]; then
+            IMAGE_NAME_SUFFIX="-dev"
+          elif [ "${GITHUB_REF_NAME:-${GITHUB_REF##*/}}" = "main" ] || [ "${GITHUB_REF_NAME:-${GITHUB_REF##*/}}" = "master" ]; then
+            IMAGE_NAME_SUFFIX="-prod"
+          else
+            IMAGE_NAME_SUFFIX=""
+          fi
+          echo "IMAGE_NAME_SUFFIX=$IMAGE_NAME_SUFFIX" >> "$GITHUB_ENV"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.CI_REGISTRY }}
+          username: ${{ secrets.CI_REGISTRY_USER  }}
+          password: ${{ secrets.CI_REGISTRY_PASSWORD  }}
+
+      - name: create .env FILE
+        run: |
+          echo "API_URL=${{ vars.API_URL }}" > .env.production
+          echo "API_KEY=${{ secrets.API_KEY }}" >> .env.production
+          echo "API_URL_MAP=${{ vars.API_URL_MAP }}" >> .env.production
+          echo "API_KEY_MAP=${{ secrets.API_KEY_MAP }}" >> .env.production
+          echo "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}" >> .env.production
+          echo "NEXTAUTH_URL=${{ vars.NEXTAUTH_URL }}" >> .env.production
+          echo "NEXT_PUBLIC_CONTACT_EMAIL=${{ vars.NEXT_PUBLIC_CONTACT_EMAIL }}" >> .env.production
+          echo "NEXT_PUBLIC_MAPTILER_API_KEY=${{ secrets.NEXT_PUBLIC_MAPTILER_API_KEY }}" >> .env.production
+          echo "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}" >> .env.production
+          echo "THAICOM_API_URL=${{ vars.THAICOM_API_URL }}" >> .env.production
+          echo "NEXT_PUBLIC_WSS_UPLOAD_URL=${{ vars.NEXT_PUBLIC_WSS_UPLOAD_URL }}" >> .env.production
+          echo "NEXT_PUBLIC_MAPTILER_DEM_URL=${{ vars.NEXT_PUBLIC_MAPTILER_DEM_URL }}" >> .env.production
+          echo "Created .env.production file:"
+          cat .env.production
+          ls -la .env.production
+
+      - name: Build and push Docker image for Dev
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          build-args: |
+            GITHUB_TOKEN=${{ secrets.GH_SUBMODULE_TOKEN }}
+          push: true
+          tags: |
+            ${{ secrets.CI_REGISTRY }}/${{ github.event.repository.name }}${{ env.IMAGE_NAME_SUFFIX }}:latest
+            ${{ secrets.CI_REGISTRY }}/${{ github.event.repository.name }}${{ env.IMAGE_NAME_SUFFIX }}:${{ env.IMAGE_TAG }}
+
+      - name: Logout from Docker Registry
+        run: docker logout ${{ secrets.CI_REGISTRY }}
+
+  source-code-scan:
+    name: SonarQube Scan
+    needs: build-docker
+    runs-on: tc-runner
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+
+        # https://github.com/marketplace/actions/official-sonarqube-scan
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          ENVIRONMENT_NAME: ${{ github.ref_name }}
+          SONAR_SCANNER_OPTS: -Xmx4096m
+          NODE_OPTIONS: --max-old-space-size=4096
+        with:
+          projectBaseDir: "."
+          args: >
+            -Dsonar.projectKey=${{ github.event.repository.name }}-${{ env.ENVIRONMENT_NAME }}
+            -Dsonar.sources=src
+            -Dsonar.exclusions=**/tests/**,**/*.test.js,**/*.spec.js,**/node_modules/**,**/migrations/**
+            -Dsonar.sourceEncoding=UTF-8
+            -Dsonar.javascript.node.maxspace=4096
+
+      - name: SonarQube Quality Gate check
+        id: sonarqube-quality-gate-check
+        uses: sonarsource/sonarqube-quality-gate-action@master
+        with:
+          pollingTimeoutSec: 600
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      
+      # Optionally you can use the output from the Quality Gate in another step.
+      # The possible outputs of the `quality-gate-status` variable are `PASSED`, `WARN` or `FAILED`.
+      - name: "Example show SonarQube Quality Gate Status value"
+        run: echo "The Quality Gate status is ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
+
+  docker-scan:
+    name: Trivy Scan
+    needs: source-code-scan
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    #services:
+    #  docker:
+    #    image: docker:24.0.5-dind
+    #    options: --privileged
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set image tag
+        id: prep
+        run: |
+          COMMIT_DATE=$(git --no-pager log -1 --pretty=%cd_%h --date=format:%Y%m%dT%H%M%S)
+          echo "IMAGE_TAG=${COMMIT_DATE}" >> $GITHUB_ENV
+          if [ "$GITHUB_REF_NAME" = "dev" ]; then
+            IMAGE_NAME_SUFFIX="-dev"
+          else
+            IMAGE_NAME_SUFFIX="-prod"
+          fi
+          echo "IMAGE_NAME_SUFFIX=$IMAGE_NAME_SUFFIX" >> "$GITHUB_ENV"
+
+      #- name: Set up Docker Buildx
+      #  uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.CI_REGISTRY }}
+          username: ${{ secrets.CI_REGISTRY_USER }}
+          password: ${{ secrets.CI_REGISTRY_PASSWORD }}
+
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: ${{ secrets.CI_REGISTRY }}/${{ github.event.repository.name }}${{ env.IMAGE_NAME_SUFFIX }}:${{ env.IMAGE_TAG }}
+          format: table
+          exit-code: 0
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+  deploy-dev:
+    if: github.ref == 'refs/heads/dev'
+    runs-on: tc-runner
+    needs: build-docker
+    steps:
+      # This step deploys to the dev Kubernetes cluster using the image built in the 'build' job.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: k8s
+
+      - name: Set image tag
+        id: prep
+        run: |
+          COMMIT_DATE=$(git --no-pager log -1 --pretty=%cd_%h --date=format:%Y%m%dT%H%M%S)
+          echo "IMAGE_TAG=${COMMIT_DATE}" >> $GITHUB_ENV
+          if [ "${GITHUB_REF_NAME:-${GITHUB_REF##*/}}" = "dev" ]; then
+            IMAGE_NAME_SUFFIX="-dev"
+          elif [ "${GITHUB_REF_NAME:-${GITHUB_REF##*/}}" = "main" ] || [ "${GITHUB_REF_NAME:-${GITHUB_REF##*/}}" = "master" ]; then
+            IMAGE_NAME_SUFFIX="-prod"
+          else
+            IMAGE_NAME_SUFFIX=""
+          fi
+          echo "IMAGE_NAME_SUFFIX=$IMAGE_NAME_SUFFIX" >> "$GITHUB_ENV"
+
+        # Install kubectl
+      - uses: azure/setup-kubectl@v4
+        id: install
+
+      - uses: Azure/k8s-set-context@v4
+        with:
+          kubeconfig: ${{ secrets.GEOINT_DEV_KUBE_CONF }}
+
+      - name: Replace image in K3s manifest
+        run: |
+          sed -i "s|${{ secrets.CI_REGISTRY }}/${{ github.event.repository.name }}.*:latest|${{ secrets.CI_REGISTRY }}/${{ github.event.repository.name }}${IMAGE_NAME_SUFFIX}:${IMAGE_TAG}|g" k8s/geoint-web.yaml
+
+      - name: Deploy to Dev Kubernetes Cluster
+        uses: azure/k8s-deploy@v5
+        with:
+          namespace: "geoint"
+          skip-tls-verify: true
+          manifests: |
+            k8s/geoint-web.yaml
+          images: |
+            ${{ secrets.CI_REGISTRY }}/${{ github.event.repository.name }}${{ env.IMAGE_NAME_SUFFIX }}:${{ env.IMAGE_TAG }}

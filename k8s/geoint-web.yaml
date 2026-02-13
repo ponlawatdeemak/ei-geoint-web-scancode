@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: geoint-web
+  namespace: geoint
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: geoint-web
+  template:
+    metadata:
+      labels:
+        app: geoint-web
+    spec:
+      automountServiceAccountToken: false
+      imagePullSecrets:
+      - name: rome
+      containers:
+      - name: geoint-web
+        image: rome.thaicom.io/ei-geoint-web${IMAGE_NAME_SUFFIX}:latest
+        env:
+        - name: API_URL
+          valueFrom:
+            configMapKeyRef:
+              name: geoint-config
+              key: WEB_API_URL
+        - name: API_URL_MAP
+          valueFrom:
+            configMapKeyRef:
+              name: geoint-config
+              key: API_URL_MAP
+        - name: NEXT_PUBLIC_CONTACT_EMAIL
+          valueFrom:
+            configMapKeyRef:
+              name: geoint-config
+              key: EMAIL_ADDRESS
+        - name: NEXTAUTH_URL
+          valueFrom:
+            configMapKeyRef:
+              name: geoint-config
+              key: NEXTAUTH_URL
+        - name: MIDDLEWARE_DEBUG
+          value: "true"
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: geoint-secret
+              key: API_KEY
+        - name: API_KEY_MAP
+          valueFrom:
+            secretKeyRef:
+              name: geoint-secret
+              key: API_KEY_MAP
+        - name: NEXTAUTH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: geoint-secret
+              key: NEXTAUTH_SECRET
+        - name: NEXT_PUBLIC_MAPTILER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: geoint-secret
+              key: NEXT_PUBLIC_MAPTILER_API_KEY
+        - name: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: geoint-secret
+              key: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+        - name: THAICOM_API_URL
+          valueFrom:
+            configMapKeyRef:
+              name: geoint-config
+              key: API_GATEWAY_URL
+        - name: NEXT_PUBLIC_WSS_UPLOAD_URL
+          valueFrom:
+            configMapKeyRef:
+              name: geoint-config
+              key: WSS_UPLOAD_URL
+        ports:
+        - containerPort: 3000
+        resources:
+          limits:
+            memory: "1Gi"
+            ephemeral-storage: "1Gi"
+            cpu: 1
+          requests:
+            memory: "100Mi"
+            ephemeral-storage: "200Mi"
+            cpu: 0.1
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: geoint-web
+  namespace: geoint
+spec:
+  selector:
+    app: geoint-web
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+  type: ClusterIP

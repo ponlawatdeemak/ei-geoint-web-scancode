@@ -1,0 +1,1041 @@
+{
+  "app": {
+    "name": "Intelligence Reconnaissance Insights System"
+  },
+  "button": {
+    "ok": "ตกลง",
+    "back": "ย้อนกลับ",
+    "cancel": "ยกเลิก",
+    "close": "ปิด",
+    "save": "บันทึก",
+    "add": "เพิ่ม",
+    "delete": "ลบ",
+    "edit": "แก้ไข",
+    "editName": "แก้ไขชื่อ",
+    "viewDetails": "ดูรายละเอียด",
+    "openMap": "เปิดแผนที่",
+    "viewOnMap": "ดูบนแผนที่",
+    "confirm": "ยืนยัน",
+    "clear": "ล้างค่า",
+    "search": "ค้นหา",
+    "select": "เลือก",
+    "minimize": "ย่อ/ขยาย",
+    "more": "เพิ่มเติม",
+    "download": "ดาวน์โหลด",
+    "downloadPdf": "ดาวน์โหลด PDF",
+    "mapCompare": "ดูการเปลี่ยนแปลง",
+    "mapSidebySide": "ดูการเปรียบเทียบ",
+    "selectArea": "เลือกพื้นที่",
+    "selectModel": "เลือกโมเดล",
+    "openPanel": "เปิด Panel",
+    "closePanel": "ปิด Panel",
+    "details": "รายละเอียด",
+    "previous": "ก่อนหน้า",
+    "next": "ถัดไป",
+    "options": "ตัวเลือก",
+    "dataManagement": "Data Management",
+    "gallery": "คลังภาพ",
+    "weekly": "ข้อมูลรายสัปดาห์"
+  },
+  "filter": {
+    "dialogTitle": "ตัวกรอง",
+    "all": "ทั้งหมด",
+    "noOptions": "ไม่มีตัวเลือก",
+    "loading": "กำลังโหลด...",
+    "toDate": "ถึงวันที่"
+  },
+  "status": {
+    "active": "เปิดใช้งาน",
+    "inactive": "ปิดใช้งาน",
+    "draft": "ร่าง",
+    "inProgress": "กำลังดำเนินการ",
+    "completed": "เสร็จสิ้น",
+    "failed": "ล้มเหลว",
+    "waitingForResults": "รอบันทึกผลการวิเคราะห์"
+  },
+  "sarStatus": {
+    "draft": "ร่าง",
+    "inProgress": "กำลังประมวลผลการวิเคราะห์",
+    "completed": "ประมวลผลการวิเคราะห์สำเร็จ",
+    "failed": "ล้มเหลว",
+    "waitingForResults": "รออัปโหลดผลการวิเคราะห์"
+  },
+  "view": {
+    "card": "การ์ด",
+    "table": "ตาราง",
+    "map": "แผนที่"
+  },
+  "table": {
+    "totalSearchResult_one": "ผลการค้นหาทั้งหมด {{count}} รายการ",
+    "totalSearchResult_other": "ผลการค้นหาทั้งหมด {{count}} รายการ",
+    "selectedRow_one": "เลือก {{count}} รายการ",
+    "selectedRow_other": "เลือก {{count}} รายการ",
+    "deleteSelectedRows": "ลบรายการที่เลือก",
+    "actions": "การจัดการ",
+    "noData": "ไม่มีข้อมูล",
+    "of": "จาก",
+    "labelRowsPerPage": "รายการต่อหน้า",
+    "labelDisplayedRows": "{{from}}–{{to}} จาก {{count}}",
+    "sortBy": "จัดเรียงตาม",
+    "asc": "จากต่ำไปสูง",
+    "desc": "จากสูงไปต่ำ",
+    "totalResult": "ผลลัพธ์ {{count}} รายการ",
+    "page": "หน้า",
+    "from": "จาก"
+  },
+  "alert": {
+    "errorTitle": "ข้อผิดพลาด",
+    "confirmSaveTitle": "ยืนยันการบันทึก",
+    "confirmSaveContent": "คุณแน่ใจหรือไม่ว่าต้องการบันทึก?",
+    "saveSuccess": "บันทึกสำเร็จ",
+    "confirmDeleteTitle": "ยืนยันการลบ",
+    "confirmDeleteContent": "คุณแน่ใจหรือไม่ว่าต้องการลบ?",
+    "confirmCancelTitle": "ยืนยันการยกเลิก",
+    "confirmCancelContent": "คุณแน่ใจหรือไม่ว่าต้องการยกเลิก?",
+    "deleteSuccess": "ลบสำเร็จ",
+    "confirmSignOutTitle": "ยืนยันการออกจากระบบ",
+    "confirmSignOutContent": "คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?",
+    "dataNotFound": "ไม่พบข้อมูล",
+    "mapPositionRequired": "กรุณากำหนดตำแหน่งบนแผนที่",
+    "requireFieldError": "กรุณากรอกข้อมูลให้ครบถ้วน",
+    "requireTextError": "กรุณากรอกข้อความ"
+  },
+  "link": {
+    "contactUs": "ติดต่อเรา"
+  },
+  "password": {
+    "passwordRulesTitle": "เงื่อนไขการตั้งรหัสผ่าน",
+    "notMatch": "รหัสผ่านไม่ตรงกัน",
+    "ruleMinLength": "ประกอบด้วยตัวอักษรภาษาอังกฤษ ตัวเลข อักขระพิเศษ อย่างน้อย 8 ตัวอักษร",
+    "ruleUppercase": "มีตัวอักษรภาษาอังกฤษพิมพ์ใหญ่ (A-Z) อย่างน้อย 1 ตัว",
+    "ruleLowercase": "มีตัวอักษรภาษาอังกฤษพิมพ์เล็ก (a-z) อย่างน้อย 1 ตัว",
+    "ruleNumber": "มีตัวเลข (0-9) อย่างน้อย 1 ตัว",
+    "ruleSpecial": "มีอักษรพิเศษ (!@#$%*&*) อย่างน้อย 1 ตัว"
+  },
+  "validation": {
+    "required": "ฟิลด์นี้จำเป็นต้องกรอก",
+    "minLength_one": "ความยาวขั้นต่ำคือ {{count}} ตัวอักษร",
+    "minLength_other": "ความยาวขั้นต่ำคือ {{count}} ตัวอักษร",
+    "maxLength_one": "ความยาวสูงสุดคือ {{count}} ตัวอักษร",
+    "maxLength_other": "ความยาวสูงสุดคือ {{count}} ตัวอักษร",
+    "minNumber": "ค่าต่ำสุดคือ {{count}}",
+    "maxNumber": "ค่าสูงสุดคือ {{count}}",
+    "minArrayLength_one": "จำนวนรายการขั้นต่ำคือ {{count}} รายการ",
+    "minArrayLength_other": "จำนวนรายการขั้นต่ำคือ {{count}} รายการ",
+    "maxArrayLength_one": "จำนวนรายการสูงสุดคือ {{count}} รายการ",
+    "maxArrayLength_other": "จำนวนรายการสูงสุดคือ {{count}} รายการ",
+    "invalidEmail": "รูปแบบอีเมลไม่ถูกต้อง",
+    "invalidPhone": "เฉพาะตัวเลขเท่านั้น"
+  },
+  "language": {
+    "thai": "ภาษาไทย",
+    "english": "English"
+  },
+  "unit": {
+    "duration": {
+      "day_one": "{{count}} วัน",
+      "day_other": "{{count}} วัน",
+      "month_one": "{{count}} เดือน",
+      "month_other": "{{count}} เดือน",
+      "year_one": "{{count}} ปี",
+      "year_other": "{{count}} ปี"
+    },
+    "area": {
+      "rai": "ไร่",
+      "ngan": "งาน",
+      "sqwa": "ตารางวา",
+      "sqm": "ตารางเมตร",
+      "sqkm": "ตารางกิโลเมตร",
+      "hectare": "เฮกตาร์",
+      "acre": "เอเคอร์",
+      "sqmile": "ตารางไมล์",
+      "sqnauticmile": "ตารางไมล์ทะเล",
+      "raiAbbr": "ไร่",
+      "nganAbbr": "งาน",
+      "sqwaAbbr": "ตร.ว.",
+      "sqmAbbr": "ตร.ม.",
+      "sqkmAbbr": "ตร.กม.",
+      "hectareAbbr": "เฮกตาร์",
+      "acreAbbr": "เอเคอร์",
+      "sqmileAbbr": "ตร.ไมล์",
+      "sqnauticmileAbbr": "ตร.ไมล์ทะเล"
+    },
+    "length": {
+      "foot": "ฟุต",
+      "nauticmile": "ไมล์ทะเล",
+      "mile": "ไมล์",
+      "yard": "หลา",
+      "meter": "เมตร",
+      "km": "กิโลเมตร",
+      "footAbbr": "ฟุต",
+      "nauticmileAbbr": "ไมล์ทะเล",
+      "mileAbbr": "ไมล์",
+      "yardAbbr": "หลา",
+      "meterAbbr": "ม.",
+      "kmAbbr": "กม."
+    }
+  },
+  "menu": {
+    "project": "โปรเจกต์",
+    "gallery": "คลังภาพ",
+    "profile": "โปรไฟล์",
+    "management": "จัดการข้อมูล",
+    "manageSubscription": "จัดการ Subscription",
+    "manageOrganization": "จัดการหน่วยงาน",
+    "manageUser": "จัดการผู้ใช้งาน",
+    "manageApi": "จัดการ API",
+    "manageData": "Data Management",
+    "settings": "ตั้งค่า",
+    "signOut": "ออกจากระบบ"
+  },
+  "navigation": {
+    "back": "ย้อนกลับ",
+    "profile": "โปรไฟล์",
+    "changePassword": "เปลี่ยนรหัสผ่าน",
+    "manageSubscription": "จัดการ Subscription",
+    "addSubscription": "เพิ่ม Subscription",
+    "editSubscription": "แก้ไข Subscription",
+    "manageOrganization": "จัดการหน่วยงาน",
+    "addOrganization": "เพิ่มหน่วยงาน",
+    "editOrganization": "แก้ไขหน่วยงาน",
+    "manageUser": "จัดการผู้ใช้งาน",
+    "addUser": "เพิ่มผู้ใช้งาน",
+    "editUser": "แก้ไขผู้ใช้งาน",
+    "manageApiKey": "จัดการ API Key",
+    "addApiKey": "เพิ่ม API Key",
+    "editApiKey": "แก้ไข API Key",
+    "project": "โปรเจกต์",
+    "addProject": "เพิ่มโปรเจกต์",
+    "editProject": "แก้ไขโปรเจกต์",
+    "addTask": "เพิ่ม Task",
+    "editTask": "แก้ไข Task"
+  },
+  "dialog": {
+    "weeklyMapCompare": {
+      "selectDate": "เลือกวันที่ถ่ายภาพ"
+    },
+    "mapCompare": {
+      "title": "เปรียบเทียบภาพถ่าย",
+      "changeDetectionButton": "ดูการเปลี่ยนแปลง",
+      "compareButton": "ดูการเปรียบเทียบ"
+    },
+    "projectDetails": {
+      "title": "ข้อมูลโปรเจกต์",
+      "name": "ชื่อ",
+      "detail": "รายละเอียด",
+      "tasksCount": "จำนวน Task",
+      "taskItem_one": "{{count}} รายการ",
+      "taskItem_other": "{{count}} รายการ",
+      "createdBy": "ผู้สร้าง",
+      "createdAt": "วันที่สร้าง",
+      "updatedAt": "วันที่แก้ไข"
+    },
+    "taskDetails": {
+      "title": "ข้อมูล Task",
+      "name": "ชื่อ",
+      "service": "ประเภทการวิเคราะห์ข้อมูล",
+      "rootModel": "โมเดล",
+      "feature": "คุณสมบัติ",
+      "status": "สถานะ",
+      "createdBy": "ผู้สร้าง",
+      "createdAt": "วันที่สร้าง"
+    },
+    "saveAnalysisResult": {
+      "title": "บันทึกผลการวิเคราะห์",
+      "analysisResult": "ผลการวิเคราะห์ภาพถ่าย",
+      "success": "สำเร็จ",
+      "failed": "ไม่สำเร็จ",
+      "uploadAnalysisFile": "อัปโหลดไฟล์ผลลัพธ์การวิเคราะห์",
+      "chooseFile": "เลือกไฟล์",
+      "supportedFileTypes": "รองรับไฟล์ประเภท .zip ขนาดไม่เกิน 500 MB",
+      "invalidFileFormat": "รูปแบบไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ใหม่",
+      "confirmSaveTitle": "ยืนยันบันทึกผลการวิเคราะห์",
+      "confirmSaveContent": "คุณต้องการบันทึกผลการวิเคราะห์หรือไม่ เมื่อดำเนินการบันทึกผลการวิเคราะห์ใหม่ จะทำการแทนที่ผลการวิเคราะห์เดิม"
+    },
+    "shareApi": {
+      "title": "แชร์ API"
+    },
+    "datePicker": {
+      "selectDate": "เลือกวันที่"
+    }
+  },
+  "form": {
+    "weeklyMap": {
+      "formTitle": "การติดตามผลรายสัปดาห์",
+      "selectDateRange": "เลือกช่วงวันที่"
+    },
+    "settings": {
+      "formTitle": "ตั้งค่า",
+      "language": "ภาษา",
+      "areaUnit": "หน่วยพื้นที่",
+      "lengthUnit": "หน่วยระยะทาง"
+    },
+    "profileForm": {
+      "formTitle": "โปรไฟล์",
+      "successTitle": "แก้ไขโปรไฟล์สำเร็จ",
+      "confirmContent": "คุณต้องการบันทึกโปรไฟล์หรือไม่?",
+      "changePassword": "เปลี่ยนรหัสผ่าน",
+      "firstName": "ชื่อ",
+      "lastName": "นามสกุล",
+      "organization": "หน่วยงาน",
+      "email": "อีเมล",
+      "phone": "เบอร์โทรศัพท์",
+      "userName": "ชื่อผู้ใช้งาน",
+      "role": "บทบาท",
+      "subscription": "Subscription"
+    },
+    "changePassword": {
+      "formTitle": "เปลี่ยนรหัสผ่าน",
+      "formSubtitle": "กรุณากำหนดรหัสผ่าน และยืนยันรหัสผ่านของคุณ",
+      "currentPassword": "รหัสผ่านเดิม",
+      "newPassword": "รหัสผ่านใหม่",
+      "confirmNewPassword": "ยืนยันรหัสผ่านใหม่",
+      "successTitle": "เปลี่ยนรหัสผ่านสำเร็จ",
+      "confirmTitle": "ยืนยันการเปลี่ยนรหัสผ่าน",
+      "confirmContent": "คุณต้องการเปลี่ยนรหัสผ่านหรือไม่?"
+    },
+    "resetPassword": {
+      "formTitle": "กำหนดรหัสผ่าน",
+      "formSubtitle": "กรุณากำหนดรหัสผ่าน และยืนยันรหัสผ่านของคุณ",
+      "newPassword": "รหัสผ่านใหม่",
+      "confirmNewPassword": "ยืนยันรหัสผ่านใหม่",
+      "successTitle": "รีเซ็ตรหัสผ่านสำเร็จ",
+      "successContent": "คุณสามารถเข้าสู่ระบบด้วยรหัสผ่านใหม่ได้แล้ว"
+    },
+    "login": {
+      "formTitle": "เข้าสู่ระบบ",
+      "formSubtitle": "กรุณากรอกชื่อผู้ใช้งาน และรหัสผ่านเพื่อเข้าสู่ระบบ",
+      "username": "ชื่อผู้ใช้งาน",
+      "usernamePlaceholder": "อีเมล / ชื่อผู้ใช้งาน",
+      "password": "รหัสผ่าน",
+      "forgotPassword": "ลืมรหัสผ่าน",
+      "loginButton": "เข้าสู่ระบบ",
+      "otpFormTitle": "ใส่รหัสยืนยัน OTP",
+      "otpSent": "ส่งรหัส OTP ใหม่สำเร็จ",
+      "otpSentToEmail": "รหัส OTP ถูกส่งไปยังอีเมล {{email}} (Ref: {{refCode}})",
+      "checkEmail": "กรุณาตรวจสอบกล่องจดหมายของคุณ",
+      "resendOtp": "ส่งรหัส OTP อีกครั้ง",
+      "requestNewOtp": "ขอรหัส OTP ใหม่"
+    },
+    "forgotPassword": {
+      "formTitle": "ลืมรหัสผ่าน",
+      "formSubtitle": "กรุณากรอกอีเมลของคุณเพื่อรับลิงก์สำหรับรีเซ็ตรหัสผ่าน",
+      "email": "อีเมล",
+      "sendLinkButton": "ส่งลิงก์รีเซ็ตรหัสผ่าน",
+      "successTitle": "ส่งลิงก์รีเซ็ตรหัสผ่านสำเร็จ",
+      "successContent": "กรุณาตรวจสอบอีเมลของคุณเพื่อทำการรีเซ็ตรหัสผ่าน"
+    },
+    "searchSubscription": {
+      "addSubscriptionButton": "เพิ่ม Subscription",
+      "filter": {
+        "keywordPlaceholder": "ชื่อ Subscription",
+        "organization": "หน่วยงาน"
+      },
+      "column": {
+        "name": "ชื่อ Subscription",
+        "organizationsCount": "จำนวนหน่วยงานที่ใช้งาน",
+        "createdBy": "ผู้สร้าง",
+        "createdAt": "วันที่สร้าง"
+      }
+    },
+    "searchOrganization": {
+      "addOrganizationButton": "เพิ่มหน่วยงาน",
+      "filter": {
+        "keywordPlaceholder": "ชื่อหน่วยงาน",
+        "subscription": "Subscription",
+        "status": "สถานะ"
+      },
+      "column": {
+        "name": "ชื่อหน่วยงาน",
+        "subscriptions": "Subscription",
+        "status": "สถานะ",
+        "createdAt": "วันที่สร้าง"
+      }
+    },
+    "searchApiKey": {
+      "addApiKeyButton": "เพิ่ม API Key",
+      "toggleButton": "เปิดใช้งาน API",
+      "activateSuccess": "เปิดใช้งาน API สำเร็จ",
+      "revokeSuccess": "ยกเลิกการใช้งาน API สำเร็จ",
+      "showKey": "แสดงคีย์",
+      "hideKey": "ซ่อนคีย์",
+      "copyKey": "คัดลอกคีย์",
+      "manageApiKey": "จัดการ API",
+      "filter": {
+        "keywordPlaceholder": "ค้นหา API Key",
+        "keywordOrgPlaceholder": "ค้นหาหน่วยงาน",
+        "status": "สถานะ"
+      },
+      "column": {
+        "apiKey": "API Key",
+        "organization": "หน่วยงาน",
+        "status": "สถานะ",
+        "createdAt": "วันที่สร้าง",
+        "deactivatedAt": "วันที่ยกเลิก"
+      },
+      "status": {
+        "active": "เปิดใช้งาน",
+        "inactive": "ยกเลิก"
+      },
+      "create": {
+        "title": "เพิ่ม API Key",
+        "confirmContent": "คุณต้องการเพิ่ม API Key หรือไม่",
+        "successTitle": "บันทึกสำเร็จ"
+      },
+      "delete": {
+        "title": "ยกเลิก API Key",
+        "confirmContent": "คุณต้องการยกเลิก API Key หรือไม่",
+        "successTitle": "บันทึกสำเร็จ"
+      }
+    },
+    "searchUser": {
+      "addUserButton": "เพิ่มผู้ใช้งาน",
+      "filter": {
+        "keywordPlaceholder": "ค้นหา ชื่อ นามสกุล อีเมล ชื่อผู้ใช้งาน",
+        "organization": "หน่วยงาน",
+        "role": "บทบาท",
+        "project": "โปรเจกต์",
+        "status": "สถานะ"
+      },
+      "column": {
+        "name": "ชื่อ",
+        "email": "อีเมล",
+        "organization": "หน่วยงาน",
+        "role": "บทบาท",
+        "subscriptions": "Subscription",
+        "status": "สถานะ",
+        "createdAt": "วันที่สร้าง"
+      }
+    },
+    "searchProject": {
+      "addProjectButton": "เพิ่มโปรเจกต์",
+      "filter": {
+        "keywordPlaceholder": "ชื่อโปรเจกต์",
+        "organization": "หน่วยงาน",
+        "subscription": "Subscription",
+        "createdAtRange": "ช่วงวันที่สร้าง"
+      },
+      "card": {
+        "task": "Task",
+        "taskItem_one": "{{count}} รายการ",
+        "taskItem_other": "{{count}} รายการ",
+        "status": "สถานะ",
+        "createdAt": "สร้าง",
+        "updatedAt": "แก้ไข",
+        "createdBy": "ผู้สร้าง"
+      },
+      "column": {
+        "name": "ชื่อโปรเจกต์",
+        "detail": "รายละเอียด",
+        "task": "Task",
+        "status": "สถานะ",
+        "createdAt": "วันที่สร้าง",
+        "updatedAt": "วันที่แก้ไข",
+        "createdBy": "ผู้สร้าง"
+      },
+      "option": {
+        "name": "ค้นหาด้วยชื่อ",
+        "description": "ค้นหาด้วยรายละเอียด",
+        "status": "ค้นหาด้วยสถานะ",
+        "createdBy": "ค้นหาด้วยผู้สร้าง"
+      }
+    },
+    "searchTask": {
+      "addTaskButton": "เพิ่ม Task",
+      "filter": {
+        "keywordPlaceholder": "ชื่อ Task",
+        "service": "ประเภทการวิเคราะห์ข้อมูล",
+        "rootModel": "โมเดล",
+        "status": "สถานะ"
+      },
+      "card": {
+        "service": "ประเภท",
+        "rootModel": "โมเดล",
+        "feature": "คุณสมบัติ",
+        "status": "สถานะ",
+        "createdAt": "สร้าง",
+        "createdBy": "ผู้สร้าง"
+      },
+      "column": {
+        "name": "ชื่อ",
+        "service": "ประเภทการวิเคราะห์ข้อมูล",
+        "rootModel": "โมเดล",
+        "feature": "คุณสมบัติ",
+        "status": "สถานะ",
+        "createdAt": "วันที่สร้าง",
+        "createdBy": "ผู้สร้าง"
+      },
+      "option": {
+        "name": "ค้นหาด้วยชื่อ",
+        "createdBy": "ค้นหาด้วยผู้สร้าง"
+      }
+    },
+    "organizationForm": {
+      "addTitle": "เพิ่มหน่วยงาน",
+      "editTitle": "แก้ไขหน่วยงาน",
+      "confirmContent": "คุณต้องการบันทึกหน่วยงานหรือไม่?",
+      "organizationDetails": "รายละเอียดหน่วยงาน",
+      "name": "ชื่อหน่วยงาน (ภาษาไทย)",
+      "nameEn": "ชื่อหน่วยงาน (ภาษาอังกฤษ)",
+      "contactName": "ชื่อผู้ติดต่อหลัก",
+      "contactEmail": "อีเมลผู้ติดต่อหลัก",
+      "adminNumber": "จำนวน Customer Admin",
+      "userNumber": "จำนวน Customer User",
+      "viewerNumber": "จำนวน Customer Viewer",
+      "storageNumber": "จำนวน Storage (TB)",
+      "projectNumber": "จำนวนโปรเจกต์",
+      "subscriptionDetails": "รายละเอียด Subscription",
+      "subscriptionName": "ชื่อ Subscription",
+      "startAt": "วันเริ่มต้น",
+      "endAt": "วันหมดอายุ",
+      "duration": "อายุการใช้งาน",
+      "days": "วัน",
+      "addSubscription": "เพิ่ม Subscription",
+      "deleteSubscription": "ลบ Subscription",
+      "isActive": "เปิดใช้งาน",
+      "dataUsage": "การใช้ข้อมูล",
+      "gallery": "คลังภาพ"
+    },
+    "subscriptionForm": {
+      "addTitle": "เพิ่ม Subscription",
+      "editTitle": "แก้ไข Subscription",
+      "confirmContent": "คุณต้องการบันทึก Subscription หรือไม่?",
+      "name": "ชื่อ Subscription (ภาษาไทย)",
+      "nameEn": "ชื่อ Subscription (ภาษาอังกฤษ)",
+      "analysisType": "ประเภทการวิเคราะห์ข้อมูล",
+      "selectAll": "เลือกทั้งหมด"
+    },
+    "userForm": {
+      "addTitle": "เพิ่มผู้ใช้งาน",
+      "editTitle": "แก้ไขผู้ใช้งาน",
+      "confirmContent": "คุณต้องการบันทึกผู้ใช้งานหรือไม่?",
+      "firstName": "ชื่อ",
+      "lastName": "นามสกุล",
+      "organization": "หน่วยงาน",
+      "email": "อีเมล",
+      "phone": "เบอร์โทรศัพท์",
+      "userName": "ชื่อผู้ใช้งาน",
+      "role": "บทบาท",
+      "subscription": "Subscription",
+      "isActive": "เปิดใช้งาน",
+      "resendSetupPasswordLink": "ส่งลิงก์กำหนดรหัสผ่านใหม่อีกครั้ง",
+      "resendSetupPasswordLinkConfirmTitle": "ยืนยันการส่งลิงก์กำหนดรหัสผ่านใหม่",
+      "resendSetupPasswordLinkSuccessTitle": "ส่งลิงก์กำหนดรหัสผ่านใหม่สำเร็จ"
+    },
+    "projectForm": {
+      "addTitle": "เพิ่มโปรเจกต์",
+      "editTitle": "แก้ไขโปรเจกต์",
+      "confirmContent": "คุณต้องการบันทึกโปรเจกต์หรือไม่?",
+      "name": "ชื่อ",
+      "detail": "รายละเอียด",
+      "organization": "หน่วยงาน",
+      "users": "ผู้ใช้งาน",
+      "addUserButton": "เพิ่มผู้ใช้งาน",
+      "noUsersSelected": "ไม่มีข้อมูลผู้ใช้งานที่อยู่ในโปรเจกต์",
+      "totalProjectUser_one": "ผู้ใช้งานที่อยู่ในโปรเจกต์ {{count}} รายการ",
+      "totalProjectUser_other": "ผู้ใช้งานที่อยู่ในโปรเจกต์ {{count}} รายการ"
+    },
+    "taskForm": {
+      "addTitle": "เพิ่ม Task",
+      "editTitle": "แก้ไข Task",
+      "selectAll": "เลือกทั้งหมด",
+      "name": "ชื่อ",
+      "service": "ประเภทการวิเคราะห์ข้อมูล",
+      "rootModel": "โมเดล",
+      "feature": "คุณสมบัติ",
+      "noServicePermission": "ไม่มีสิทธิ์ใช้งาน",
+      "button": {
+        "next": "ถัดไป",
+        "back": "ย้อนกลับ",
+        "saveAndProcess": "บันทึกและประมวลผล",
+        "saveDraft": "บันทึกฉบับร่าง"
+      },
+      "step1": "ตั้งชื่อและเลือกประเภทการวิเคราะห์",
+      "step2": "เลือกภาพถ่าย",
+      "step3": "เลือกพื้นที่วิเคราะห์",
+      "selectImage": "เลือกภาพถ่าย",
+      "selectFromGallery": "เลือกจากคลังภาพ",
+      "imageName": "ชื่อภาพถ่าย",
+      "captureDate": "วันที่ถ่ายภาพ",
+      "hashtag": "แฮชแท็ก",
+      "selectBaseImage": "เลือกภาพถ่ายตั้งต้น",
+      "selectComparisonImage": "เลือกภาพถ่ายเปรียบเทียบ",
+      "selectDetectionModel": "เลือกการตรวจจับ{{name}}",
+      "modelResultColumn": {
+        "model": "ชื่อโมเดล",
+        "feature": "คุณสมบัติ",
+        "processAt": "วันที่ประมวลผล",
+        "project": "ชื่อโปรเจกต์"
+      },
+      "gallery": "คลังภาพ",
+      "sarAnalysisAreaForm": {
+        "defineAnalysisArea": "กำหนดพื้นที่วิเคราะห์ภาพถ่าย",
+        "importVector": "นำเข้า Vector",
+        "enterCoordinates": "ระบุค่าพิกัด",
+        "chooseFile": "เลือกไฟล์",
+        "uploadHint": "รองรับไฟล์: Shapefile (.zip), GeoJSON (.geojson), KML (.kml), KMZ (.kmz) ขนาดไฟล์ไม่เกิน 50 MB",
+        "coordinateSystem": "เลือกระบบค่าพิกัด",
+        "latitudeMin": "ค่าพิกัด Latitude min",
+        "longitudeMin": "ค่าพิกัด Longitude min",
+        "latitudeMax": "ค่าพิกัด Latitude max",
+        "longitudeMax": "ค่าพิกัด Longitude max",
+        "xMin": "ค่าพิกัด X min",
+        "yMin": "ค่าพิกัด Y min",
+        "xMax": "ค่าพิกัด X max",
+        "yMax": "ค่าพิกัด Y max",
+        "mgrsMin": "ค่าพิกัด MGRS min",
+        "mgrsMax": "ค่าพิกัด MGRS max",
+        "drawPoint": "วาดตำแหน่ง",
+        "drawArea": "วาดพื้นที่",
+        "analysisArea": "พื้นที่วิเคราะห์ภาพถ่าย",
+        "noAnalysisAreaSelected": "ไม่มีพื้นที่วิเคราะห์ภาพถ่าย",
+        "cannotAddAnalysisArea": "ไม่สามารถเพิ่มพื้นที่วิเคราะห์ได้",
+        "maxAreaInfo": "พื้นที่วิเคราะห์ภาพถ่ายเกินขนาด 3 ตร.กม. กรุณาแก้ไขพื้นที่ใหม่",
+        "cannotUploadFile": "ไม่สามารถอัปโหลดไฟล์ได้",
+        "cannotUploadFileInfo": "รูปแบบไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ใหม่",
+        "noSupportedGeometries": "ไม่พบ Geometry ที่รองรับ",
+        "noSupportedGeometriesInfo": "มีเพียง Point, LineString หรือ Polygon เท่านั้นที่อนุญาต โดยมีพื้นที่สูงสุด 3 ตร.กม.",
+        "noRemainingSlots": "ไม่สามารถเพิ่มพื้นที่วิเคราะห์ได้",
+        "noRemainingSlotsInfo": "คุณเพิ่มพื้นที่วิเคราะห์ภาพถ่ายเกินจำนวนที่กำหนด"
+      }
+    }
+  },
+  "tools": {
+    "compass": "เข็มทิศ",
+    "copyCoordinates": "คัดลอกค่าพิกัด",
+    "basemap": "แผนที่พื้นฐาน",
+    "basemapType": "ประเภท",
+    "basemapTypes": {
+      "googleSatellite": "ภาพถ่ายดาวเทียม",
+      "googleHybrid": "ผสม",
+      "light": "ธีมสว่าง",
+      "dark": "ธีมมืด"
+    },
+    "currentLocation": "ตำแหน่งปัจจุบัน",
+    "zoom": "ซูมเข้า /ซูมออก",
+    "image": "ข้อมูลภาพถ่าย",
+    "measurement": "เครื่องมือวัด",
+    "searchCoordinate": "ค้นหาพิกัด",
+    "searchCoordinateForm": {
+      "inputPlaceholder": "ระบุพิกัด",
+      "searchCoordinateInfo": "รองรับ GCS, UTM47, UTM48, MGRS"
+    },
+    "searchCoordinateHelp": {
+      "title": "คำอธิบายการค้นหาค่าพิกัด",
+      "supportedSystems": {
+        "title": "ระบบค่าพิกัดที่รองรับ:",
+        "list": [
+          "GCS (Geographic Coordinate System)",
+          "UTM Zone 47",
+          "UTM Zone 48",
+          "MGRS (Military Grid Reference System)"
+        ]
+      },
+      "examples": {
+        "title": "ตัวอย่างการระบุพิกัด:",
+        "gcs": {
+          "label": "GCS",
+          "value": "13.7649,100.5383"
+        },
+        "utm": {
+          "label": "UTM (Zone 47N)",
+          "value": "666306.09,1522257.06"
+        },
+        "mgrs": {
+          "label": "MGRS",
+          "value": "47PPR6630622257"
+        }
+      },
+      "zoneExamples": {
+        "title": "การระบุ Zone สำหรับระบบพิกัด UTM:",
+        "list": [
+          "47N:666306.09,1522257.06",
+          "48N:235001.57,1511589.49"
+        ]
+      }
+    },
+    "currentLocationErrorTitle": "ไม่สามารถระบุตำแหน่งได้",
+    "locationServicesDisabled": "กรุณาอนุญาตให้เบราว์เซอร์เข้าถึงตำแหน่งของคุณ",
+    "cannotGetLocation": "ไม่สามารถรับตำแหน่งของคุณได้ กรุณาลองใหม่อีกครั้ง",
+    "searchPlacePlaceholder": "ระบุคำค้นหา",
+    "searchPlaceNoPlaces": "ไม่พบสถานที่ที่ค้นหา",
+    "searchingPlaces": "กำลังค้นหา...",
+    "3d": "3D",
+    "home": "ซูมไปยังขอบเขตการทำงาน",
+    "export": "พิมพ์ภาพแผนที่",
+    "printMap": {
+      "reportDate": "วันที่ออกรายงาน",
+      "orgName": "หน่วยงาน"
+    }
+  },
+  "map": {
+    "layer": "ชั้นข้อมูล",
+    "weekly": "การติดตามรายสัปดาห์",
+    "weeklyCompare": {
+      "selectImageDate": "เลือกวันที่ถ่ายภาพ",
+      "compareImage": "เพื่อดูการเปรียบเทียบ",
+      "leftImage": "ด้านซ้าย",
+      "rightImage": "ด้านขวา"
+    },
+    "weeklyObjectDetection": "การตรวจจับ",
+    "weeklyChangeDetection": "การตรวจจับความเปลี่ยนแปลง",
+    "detection": {
+      "taskName": "ชื่อ Task",
+      "model": "ประเภทการวิเคราะห์ข้อมูล",
+      "confidence": "ความเชื่อมั่น",
+      "area": "พื้นที่",
+      "aoiName": "ชื่อ AOI"
+    },
+    "info": {
+      "createdAt": "สร้าง",
+      "updatedAt": "แก้ไข"
+    },
+    "aoiLayer": "พื้นที่วิเคราะห์ภาพถ่าย",
+    "unavailableIncompleteTask": "ไม่สามารถแสดงข้อมูลได้ เนื่องจาก Task อยู่ระหว่างการประมวลผล",
+    "noDataTask": "ไม่สามารถแสดงข้อมูลได้ เนื่องจาก Task อยู่ระหว่างการสร้าง",
+    "reset": "รีเซ็ต",
+    "totalArea": "พื้นที่รวม",
+    "items": "รายการ",
+    "buildings": "จำนวนสิ่งปลูกสร้าง",
+    "adjustConfidence": "ปรับความเชื่อมั่น",
+    "downloadAnalysisData": "ดาวน์โหลดข้อมูลวิเคราะห์",
+    "saveAnalysisResult": "บันทึกผลการวิเคราะห์",
+    "pleaseSelectDataToDownload": "กรุณาเลือกข้อมูลที่ต้องการดาวน์โหลด",
+    "selectFileTypeDescription": "ประเภทไฟล์",
+    "selectFileTypeToDownload": "เลือกประเภทไฟล์ดาวน์โหลด",
+    "bandComposition": "แบนด์คอมโพสิชัน"
+  },
+  "gallery": {
+    "title": {
+      "upload": "อัปโหลดภาพถ่าย",
+      "optical": "ภาพถ่าย Optical และภาพถ่ายทางอากาศ",
+      "sar": "ภาพถ่าย SAR",
+      "organization": "หน่วยงาน"
+    },
+    "uploadDialog": {
+      "title": "อัปโหลดภาพถ่าย {{service}}",
+      "and": "และ",
+      "aerial": "ภาพถ่ายทางอากาศ",
+      "selectFile": "เลือกไฟล์",
+      "reading": "กำลังอ่าน...",
+      "supportedFiles": "รองรับไฟล์ประเภท *.tiff, *.zip ขนาดไม่เกิน 10 GB",
+      "imageName": "ชื่อภาพถ่าย",
+      "imagingDate": "วันที่ถ่ายภาพ",
+      "hashtags": "แฮชแท็ก",
+      "metadata": "Metadata ภาพถ่าย",
+      "status": "สถานะ",
+      "uploading": "กำลังอัปโหลด",
+      "validating": "กำลังตรวจสอบ metadata",
+      "upload": "อัปโหลด",
+      "cancel": "ยกเลิก",
+      "close": "ปิด",
+      "error": {
+        "userNotFound": "ไม่พบข้อมูลผู้ใช้ กรุณาลองใหม่",
+        "metadataTooLarge": "Metadata ขนาดเกิน {{size}} KB",
+        "metadataInvalid": "Metadata ไม่ถูกต้อง กรุณาตรวจสอบ",
+        "uploadFailed": "การอัปโหลดล้มเหลว กรุณาลองใหม่อีกครั้ง"
+      },
+      "success": {
+        "uploadComplete": "อัปโหลดสำเร็จ",
+        "uploadCancelled": "ยกเลิกอัปโหลดสำเร็จ"
+      }
+    },
+    "imagesSelector": {
+      "search": {
+        "keyword": "ระบุคำค้นหา",
+        "imagingDateRange": "ช่วงวันที่ถ่ายภาพ",
+        "prefixName": "ค้นหาด้วยชื่อภาพถ่าย",
+        "prefixType": "ค้นหาด้วยประเภทภาพถ่าย",
+        "prefixTag": "ค้นหาด้วยแฮชแท็ก"
+      },
+      "contextMenu": {
+        "show": "แสดงผลการวิเคราะห์ภาพถ่าย",
+        "createTask": "สร้าง Task",
+        "edit": "แก้ไข",
+        "shared": "แชร์",
+        "download": "ดาวน์โหลด",
+        "delete": "ลบ"
+      },
+      "detail": {
+        "service": "ประเภท",
+        "imagingDate": "วันที่ถ่ายภาพ",
+        "createdAt": "วันที่อัปโหลด",
+        "createdBy": "ผู้อัปโหลด",
+        "hashtags": "แฮชแท็ก",
+        "processItem": {
+          "inProcess": {
+            "statusLabel": "สถานะ"
+          },
+          "failed": {
+            "statusLabel": "สถานะ",
+            "statusText": "เกิดข้อผิดพลาด",
+            "remarkLabel": "รายละเอียดเพิ่มเติม"
+          }
+        }
+      },
+      "sortBy": {
+        "name": "ชื่อภาพถ่าย",
+        "imagingDate": "วันที่ถ่ายภาพ"
+      }
+    },
+    "uploadProgress": {
+      "imageName": "ชื่อภาพถ่าย",
+      "statusLabel": "สถานะ"
+    },
+    "alert": {
+      "cancelTitle": "ยกเลิกการอัปโหลดภาพถ่าย",
+      "cancelContent": "คุณต้องการยกเลิกและลบภาพถ่ายที่กำลังอัปโหลดออกจากระบบหรือไม่",
+      "deleteTitle": "ลบภาพถ่าย",
+      "deleteContent": "คุณต้องการลบภาพถ่ายออกจากระบบหรือไม่",
+      "errorUpload": "เกิดข้อผิดพลาดในการอัปโหลด กรุณายกเลิกและอัปโหลดใหม่อีกครั้ง",
+      "successUpload": "อัปโหลดภาพถ่ายสำเร็จ",
+      "failedUploadTitle": "อัปโหลดภาพถ่ายล้มเหลว",
+      "failedUploadContent": "กรุณาตรวจสอบไฟล์และอัปโหลดใหม่อีกครั้ง",
+      "failedUploadContentRemark": "หมายเหตุ"
+    },
+    "status": {
+      "default": "กำลังดำเนินการ",
+      "QUEUED": "เข้าคิว",
+      "UPLOAD_PENDING": "รออัปโหลด",
+      "UPLOAD_COMPLETED": "อัปโหลดเสร็จสิ้น",
+      "EXTRACTING": "กำลังแตกไฟล์",
+      "EXTRACTED": "แตกไฟล์เสร็จ",
+      "CONVERTING_COG": "กำลังแปลง COG",
+      "VALIDATING_PATTERN": "กำลังตรวจสอบรูปแบบ",
+      "GENERATING_METADATA": "กำลังสร้าง Metadata",
+      "READY": "พร้อมใช้งาน",
+      "ABORTED": "ยกเลิกแล้ว",
+      "FAILED_UPLOAD": "อัปโหลดล้มเหลว",
+      "FAILED_EXTRACT": "แตกไฟล์ล้มเหลว",
+      "FAILED_CONVERT_COG": "แปลง COG ล้มเหลว",
+      "FAILED_VALIDATE_PATTERN": "ตรวจสอบไม่ผ่าน",
+      "FAILED_METADATA": "สร้าง Metadata ล้มเหลว"
+    },
+    "action": {
+      "processTask": {
+        "title": "ผลลัพธ์การวิเคราะห์ข้อมูลภาพถ่าย",
+        "column": {
+          "service": "ประเภทการวิเคราะห์ข้อมูล",
+          "rootModel": "โมเดล",
+          "feature": "คุณสมบัติ",
+          "createdAt": "วันที่สร้าง",
+          "createdBy": "ผู้สร้าง",
+          "name": "ชื่อ Task",
+          "projectName": "ชื่อโปรเจกต์"
+        }
+      },
+      "edit": {
+        "title": "แก้ไขภาพถ่าย"
+      },
+      "shared": {
+        "title": "แชร์ภาพถ่าย"
+      },
+      "task": {
+        "titleTask": "สร้าง Task",
+        "titleProject": "สร้างโปรเจกต์",
+        "taskForm": {
+          "project": "เลือกโปรเจกต์"
+        },
+        "projectFrom": {}
+      }
+    }
+  },
+  "metadata": {
+    "validateAndFormat": "ตรวจสอบและจัดรูปแบบ",
+    "exceedsSize": "Metadata ขนาดเกิน {{size}} KB"
+  },
+  "session": {
+    "expiredTitle": "หมดเวลาการใช้งาน",
+    "expiredContent": "การเข้าใช้งานของคุณหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง",
+    "backToLogin": "กลับไปหน้าเข้าสู่ระบบ"
+  },
+  "unauthorized": {
+    "title": "ไม่มีสิทธิ์เข้าถึง",
+    "content": "คุณไม่มีสิทธิ์ในการเข้าถึงหน้านี้\n กรุณาติดต่อผู้ดูแลระบบ",
+    "backToProject": "กลับไปหน้าโปรเจกต์"
+  },
+  "error": {
+    "UNKNOWN": "เกิดข้อผิดพลาด กรุณาทำรายการใหม่อีกครั้ง",
+    "INCORRECT_RESET_PASSWORD_LINK": "ลิงก์รีเซ็ตรหัสผ่านไม่ถูกต้องหรือหมดอายุ กรุณาติดต่อเจ้าหน้าที่",
+    "DUPLICATE_USERNAME_OR_EMAIL": "ชื่อผู้ใช้หรืออีเมลนี้มีอยู่ในระบบแล้ว",
+    "TOKEN_INCORRECT": "Token ไม่ถูกต้อง",
+    "TOKEN_EXPIRED": "Token หมดอายุแล้ว",
+    "TOKEN_INVALID": "Token ไม่สามารถใช้งานได้",
+    "OTP_INCORRECT": "รหัส OTP ไม่ถูกต้อง",
+    "OTP_NOT_FOUND": "ไม่พบรหัส OTP",
+    "USER_OR_PASSWORD_INCORRECT": "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง",
+    "USER_NOT_FOUND": "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง",
+    "USER_FIRST_TIME_LOGIN": "กรุณาตรวจสอบ Email เพื่อแก้ไขรหัสผ่านครั้งแรก",
+    "USER_NOT_ACTIVE": "ไม่สามารถเข้าสู่ระบบได้ เนื่องจากบัญชีผู้ใช้งานของคุณถูกระงับชั่วคราว",
+    "USER_NOT_PERMISSION": "ผู้ใช้ไม่มีสิทธิ์ใช้งาน",
+    "PASSWORD_INCORRECT": "รหัสผ่านไม่ถูกต้อง",
+    "INTERNAL_SERVER_ERROR": "เกิดข้อผิดพลาด",
+    "DUPLICATE_NAME_OR_NAME_EN": "มีชื่อนี้อยู่ในระบบแล้ว",
+    "DATA_IN_USE": "มีการใช้ข้อมูลนี้อยู่ในระบบ",
+    "USER_UNAUTHORIZED": "ผู้ใช้งานไม่ได้รับอนุญาต",
+    "DUPLICATE_TASK_NAME": "ชื่อมีอยู่ในระบบแล้ว",
+    "SUBSCRIPTION_NO_VALID": "ไม่พบรายละเอียด Subscription ที่สามารถใช้งานได้ กรุณาติดต่อเจ้าหน้าที่",
+    "ERROR_PROCESSING_TASK": "เกิดข้อผิดพลาดระหว่างการประมวลผล กรุณาบันทึกและประมวลผลใหม่อีกครั้ง",
+    "BAD_REQUEST": "คำขอไม่ถูกต้อง",
+    "PARAMETER_INVALID": "พารามิเตอร์ไม่ถูกต้อง",
+    "ROLE_OVER_LIMIT": "ผู้ใช้งานเกินจำนวนบทบาทที่กำหนดไว้",
+    "IMAGE_IN_USE": "ภาพถ่ายถูกใช้งานอยู่ในขณะนี้"
+  },
+  "empty": {
+    "noImageSearch": "ไม่มีภาพถ่าย กรุณาอัปโหลดภาพถ่าย",
+    "noImageDetail": "ไม่มีข้อมูลภาพถ่าย",
+    "noData": "ไม่พบข้อมูล",
+    "noList": "ไม่มีรายการ"
+  },
+  "itv": {
+    "button": {
+      "addLayer": "เพิ่มชั้นข้อมูล",
+      "sort": "เรียงลำดับ",
+      "info": "แสดงข้อมูลเพิ่มเติม",
+      "addDraw": "เพิ่มการวาด"
+    },
+    "label": {
+      "add": "เพิ่มชั้นข้อมูล",
+      "edit": "แก้ไขชั้นข้อมูล",
+      "image": "ข้อมูลภาพถ่าย"
+    },
+    "menu": {
+      "gallery": "นำเข้าจากคลังภาพ",
+      "rasterTile": "Raster Tiles",
+      "vectorTile": "Vector Tiles",
+      "photo": "นำเข้าภาพถ่าย",
+      "vector": "นำเข้า Vector",
+      "draw": "วาดประกอบแผนที่",
+      "annotation": "วาดสัญลักษณ์ทางทหาร"
+    },
+    "form": {
+      "dialog": {
+        "name": {
+          "label": "ชื่อชั้นข้อมูล",
+          "placeholder": "ระบุชื่อชั้นข้อมูล"
+        },
+        "url": {
+          "label": "URL",
+          "placeholder": "https://example.com/{z}/{x}/{y}"
+        }
+      }
+    },
+    "upload": {
+      "supportedFile": "รองรับไฟล์: {{type}} ขนาดไฟล์ละไม่เกิน {{size}} MB",
+      "supportedFileVector": "รองรับไฟล์: Shapefile (.zip), GeoJSON (.geojson), KML (.kml), KMZ (.kmz) ขนาดไฟล์ไม่เกิน 50 MB",
+      "photoCount": "จำนวนภาพถ่าย {{count}} รายการ",
+      "locator": {
+        "title": "นำเข้าภาพถ่าย",
+        "all": "ทั้งหมด",
+        "address": "มีค่าพิกัด",
+        "noAddress": "ไม่มีค่าพิกัด",
+        "defindCoordinates": "กำหนดค่าพิกัด",
+        "latitude": "Latitude",
+        "longitude": "Longitude"
+      },
+      "loading": {
+        "title": "อัปโหลดภาพถ่าย",
+        "fileName": "ชื่อภาพถ่าย",
+        "status": "สถานะ",
+        "uploading": "กำลังอัปโหลด"
+      }
+    },
+    "alert": {
+      "uploadAlertTitle": "ไม่สามารถอัปโหลดไฟล์ได้",
+      "fileTypeNotSupported": "รูปแบบไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ใหม่",
+      "fileSizeExceeded": "ขนาดไฟล์เกิน {{size}} MB กรุณาเลือกไฟล์ใหม่",
+      "maxFileCount": "จำนวนไฟล์เกิน {{count}} ไฟล์ กรุณาเลือกไฟล์ใหม่",
+      "maxItemCount": "จำนวนข้อมูลเกิน {{count}} ชิ้น กรุณาเลือกไฟล์ใหม่"
+    },
+    "popup": {
+      "name": "ชื่อ",
+      "imagingDate": "วันที่ถ่ายภาพ"
+    },
+    "draw": {
+      "type": "รูปแบบ",
+      "border": "สีเส้นขอบ",
+      "fill": "สีภายใน",
+      "point": "ตำแหน่ง",
+      "line": "เส้น",
+      "polygon": "พื้นที่",
+      "text": "ข้อความ",
+      "drawFillColor": "สีภายใน",
+      "drawText": "ข้อความ",
+      "drawSize": "ขนาด",
+      "drawDegree": "องศา",
+      "drawTextHaloSize": "ความหนาเส้นขอบ",
+      "drawTextHaloColor": "สีเส้นขอบ",
+      "drawTextColor": "สีภายใน",
+      "drawBorderSize": "ความหนาเส้นขอบ",
+      "drawBorderColor": "สีเส้นขอบ",
+      "polygonType": {
+        "rectangle": "สี่เหลี่ยม",
+        "circle": "วงกลม",
+        "polygon": "พื้นที่"
+      }
+    }
+  },
+  "dataManagement": {
+    "userCount": "จำนวนผู้ใช้งาน",
+    "subscription": "Subscription",
+    "storageUsage": "การใช้พื้นที่",
+    "projectStorage": "พื้นที่โปรเจกต์",
+    "expiredSubscriptions": "รายการหมดอายุ",
+    "subscriptionName": "ชื่อ Subscription",
+    "startDate": "เริ่มต้น",
+    "endDate": "หมดอายุ",
+    "remaining": "คงเหลือ",
+    "days": "วัน",
+    "expired": "หมดอายุแล้ว",
+    "customerAdmin": "ผู้ดูแลระบบหน่วยงาน",
+    "user": "ผู้ใช้งาน",
+    "viewer": "ผู้เข้าชม",
+    "unlimited": "ไม่จำกัด",
+    "used": "ใช้แล้ว",
+    "total": "ทั้งหมด",
+    "free": "คงเหลือ",
+    "allProjects": "ทั้งหมด",
+    "project": "โปรเจกต์",
+    "size": "พื้นที่ (TB)",
+    "details": "รายละเอียด",
+    "filterAll": "ทั้งหมด",
+    "filterGallery": "คลังภาพ",
+    "filterProject": "โปรเจกต์",
+    "organization": "ทั้งหน่วยงาน",
+    "owner": "ตนเอง",
+    "taskStorageUsage": "รายการ Tasks ใช้พื้นที่",
+    "taskName": "ชื่อ Task",
+    "taskType": "ประเภท",
+    "taskModel": "โมเดล",
+    "taskProperties": "คุณสมบัติ",
+    "createdBy": "ผู้สร้าง",
+    "createdAt": "วันที่สร้าง"
+  },
+  "annotation": {
+    "label": "Label",
+    "symbol": "Symbol",
+    "editSymbol": "แก้ไขสัญลักษณ์",
+    "symbolAll": "สัญลักษณ์ทั้งหมด",
+    "symbolSearch": "ค้นหาสัญลักษณ์",
+    "symbolSize": "Symbol Size",
+    "context": "Context",
+    "identity": "Identity / Affiliation",
+    "status": "Status / Planned",
+    "headquarters": "Headquarters / Task Force / Dummy",
+    "echelon": "Echelon",
+    "modifier1": "Modifier 1",
+    "modifier2": "Modifier 2",
+    "engagementBar": "Engagement Bar",
+    "iff": "IFF / SIF / AIS",
+    "speed": "Speed",
+    "uniqueDesignation": "Unique Designation",
+    "reinforced": "Reinforced",
+    "staffComments": "Staff Comments",
+    "additionalInformation": "Additional Information",
+    "addAnnotation": "เพิ่มชั้นข้อมูลวาดสัญลักษณ์ทางทหาร",
+    "editAnnotation": "แก้ไขชั้นข้อมูลวาดสัญลักษณ์ทางทหาร",
+    "annotationName": "ชื่อชั้นข้อมูล",
+    "specifyAnnotationName": "ระบุชื่อชั้นข้อมูล",
+    "noLabelAvailable": "ไม่มีข้อมูล"
+  }
+}

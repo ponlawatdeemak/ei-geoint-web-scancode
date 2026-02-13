@@ -1,0 +1,3 @@
+[submodule "ei-geoint-web-interface"]
+	path = ei-geoint-web-interface
+	url = ../ei-geoint-web-interface

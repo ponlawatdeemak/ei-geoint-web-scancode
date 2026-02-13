@@ -1,0 +1,28 @@
+{
+  // ใช้ biome เป็น default formatter
+  "editor.defaultFormatter": "biomejs.biome",
+
+  // ให้ format ทุกครั้งที่ save
+  "editor.formatOnSave": true,
+
+  // ตั้งค่าให้ biome ใช้กับไฟล์ที่ต้องการ
+  "[javascript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "files.eol": "\n",
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "editor.codeActionsOnSave": {
+    "source.fixAll.biome": "explicit"
+  }
+}

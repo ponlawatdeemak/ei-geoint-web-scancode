@@ -1,0 +1,161 @@
+{
+  "root": false,
+  "$schema": "https://biomejs.dev/schemas/2.2.4/schema.json",
+  "vcs": {
+    "enabled": false,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "ignoreUnknown": false,
+    "includes": [
+      "**",
+      "!package-lock.json",
+      "!node_modules",
+      "!.gitlab",
+      "!.next",
+      "!dist",
+      "!build",
+      "!**/*.md",
+      "!**/types",
+      "!next-env.d.ts"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "formatWithErrors": false,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 120,
+    "attributePosition": "auto",
+    "bracketSameLine": false,
+    "bracketSpacing": true,
+    "expand": "auto"
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "complexity": {
+        "noExcessiveCognitiveComplexity": {
+          "level": "error",
+          "options": {
+            "maxAllowedComplexity": 25
+          }
+        },
+        "useWhile": "warn",
+        "noForEach": "off",
+        "noStaticOnlyClass": "warn",
+        "noUselessSwitchCase": "error",
+        "useFlatMap": "warn",
+        "useDateNow": "warn",
+        "useOptionalChain": "warn",
+        "noUselessEmptyExport": "info",
+        "noUselessConstructor": "info",
+        "noUselessTypeConstraint": "info",
+        "noUselessThisAlias": "info",
+        "useLiteralKeys": "info",
+        "noBannedTypes": "warn",
+        "noExcessiveNestedTestSuites": "info"
+      },
+      "correctness": {
+        "noInvalidBuiltinInstantiation": "error",
+        "noInvalidUseBeforeDeclaration": "error",
+        "noUnusedVariables": "warn",
+        "noPrecisionLoss": "error"
+      },
+      "style": {
+        "useForOf": "info",
+        "useExplicitLengthCheck": "error",
+        "useFilenamingConvention": "warn",
+        "useCollapsedIf": "error",
+        "useAtIndex": "off",
+        "useNodejsImportProtocol": "off",
+        "useNumberNamespace": "error",
+        "noSubstr": "error",
+        "useTrimStartEnd": "error",
+        "useThrowNewError": "warn",
+        "noParameterProperties": "warn",
+        "useAsConstAssertion": "info",
+        "useEnumInitializers": "warn",
+        "useShorthandFunctionType": "info",
+        "useLiteralEnumMembers": "warn",
+        "noRestrictedTypes": "warn",
+        "noRestrictedImports": "warn",
+        "noCommonJs": "warn",
+        "noNonNullAssertion": "warn",
+        "noNamespace": "warn",
+        "noInferrableTypes": "info",
+        "useArrayLiterals": "info",
+        "useNamingConvention": "off",
+        "useConsistentMemberAccessibility": "info",
+        "useDefaultParameterLast": "warn",
+        "useImportType": "off",
+        "useExportType": "warn",
+        "useConsistentArrayType": "info",
+        "noDoneCallback": "info"
+      },
+      "suspicious": {
+        "useErrorMessage": "error",
+        "useIsArray": "error",
+        "noThenProperty": "error",
+        "useNumberToFixedDigitsArgument": "error",
+        "useNamespaceKeyword": "error",
+        "useAwait": "warn",
+        "noUnsafeDeclarationMerging": "error",
+        "noRedeclare": "error",
+        "noMisleadingInstantiator": "error",
+        "noConfusingVoidType": "warn",
+        "noExtraNonNullAssertion": "warn",
+        "noExplicitAny": "warn",
+        "noEmptyInterface": "error",
+        "noEmptyBlockStatements": "warn",
+        "noDuplicateClassMembers": "error",
+        "useAdjacentOverloadSignatures": "warn",
+        "noMisplacedAssertion": "warn",
+        "noFocusedTests": "warn",
+        "noExportsInTest": "error",
+        "noDuplicateTestHooks": "error",
+        "noSkippedTests": "warn"
+      },
+      "nursery": {
+        "useExplicitType": "off",
+        "useSortedClasses": {
+          "fix": "safe",
+          "level": "error",
+          "options": {}
+        }
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "jsxQuoteStyle": "single",
+      "quoteStyle": "single",
+      "quoteProperties": "asNeeded",
+      "trailingCommas": "all",
+      "semicolons": "asNeeded",
+      "arrowParentheses": "always",
+      "bracketSameLine": false,
+      "attributePosition": "auto",
+      "bracketSpacing": true
+    },
+    "parser": {
+      "unsafeParameterDecoratorsEnabled": true
+    }
+  },
+  "html": {
+    "formatter": {
+      "selfCloseVoidElements": "always"
+    }
+  },
+  "css": {
+    "formatter": {
+      "quoteStyle": "single"
+    }
+  },
+  "assist": {
+    "enabled": false
+  }
+}

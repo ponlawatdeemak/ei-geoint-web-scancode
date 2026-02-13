@@ -1,0 +1,84 @@
+name: Deploy-Prod
+
+on:
+  workflow_dispatch:
+    inputs:
+      comment:
+        description: 'Comment to include in the trigger'
+        required: true
+
+jobs:
+  deploy-prod:
+    if: github.ref == 'refs/heads/master'
+    runs-on: tc-runner
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Check approval comments
+      run: |
+        COMMENT="${{ github.event.inputs.comment }}"
+        INITIATOR="${{ github.actor }}"
+        APPROVED_USERS=("th4nit" "apichartw" "TP-best" "Tithiwat")
+
+        if [[ "$COMMENT" == *"approve"* || "$COMMENT" == *"LGTM"* ]]; then
+          if [[ " ${APPROVED_USERS[@]} " =~ " $INITIATOR " ]]; then
+            echo "Manual trigger received with approved comment by user $INITIATOR: $COMMENT"
+            # Add deployment steps here
+          else
+            echo "Manual trigger received, but user $INITIATOR is not authorized. Exiting workflow."
+            exit 78  # Exit with a neutral exit code (78) if initiator is not authorized
+          fi
+        else
+          echo "No approval comments found. Exiting workflow."
+          exit 78  # Exit with a neutral exit code (78) if no approval comments are found
+        fi
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        sparse-checkout: k8s
+
+    - name: Set image tag
+      id: prep
+      run: |
+        COMMIT_DATE=$(git --no-pager log -1 --pretty=%cd_%h --date=format:%Y%m%dT%H%M%S)
+        echo "IMAGE_TAG=${COMMIT_DATE}" >> $GITHUB_ENV
+        if [ "$GITHUB_REF_NAME" = "dev" ]; then
+          IMAGE_NAME_SUFFIX="-dev"
+        else
+          IMAGE_NAME_SUFFIX="-prod"
+        fi
+        echo "IMAGE_NAME_SUFFIX=$IMAGE_NAME_SUFFIX" >> "$GITHUB_ENV"
+
+      # Install kubectl
+    - uses: azure/setup-kubectl@v4
+      id: install
+      
+    - uses: Azure/k8s-set-context@v4
+      with:
+        kubeconfig: ${{ secrets.GEOINT_PROD_KUBE_CONF }}
+
+    - name: Replace image in K3s manifest
+      run: |
+        sed -i "s|${{ secrets.CI_REGISTRY }}/${{ github.event.repository.name }}.*:latest|${{ secrets.CI_REGISTRY }}/${{ github.event.repository.name }}${IMAGE_NAME_SUFFIX}:${IMAGE_TAG}|g" k8s/geoint-web.yaml
+        
+    - name: Deploy to Prod Kubernetes Cluster
+      uses: azure/k8s-deploy@v5
+      with:
+        namespace: "geoint"
+        skip-tls-verify: true
+        manifests: |
+          k8s/geoint-web.yaml
+        images: |
+            ${{ secrets.CI_REGISTRY }}/${{ github.event.repository.name }}${{ env.IMAGE_NAME_SUFFIX }}:${{ env.IMAGE_TAG }}
+        imagepullsecrets: "rome"
+
+  
+  post-test:
+    needs: deploy-prod
+    name: Post Test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Post Test
+      run: echo "Post test"

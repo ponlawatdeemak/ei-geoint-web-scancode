@@ -1,0 +1,1041 @@
+{
+  "app": {
+    "name": "Intelligence Reconnaissance Insights System"
+  },
+  "button": {
+    "ok": "OK",
+    "back": "Back",
+    "cancel": "Cancel",
+    "close": "Close",
+    "save": "Save",
+    "add": "Add",
+    "delete": "Delete",
+    "edit": "Edit",
+    "editName": "Edit Name",
+    "viewDetails": "View Details",
+    "openMap": "Open Map",
+    "viewOnMap": "View on Map",
+    "confirm": "Confirm",
+    "clear": "Clear",
+    "search": "Search",
+    "select": "Select",
+    "minimize": "Minimize/Maximize",
+    "more": "More",
+    "download": "Download",
+    "downloadPdf": "Download PDF",
+    "mapCompare": "Map Comparison",
+    "mapSidebySide": "Map Side by Side",
+    "selectArea": "Select Area",
+    "selectModel": "Select Model",
+    "openPanel": "Open Panel",
+    "closePanel": "Close Panel",
+    "details": "Details",
+    "previous": "Previous",
+    "next": "Next",
+    "options": "Options",
+    "dataManagement": "Data Management",
+    "gallery": "Gallery",
+    "weekly": "Weekly"
+  },
+  "filter": {
+    "dialogTitle": "Filters",
+    "all": "All",
+    "noOptions": "No options",
+    "loading": "Loading...",
+    "toDate": "To Date"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "draft": "Draft",
+    "inProgress": "In Progress",
+    "completed": "Completed",
+    "failed": "Failed",
+    "waitingForResults": "Waiting for Results"
+  },
+  "sarStatus": {
+    "draft": "Draft",
+    "inProgress": "Processing analysis",
+    "completed": "Analysis completed",
+    "failed": "Failed",
+    "waitingForResults": "Waiting for analysis results upload"
+  },
+  "view": {
+    "card": "Card",
+    "table": "Table",
+    "map": "Map"
+  },
+  "table": {
+    "totalSearchResult_one": "Total search results {{count}} item",
+    "totalSearchResult_other": "Total search results {{count}} items",
+    "selectedRow_one": "Selected {{count}} row",
+    "selectedRow_other": "Selected {{count}} rows",
+    "deleteSelectedRows": "Delete selected row(s)",
+    "actions": "Actions",
+    "noData": "No data",
+    "of": "of",
+    "labelRowsPerPage": "Rows per page",
+    "labelDisplayedRows": "{{from}}–{{to}} of {{count}}",
+    "sortBy": "Sort by",
+    "asc": "Low to High",
+    "desc": "High to Low",
+    "totalResult": "Total results {{count}} items",
+    "page": "Page",
+    "from": "From"
+  },
+  "alert": {
+    "errorTitle": "Error",
+    "confirmSaveTitle": "Confirm Save",
+    "confirmSaveContent": "Are you sure you want to save?",
+    "saveSuccess": "Save successful",
+    "confirmDeleteTitle": "Confirm Delete",
+    "confirmDeleteContent": "Are you sure you want to delete?",
+    "confirmCancelTitle": "Confirm Cancel",
+    "confirmCancelContent": "Are you sure you want to cancel?",
+    "deleteSuccess": "Delete successful",
+    "confirmSignOutTitle": "Confirm Sign Out",
+    "confirmSignOutContent": "Are you sure you want to sign out?",
+    "dataNotFound": "Data not found",
+    "mapPositionRequired": "Please set the position on the map",
+    "requireFieldError": "Please fill in all required fields",
+    "requireTextError": "Please enter text"
+  },
+  "link": {
+    "contactUs": "Contact Us"
+  },
+  "password": {
+    "passwordRulesTitle": "Password requirements",
+    "notMatch": "Passwords do not match",
+    "ruleMinLength": "At least 8 characters including letters, numbers, and special characters",
+    "ruleUppercase": "At least 1 uppercase letter (A-Z)",
+    "ruleLowercase": "At least 1 lowercase letter (a-z)",
+    "ruleNumber": "At least 1 number (0-9)",
+    "ruleSpecial": "At least 1 special character (!@#$%*&*)"
+  },
+  "validation": {
+    "required": "This field is required",
+    "minLength_one": "Minimum length is {{count}} character",
+    "minLength_other": "Minimum length is {{count}} characters",
+    "maxLength_one": "Maximum length is {{count}} character",
+    "maxLength_other": "Maximum length is {{count}} characters",
+    "minNumber": "Minimum value is {{count}}",
+    "maxNumber": "Maximum value is {{count}}",
+    "minArrayLength_one": "Please select at least {{count}} item",
+    "minArrayLength_other": "Please select at least {{count}} items",
+    "maxArrayLength_one": "You can select up to {{count}} item only",
+    "maxArrayLength_other": "You can select up to {{count}} items only",
+    "invalidEmail": "Invalid email format",
+    "invalidPhone": "Only numbers are allowed"
+  },
+  "language": {
+    "thai": "ภาษาไทย",
+    "english": "English"
+  },
+  "unit": {
+    "duration": {
+      "day_one": "{{count}} Day",
+      "day_other": "{{count}} Days",
+      "month_one": "{{count}} Month",
+      "month_other": "{{count}} Months",
+      "year_one": "{{count}} Year",
+      "year_other": "{{count}} Years"
+    },
+    "area": {
+      "rai": "Rai",
+      "ngan": "Ngan",
+      "sqwa": "Square Wa",
+      "sqm": "Square Meter",
+      "sqkm": "Square Kilometer",
+      "hectare": "Hectare",
+      "acre": "Acre",
+      "sqmile": "Square Mile",
+      "sqnauticmile": "Square Nautical Mile",
+      "raiAbbr": "rai",
+      "nganAbbr": "ngan",
+      "sqwaAbbr": "sq wa",
+      "sqmAbbr": "sq m",
+      "sqkmAbbr": "sq km",
+      "hectareAbbr": "ha",
+      "acreAbbr": "ac",
+      "sqmileAbbr": "sq mi",
+      "sqnauticmileAbbr": "sq nmi"
+    },
+    "length": {
+      "foot": "Foot",
+      "nauticmile": "Nautical Mile",
+      "mile": "Mile",
+      "yard": "Yard",
+      "meter": "Meter",
+      "km": "Kilometer",
+      "footAbbr": "ft",
+      "nauticmileAbbr": "nmi",
+      "mileAbbr": "mi",
+      "yardAbbr": "yd",
+      "meterAbbr": "m",
+      "kmAbbr": "km"
+    }
+  },
+  "menu": {
+    "project": "Project",
+    "gallery": "Gallery",
+    "profile": "Profile",
+    "management": "Management",
+    "manageSubscription": "Manage Subscription",
+    "manageOrganization": "Manage Organization",
+    "manageUser": "Manage User",
+    "manageApi": "Manage API",
+    "manageData": "Data Management",
+    "settings": "Settings",
+    "signOut": "Sign Out"
+  },
+  "navigation": {
+    "back": "Back",
+    "profile": "Profile",
+    "changePassword": "Change Password",
+    "manageSubscription": "Manage Subscription",
+    "addSubscription": "Add Subscription",
+    "editSubscription": "Edit Subscription",
+    "manageOrganization": "Manage Organization",
+    "addOrganization": "Add Organization",
+    "editOrganization": "Edit Organization",
+    "manageUser": "Manage User",
+    "addUser": "Add User",
+    "editUser": "Edit User",
+    "manageApiKey": "Manage API Key",
+    "addApiKey": "Add API Key",
+    "editApiKey": "Edit API Key",
+    "project": "Project",
+    "addProject": "Add Project",
+    "editProject": "Edit Project",
+    "addTask": "Add Task",
+    "editTask": "Edit Task"
+  },
+  "dialog": {
+    "weeklyMapCompare": {
+      "selectDate": "Select Date"
+    },
+    "mapCompare": {
+      "title": "Image Comparison",
+      "changeDetectionButton": "View Change Detection",
+      "compareButton": "View Comparison"
+    },
+    "projectDetails": {
+      "title": "Project Details",
+      "name": "Name",
+      "detail": "Detail",
+      "tasksCount": "Task",
+      "taskItem_one": "{{count}} item",
+      "taskItem_other": "{{count}} items",
+      "createdBy": "Created By",
+      "createdAt": "Created At",
+      "updatedAt": "Updated At"
+    },
+    "taskDetails": {
+      "title": "Task Details",
+      "name": "Name",
+      "service": "Service",
+      "rootModel": "Model",
+      "feature": "Feature",
+      "status": "Status",
+      "createdBy": "Created By",
+      "createdAt": "Created At"
+    },
+    "saveAnalysisResult": {
+      "title": "Save Analysis Result",
+      "analysisResult": "Image Analysis Result",
+      "success": "Success",
+      "failed": "Failed",
+      "uploadAnalysisFile": "Upload Analysis Result File",
+      "chooseFile": "Choose File",
+      "supportedFileTypes": "Supported file type: .zip up to 500 MB",
+      "invalidFileFormat": "Invalid file format. Please choose a new file.",
+      "confirmSaveTitle": "Confirm Save Analysis Result",
+      "confirmSaveContent": "Do you want to save the analysis result? Saving a new analysis result will overwrite the previous one."
+    },
+    "shareApi": {
+      "title": "Share API"
+    },
+    "datePicker": {
+      "selectDate": "SELECT DATE"
+    }
+  },
+  "form": {
+    "weeklyMap": {
+      "formTitle": "Weekly Monitoring",
+      "selectDateRange": "Select Date Range"
+    },
+    "settings": {
+      "formTitle": "Settings",
+      "language": "Language",
+      "areaUnit": "Area Unit",
+      "lengthUnit": "Length Unit"
+    },
+    "profileForm": {
+      "formTitle": "Profile",
+      "successTitle": "Profile updated successfully",
+      "confirmContent": "Do you want to save your profile?",
+      "changePassword": "Change Password",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "organization": "Organization",
+      "email": "Email",
+      "phone": "Phone",
+      "userName": "User Name",
+      "role": "Role",
+      "subscription": "Subscription"
+    },
+    "changePassword": {
+      "formTitle": "Change Password",
+      "formSubtitle": "Please set and confirm your new password.",
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmNewPassword": "Confirm New Password",
+      "successTitle": "Password changed successfully",
+      "confirmTitle": "Confirm Password Change",
+      "confirmContent": "Do you want to change your password?"
+    },
+    "resetPassword": {
+      "formTitle": "Set Password",
+      "formSubtitle": "Please set and confirm your new password.",
+      "newPassword": "New Password",
+      "confirmNewPassword": "Confirm New Password",
+      "successTitle": "Password reset successfully",
+      "successContent": "You can now log in with your new password."
+    },
+    "login": {
+      "formTitle": "Login",
+      "formSubtitle": "Please enter your username and password to log in.",
+      "username": "Username",
+      "usernamePlaceholder": "Email / Username",
+      "password": "Password",
+      "forgotPassword": "Forgot Password",
+      "loginButton": "Login",
+      "otpFormTitle": "Enter OTP",
+      "otpSent": "OTP sent successfully",
+      "otpSentToEmail": "OTP sent to email {{email}} (Ref: {{refCode}})",
+      "checkEmail": "Please check your email",
+      "resendOtp": "Resend OTP",
+      "requestNewOtp": "Request New OTP"
+    },
+    "forgotPassword": {
+      "formTitle": "Forgot Password",
+      "formSubtitle": "Please enter your email address to receive a password reset link.",
+      "email": "Email",
+      "sendLinkButton": "Send Password Reset Link",
+      "successTitle": "Password Reset Link Sent",
+      "successContent": "Please check your email to reset your password."
+    },
+    "searchSubscription": {
+      "addSubscriptionButton": "Add Subscription",
+      "filter": {
+        "keywordPlaceholder": "Subscription Name",
+        "organization": "Organization"
+      },
+      "column": {
+        "name": "Subscription Name",
+        "organizationsCount": "Active Organizations",
+        "createdBy": "Created By",
+        "createdAt": "Created At"
+      }
+    },
+    "searchOrganization": {
+      "addOrganizationButton": "Add Organization",
+      "filter": {
+        "keywordPlaceholder": "Organization Name",
+        "subscription": "Subscription",
+        "status": "Status"
+      },
+      "column": {
+        "name": "Organization Name",
+        "subscriptions": "Subscriptions",
+        "status": "Status",
+        "createdAt": "Created At"
+      }
+    },
+    "searchApiKey": {
+      "addApiKeyButton": "Add API Key",
+      "toggleButton": "Enable API",
+      "activateSuccess": "API activated successfully",
+      "revokeSuccess": "API revoked successfully",
+      "manageApiKey": "Manage API",
+      "showKey": "Show Key",
+      "hideKey": "Hide Key",
+      "copyKey": "Copy Key",
+      "filter": {
+        "keywordPlaceholder": "Search API Key",
+        "keywordOrgPlaceholder": "Search Organization",
+        "status": "Status"
+      },
+      "column": {
+        "apiKey": "API Key",
+        "organization": "Organization",
+        "status": "Status",
+        "createdAt": "Created At",
+        "deactivatedAt": "Deactivated At"
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Cancelled"
+      },
+      "create": {
+        "title": "Add API Key",
+        "confirmContent": "Do you want to add API Key",
+        "successTitle": "Save Success"
+      },
+      "delete": {
+        "title": "Revoke API Key",
+        "confirmContent": "Do you want to revoke API Key",
+        "successTitle": "Save Success"
+      }
+    },
+    "searchUser": {
+      "addUserButton": "Add User",
+      "filter": {
+        "keywordPlaceholder": "Search by name, surname, email, username",
+        "organization": "Organization",
+        "role": "Role",
+        "project": "Project",
+        "status": "Status"
+      },
+      "column": {
+        "name": "Name",
+        "email": "Email",
+        "organization": "Organization",
+        "role": "Role",
+        "subscriptions": "Subscriptions",
+        "status": "Status",
+        "createdAt": "Created At"
+      }
+    },
+    "searchProject": {
+      "addProjectButton": "Add Project",
+      "filter": {
+        "keywordPlaceholder": "Project Name",
+        "organization": "Organization",
+        "subscription": "Subscription",
+        "createdAtRange": "Created At Range"
+      },
+      "card": {
+        "task": "Task",
+        "taskItem_one": "{{count}} item",
+        "taskItem_other": "{{count}} items",
+        "status": "Status",
+        "createdAt": "Created",
+        "updatedAt": "Updated",
+        "createdBy": "By"
+      },
+      "column": {
+        "name": "Project Name",
+        "detail": "Detail",
+        "task": "Task",
+        "status": "Status",
+        "createdAt": "Created At",
+        "updatedAt": "Updated At",
+        "createdBy": "Created By"
+      },
+      "option": {
+        "name": "Search by Name",
+        "description": "Search by Description",
+        "status": "Search by Status",
+        "createdBy": "Search by Created By"
+      }
+    },
+    "searchTask": {
+      "addTaskButton": "Add Task",
+      "filter": {
+        "keywordPlaceholder": "Task Name",
+        "service": "Service",
+        "rootModel": "Model",
+        "status": "Status"
+      },
+      "card": {
+        "service": "Service",
+        "rootModel": "Model",
+        "feature": "Feature",
+        "status": "Status",
+        "createdAt": "Created",
+        "createdBy": "Created By"
+      },
+      "column": {
+        "name": "Name",
+        "service": "Service",
+        "rootModel": "Model",
+        "feature": "Feature",
+        "status": "Status",
+        "createdAt": "Created At",
+        "createdBy": "Created By"
+      },
+      "option": {
+        "name": "Search by Name",
+        "createdBy": "Search by Created By"
+      }
+    },
+    "organizationForm": {
+      "addTitle": "Add Organization",
+      "editTitle": "Edit Organization",
+      "confirmContent": "Do you want to save the organization?",
+      "organizationDetails": "Organization Details",
+      "name": "Name (Thai)",
+      "nameEn": "Name (English)",
+      "contactName": "Primary Contact Name",
+      "contactEmail": "Primary Contact Email",
+      "adminNumber": "Number of Customer Admins",
+      "userNumber": "Number of Customer Users",
+      "viewerNumber": "Number of Customer Viewers",
+      "storageNumber": "Storage (TB)",
+      "projectNumber": "Number of Projects",
+      "subscriptionDetails": "Subscription Details",
+      "subscriptionName": "Subscription Name",
+      "startAt": "Start Date",
+      "endAt": "Expiration Date",
+      "duration": "Duration",
+      "days": "Days",
+      "addSubscription": "Add Subscription",
+      "deleteSubscription": "Delete Subscription",
+      "isActive": "Active",
+      "dataUsage": "Data Usage",
+      "gallery": "Gallery"
+    },
+    "subscriptionForm": {
+      "addTitle": "Add Subscription",
+      "editTitle": "Edit Subscription",
+      "confirmContent": "Do you want to save the subscription?",
+      "name": "Name (Thai)",
+      "nameEn": "Name (English)",
+      "analysisType": "Analysis Type",
+      "selectAll": "Select All"
+    },
+    "userForm": {
+      "addTitle": "Add User",
+      "editTitle": "Edit User",
+      "confirmContent": "Do you want to save the user?",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "organization": "Organization",
+      "email": "Email",
+      "phone": "Phone",
+      "userName": "User Name",
+      "role": "Role",
+      "subscription": "Subscription",
+      "isActive": "Active",
+      "resendSetupPasswordLink": "Resend Setup Password Link",
+      "resendSetupPasswordLinkConfirmTitle": "Confirm Resend Setup Password Link",
+      "resendSetupPasswordLinkSuccessTitle": "Resend Setup Password Link Success"
+    },
+    "projectForm": {
+      "addTitle": "Add Project",
+      "editTitle": "Edit Project",
+      "confirmContent": "Do you want to save the project?",
+      "name": "Name",
+      "detail": "Details",
+      "organization": "Organization",
+      "users": "Users",
+      "addUserButton": "Add User",
+      "noUsersSelected": "No users selected for this project",
+      "totalProjectUser_one": "{{count}} user in project",
+      "totalProjectUser_other": "{{count}} users in project"
+    },
+    "taskForm": {
+      "addTitle": "Add Task",
+      "editTitle": "Edit Task",
+      "selectAll": "Select All",
+      "name": "Name",
+      "service": "Service",
+      "rootModel": "Model",
+      "feature": "Feature",
+      "noServicePermission": "No permission.",
+      "button": {
+        "next": "Next",
+        "back": "Back",
+        "saveAndProcess": "Save and Process",
+        "saveDraft": "Save Draft"
+      },
+      "step1": "Name and select the service",
+      "step2": "Select image",
+      "step3": "Select analysis area",
+      "selectImage": "Select image",
+      "selectFromGallery": "Select from Gallery",
+      "imageName": "Image Name",
+      "captureDate": "Capture Date",
+      "hashtag": "Hashtag",
+      "selectBaseImage": "Select Base Image",
+      "selectComparisonImage": "Select Comparison Image",
+      "selectDetectionModel": "Select {{name}} Detection Model",
+      "modelResultColumn": {
+        "model": "Model",
+        "feature": "Feature",
+        "processAt": "Process Date",
+        "project": "Project"
+      },
+      "gallery": "Gallery",
+      "sarAnalysisAreaForm": {
+        "defineAnalysisArea": "Define Analysis Area",
+        "importVector": "Import Vector",
+        "enterCoordinates": "Enter Coordinates",
+        "chooseFile": "Choose File",
+        "uploadHint": "Supported files: Shapefile (.zip), GeoJSON (.geojson), KML (.kml), KMZ (.kmz) up to 50 MB",
+        "coordinateSystem": "Select Coordinate System",
+        "latitudeMin": "Latitude Min",
+        "longitudeMin": "Longitude Min",
+        "latitudeMax": "Latitude Max",
+        "longitudeMax": "Longitude Max",
+        "xMin": "X Min",
+        "yMin": "Y Min",
+        "xMax": "X Max",
+        "yMax": "Y Max",
+        "mgrsMin": "MGRS Min",
+        "mgrsMax": "MGRS Max",
+        "drawPoint": "Draw Point",
+        "drawArea": "Draw Area",
+        "analysisArea": "Analysis Area",
+        "noAnalysisAreaSelected": "No analysis area selected",
+        "cannotAddAnalysisArea": "Cannot add analysis area",
+        "maxAreaInfo": "Analysis area exceeds 3 sq.km. Please adjust the area",
+        "cannotUploadFile": "Cannot upload file",
+        "cannotUploadFileInfo": "Invalid file. Please select a new file",
+        "noSupportedGeometries": "No supported Geometry found",
+        "noSupportedGeometriesInfo": "Only Point, LineString, or Polygon are allowed, with a maximum area of 3 sq.km.",
+        "noRemainingSlots": "Cannot add analysis area",
+        "noRemainingSlotsInfo": "You have exceeded the maximum number of analysis areas allowed"
+      }
+    }
+  },
+  "tools": {
+    "compass": "Compass",
+    "copyCoordinates": "Copy coordinates",
+    "basemap": "Basemap",
+    "basemapType": "Type",
+    "basemapTypes": {
+      "googleSatellite": "Satellite",
+      "googleHybrid": "Hybrid",
+      "light": "Light Theme",
+      "dark": "Dark Theme"
+    },
+    "currentLocation": "Current Location",
+    "zoom": "Zoom In / Zoom Out",
+    "image": "Image Infomation",
+    "measurement": "Measurement",
+    "searchCoordinate": "Search Coordinate",
+    "searchCoordinateForm": {
+      "inputPlaceholder": "Enter coordinate",
+      "searchCoordinateInfo": "Supported formats: GCS, UTM47, UTM48, MGRS"
+    },
+    "searchCoordinateHelp": {
+      "title": "Coordinate Search Explanation",
+      "supportedSystems": {
+        "title": "Supported Coordinate Systems:",
+        "list": [
+          "GCS (Geographic Coordinate System)",
+          "UTM Zone 47",
+          "UTM Zone 48",
+          "MGRS (Military Grid Reference System)"
+        ]
+      },
+      "examples": {
+        "title": "Coordinate Input Examples:",
+        "gcs": {
+          "label": "GCS",
+          "value": "13.7649,100.5383"
+        },
+        "utm": {
+          "label": "UTM (Zone 47N)",
+          "value": "666306.09,1522257.06"
+        },
+        "mgrs": {
+          "label": "MGRS",
+          "value": "47PPR6630622257"
+        }
+      },
+      "zoneExamples": {
+        "title": "Specifying Zone for UTM System:",
+        "list": [
+          "47N:666306.09,1522257.06",
+          "48N:235001.57,1511589.49"
+        ]
+      }
+    },
+    "currentLocationErrorTitle": "Cannot determine current location",
+    "locationServicesDisabled": "Please allow the browser to access your location",
+    "cannotGetLocation": "Cannot get your location. Please try again.",
+    "searchPlacePlaceholder": "Enter search keyword",
+    "searchPlaceNoPlaces": "No places found",
+    "searchingPlaces": "Searching...",
+    "3d": "3D",
+    "export": "Print Map",
+    "home": "Zoom to extent",
+    "printMap": {
+      "reportDate": "Report Date",
+      "orgName": "Organization"
+    }
+  },
+  "map": {
+    "layer": "Layers",
+    "weekly": "Weekly Monitoring",
+    "weeklyCompare": {
+      "selectImageDate": "Select Image Date",
+      "compareImage": "To Compare Images",
+      "leftImage": "Left Image",
+      "rightImage": "Right Image"
+    },
+    "weeklyObjectDetection": "Object Detection",
+    "weeklyChangeDetection": "Change Detection",
+    "detection": {
+      "taskName": "Task Name",
+      "model": "Analysis Type",
+      "confidence": "Confidence",
+      "area": "Area",
+      "aoiName": "AOI Name"
+    },
+    "info": {
+      "createdAt": "Created",
+      "updatedAt": "Updated"
+    },
+    "aoiLayer": "Analysis Area",
+    "unavailableIncompleteTask": "Cannot display data because the task is processing.",
+    "noDataTask": "Cannot display data because the task is being created.",
+    "reset": "Reset",
+    "totalArea": "Total Area",
+    "items": "Items",
+    "buildings": "Number of buildings",
+    "adjustConfidence": "Adjust confidence",
+    "downloadAnalysisData": "Download analysis data",
+    "saveAnalysisResult": "Save analysis result",
+    "pleaseSelectDataToDownload": "Please select data to download",
+    "selectFileTypeDescription": "File Type",
+    "selectFileTypeToDownload": "Select file type to download",
+    "bandComposition": "Band Composition"
+  },
+  "gallery": {
+    "title": {
+      "upload": "Upload Image",
+      "optical": "Optical Image and Aerial Image",
+      "sar": "SAR Image",
+      "organization": "Organization"
+    },
+    "uploadDialog": {
+      "title": "Upload {{service}}",
+      "and": " and ",
+      "aerial": "Aerial",
+      "selectFile": "Select File",
+      "reading": "Reading...",
+      "supportedFiles": "Supported file types: *.tiff, *.zip up to 10 GB",
+      "imageName": "Image Name",
+      "imagingDate": "Imaging Date",
+      "hashtags": "Hashtags",
+      "metadata": "Image Metadata",
+      "status": "Status",
+      "uploading": "Uploading",
+      "validating": "Validating Metadata",
+      "upload": "Upload",
+      "cancel": "Cancel",
+      "close": "Close",
+      "error": {
+        "userNotFound": "User not found. Please try again",
+        "metadataTooLarge": "Metadata size exceeds {{size}} KB",
+        "metadataInvalid": "Invalid metadata. Please check",
+        "uploadFailed": "Upload failed. Please try again"
+      },
+      "success": {
+        "uploadComplete": "Upload successful",
+        "uploadCancelled": "Upload cancelled successfully"
+      }
+    },
+    "imagesSelector": {
+      "search": {
+        "keyword": "Keyword",
+        "imagingDateRange": "Imaging Date Range",
+        "prefixName": "Search by Name",
+        "prefixType": "Search by Type",
+        "prefixTag": "Search by Hashtag"
+      },
+      "contextMenu": {
+        "show": "Show Analysis",
+        "createTask": "Create Task",
+        "edit": "Edit",
+        "shared": "Share",
+        "download": "Download",
+        "delete": "Delete"
+      },
+      "detail": {
+        "service": "Service",
+        "imagingDate": "Imaging Date",
+        "createdAt": "Upload Date",
+        "createdBy": "Uploader",
+        "hashtags": "Hashtags",
+        "processItem": {
+          "inProcess": {
+            "statusLabel": "Status"
+          },
+          "failed": {
+            "statusLabel": "Status",
+            "statusText": "Failed",
+            "remarkLabel": "Detail"
+          }
+        }
+      },
+      "sortBy": {
+        "name": "Image Name",
+        "imagingDate": "Imaging Date"
+      }
+    },
+    "uploadProgress": {
+      "imageName": "Image Name",
+      "statusLabel": "Status"
+    },
+    "alert": {
+      "cancelTitle": "Confirm Cancel Upload",
+      "cancelContent": "Are you sure you want to cancel upload",
+      "deleteTitle": "Confirm Delete Image",
+      "deleteContent": "Are you sure you want to delete the selected image",
+      "errorUpload": "An error occurred during upload. Please cancel and try uploading again.",
+      "successUpload": "Image Upload successful.",
+      "failedUploadTitle": "Image Upload failed.",
+      "failedUploadContent": "Please check the file and try uploading again.",
+      "failedUploadContentRemark": "Reason"
+    },
+    "status": {
+      "default": "In Progress",
+      "QUEUED": "Queued",
+      "UPLOAD_PENDING": "Upload Pending",
+      "UPLOAD_COMPLETED": "Upload Completed",
+      "EXTRACTING": "Extracting",
+      "EXTRACTED": "Extracted",
+      "CONVERTING_COG": "Converting COG",
+      "VALIDATING_PATTERN": "Validating Pattern",
+      "GENERATING_METADATA": "Generating Metadata",
+      "READY": "Ready",
+      "ABORTED": "Aborted",
+      "FAILED_UPLOAD": "Upload Failed",
+      "FAILED_EXTRACT": "Extract Failed",
+      "FAILED_CONVERT_COG": "COG Conversion Failed",
+      "FAILED_VALIDATE_PATTERN": "Validation Failed",
+      "FAILED_METADATA": "Metadata Generation Failed"
+    },
+    "action": {
+      "processTask": {
+        "title": "Process Task Result",
+        "column": {
+          "service": "Service Type",
+          "rootModel": "Root Model",
+          "feature": "Feature",
+          "createdAt": "Created At",
+          "createdBy": "Created By",
+          "name": "Task Name",
+          "projectName": "Project Name"
+        }
+      },
+      "edit": {
+        "title": "Edit Image"
+      },
+      "shared": {
+        "title": "Share Image"
+      },
+      "task": {
+        "titleTask": "Create Task",
+        "titleProject": "Create Project",
+        "taskForm": {
+          "project": "Select Project"
+        },
+        "projectFrom": {}
+      }
+    }
+  },
+  "metadata": {
+    "validateAndFormat": "Validate & Format",
+    "exceedsSize": "Metadata exceeds {{size}} KB"
+  },
+  "session": {
+    "expiredTitle": "Session Expired",
+    "expiredContent": "Your session has expired. Please log in again.",
+    "backToLogin": "Back to Login"
+  },
+  "unauthorized": {
+    "title": "Unauthorized",
+    "content": "You do not have permission to access this page. Please contact your administrator.",
+    "backToProject": "Back to Projects"
+  },
+  "error": {
+    "UNKNOWN": "Something went wrong. Please try again.",
+    "INCORRECT_RESET_PASSWORD_LINK": "The reset password link is invalid or has expired. Please contact support.",
+    "DUPLICATE_USERNAME_OR_EMAIL": "Username or email already to use.",
+    "TOKEN_INCORRECT": "Incorrect token.",
+    "TOKEN_EXPIRED": "Token has expired.",
+    "TOKEN_INVALID": "Invalid token.",
+    "OTP_INCORRECT": "Incorrect OTP code.",
+    "OTP_NOT_FOUND": "OTP code not found.",
+    "USER_OR_PASSWORD_INCORRECT": "Incorrect username or password.",
+    "USER_NOT_FOUND": "Incorrect username or password.",
+    "USER_FIRST_TIME_LOGIN": "Please check your email to reset your initial password.",
+    "USER_NOT_ACTIVE": "Unable to login. Your account has been temporarily suspended.",
+    "USER_NOT_PERMISSION": "User does not have permission.",
+    "PASSWORD_INCORRECT": "Incorrect password.",
+    "INTERNAL_SERVER_ERROR": "An error occurred.",
+    "DUPLICATE_NAME_OR_NAME_EN": "Name already to use.",
+    "DATA_IN_USE": "Data is currently in use.",
+    "USER_UNAUTHORIZED": "Unauthorized user.",
+    "DUPLICATE_TASK_NAME": "Task name already exists.",
+    "SUBSCRIPTION_NO_VALID": "No valid subscription details found. Please contact support.",
+    "ERROR_PROCESSING_TASK": "An error occurred while processing. Please save and process again.",
+    "BAD_REQUEST": "Bad request.",
+    "PARAMETER_INVALID": "Invalid parameter.",
+    "ROLE_OVER_LIMIT": "User role limit exceeded.",
+    "IMAGE_IN_USE": "Image is currently in use."
+  },
+  "empty": {
+    "noImageSearch": "No image found. Please upload an image.",
+    "noImageDetail": "No image data found.",
+    "noData": "No data.",
+    "noList": "No data."
+  },
+  "itv": {
+    "button": {
+      "addLayer": "Add Layer",
+      "sort": "Sort",
+      "info": "Infomation",
+      "addDraw": "Add Draw"
+    },
+    "label": {
+      "add": "Add",
+      "edit": "Edit",
+      "image": "Image Infomation"
+    },
+    "menu": {
+      "gallery": "Gallery Import",
+      "rasterTile": "Raster Tiles",
+      "vectorTile": "Vector Tiles",
+      "photo": "Photo Import",
+      "vector": "Vector Import",
+      "draw": "Map Draw",
+      "annotation": "Military Symbol"
+    },
+    "form": {
+      "dialog": {
+        "name": {
+          "label": "Layer name",
+          "placeholder": "Enter layer name"
+        },
+        "url": {
+          "label": "URL",
+          "placeholder": "https://example.com/{z}/{x}/{y}"
+        }
+      }
+    },
+    "upload": {
+      "supportedFile": "Supported files: {{type}} up to {{size}} MB",
+      "supportedFileVector": "Supported files: Shapefile (.zip), GeoJSON (.geojson), KML (.kml), KMZ (.kmz) up to 50 MB",
+      "photoCount": "Photo {{count}} items",
+      "locator": {
+        "title": "Photo Import",
+        "all": "All",
+        "address": "Address",
+        "noAddress": "No Address",
+        "defindCoordinates": "Define Address",
+        "latitude": "Latitude",
+        "longitude": "Longitude"
+      },
+      "loading": {
+        "title": "Photo Upload",
+        "fileName": "Photo Name",
+        "status": "Status",
+        "uploading": "Uploading"
+      }
+    },
+    "alert": {
+      "uploadAlertTitle": "Cannot upload file",
+      "fileTypeNotSupported": "File type not supported. Please select a new file.",
+      "fileSizeExceeded": "File size exceeded {{size}} MB. Please select a new file.",
+      "maxFileCount": "File count exceeded {{count}} files. Please select a new file.",
+      "maxItemCount": "Feature count exceeded {{count}} item. Please select a new file."
+    },
+    "popup": {
+      "name": "Name",
+      "imagingDate": "Imaging Date"
+    },
+    "draw": {
+      "type": "Format",
+      "border": "Border Color",
+      "fill": "Fill Color",
+      "point": "Point",
+      "line": "Line",
+      "polygon": "Polygon",
+      "text": "Text",
+      "drawFillColor": "Fill Color",
+      "drawText": "Text",
+      "drawSize": "Size",
+      "drawDegree": "Degree",
+      "drawTextHaloSize": "Text Halo Size",
+      "drawTextHaloColor": "Text Halo Color",
+      "drawTextColor": "Text Color",
+      "drawBorderSize": "Border Size",
+      "drawBorderColor": "Border Color",
+      "polygonType": {
+        "rectangle": "Rectangle",
+        "circle": "Circle",
+        "polygon": "Polygon"
+      }
+    }
+  },
+  "dataManagement": {
+    "userCount": "User Count",
+    "subscription": "Subscription",
+    "storageUsage": "Storage Usage",
+    "projectStorage": "Project Storage",
+    "expiredSubscriptions": "Expired Subscriptions",
+    "subscriptionName": "Subscription Name",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "remaining": "Remaining",
+    "days": "days",
+    "expired": "Expired",
+    "customerAdmin": "Customer Admin",
+    "user": "User",
+    "viewer": "Viewer",
+    "unlimited": "Unlimited",
+    "used": "Used",
+    "total": "Total",
+    "free": "Free",
+    "allProjects": "All",
+    "project": "Project",
+    "size": "Size (TB)",
+    "details": "Details",
+    "filterAll": "All",
+    "filterGallery": "Gallery",
+    "filterProject": "Project",
+    "organization": "Organization",
+    "owner": "Own",
+    "taskStorageUsage": "Task Storage Usage",
+    "taskName": "Task Name",
+    "taskType": "Type",
+    "taskModel": "Model",
+    "taskProperties": "Properties",
+    "createdBy": "Created By",
+    "createdAt": "Created Date"
+  },
+  "annotation": {
+    "label": "Label",
+    "symbol": "Symbol",
+    "editSymbol": "Edit Symbol",
+    "symbolAll": "All Symbols",
+    "symbolSearch": "Search Symbols",
+    "symbolSize": "Symbol Size",
+    "context": "Context",
+    "identity": "Identity / Affiliation",
+    "status": "Status / Planned",
+    "headquarters": "Headquarters / Task Force / Dummy",
+    "echelon": "Echelon",
+    "modifier1": "Modifier 1",
+    "modifier2": "Modifier 2",
+    "engagementBar": "Engagement Bar",
+    "iff": "IFF / SIF / AIS",
+    "speed": "Speed",
+    "uniqueDesignation": "Unique Designation",
+    "reinforced": "Reinforced",
+    "staffComments": "Staff Comments",
+    "additionalInformation": "Additional Information",
+    "addAnnotation": "Add Military Symbol Drawing Layer",
+    "editAnnotation": "Edit Military Symbol Drawing Layer",
+    "annotationName": "Layer name",
+    "specifyAnnotationName": "Specify layer name",
+    "noLabelAvailable": "No label available"
+  }
+}
