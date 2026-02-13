@@ -8,11 +8,6 @@ import { useTranslation } from 'react-i18next'
 
 const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL
 
-console.log('CONTACT_EMAIL:', CONTACT_EMAIL)
-console.log('API_URL:', process.env.API_URL)
-console.log('NEXTAUTH_SECRET:', process.env.NEXTAUTH_SECRET)
-console.log('NEXTAUTH_URL:', process.env.NEXTAUTH_URL)
-
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { t } = useTranslation('common')
   return (

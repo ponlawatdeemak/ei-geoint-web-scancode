@@ -69,8 +69,9 @@ function toDecimalDegree(value: string, from: CoordSystem): [number, number] | n
         return null
       return [lng, lat]
     } else if (from === 'UTM') {
-      const match = /^(\d{1,2})([NS])[:\s]+(\d+(?:\.\d+)?)\s*(?:,|\s+)\s*(\d+(?:\.\d+)?)$/.exec(value)
-      const matchWithoutZone = /^(-?\d+(?:\.\d+)?)\s*(?:,|\s+)\s*(-?\d+(?:\.\d+)?)$/.exec(value)
+      const match = /^(\d{1,2})([NS])[:\s]+(\d+(?:\.\d+)?)(?:\s*,\s*|\s+)(\d+(?:\.\d+)?)$/.exec(value)
+      const matchWithoutZone = /^(-?\d+(?:\.\d+)?)(?:\s*,\s*|\s+)(-?\d+(?:\.\d+)?)$/.exec(value)
+      // console.log('match', match, matchWithoutZone)
       let zone = 47,
         isNorth = true,
         easting: number | undefined,

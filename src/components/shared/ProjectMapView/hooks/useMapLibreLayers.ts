@@ -206,6 +206,7 @@ export function useMapLibreLayers(params: {
 
     // Always reorder if we created/updated layers or if order changed
     // This fixes the issue where updating a single layer (e.g. band change) pushes it to top
+    // Fix from thaicom: only reorder if there are created layers
     if (createdLayersRef.current.size > 0) {
       reorderLayers(map, allConfigs)
     }

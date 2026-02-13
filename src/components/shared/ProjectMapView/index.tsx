@@ -264,13 +264,17 @@ const ProjectMapView = forwardRef<ProjectMapViewRef, ProjectMapViewProps>(
       setThresholds((prev) => ({ ...prev, [id]: v }))
     }
 
+    // Fix from thaicom: manage layer config overrides (e.g. color scheme)
     const [layerConfigOverrides, setLayerConfigOverrides] = useState<Record<string, Partial<LayerConfig>>>({})
 
     const handleLayerConfigChange = useCallback((id: string, config: Partial<LayerConfig>) => {
-      setLayerConfigOverrides((prev) => ({
-        ...prev,
-        [id]: { ...prev[id], ...config },
-      } as Record<string, Partial<LayerConfig>>))
+      setLayerConfigOverrides(
+        (prev) =>
+          ({
+            ...prev,
+            [id]: { ...prev[id], ...config },
+          }) as Record<string, Partial<LayerConfig>>,
+      )
     }, [])
 
     // สร้างข้อมูล layerList จาก featureLayers
@@ -316,6 +320,7 @@ const ProjectMapView = forwardRef<ProjectMapViewRef, ProjectMapViewProps>(
         groupLayer = Object.values(groups)
       }
 
+      // Fix from thaicom: apply layerConfigOverrides
       for (const group of groupLayer) {
         if (group.layerConfigs) {
           group.layerConfigs = group.layerConfigs.map((cfg) => {
@@ -529,8 +534,9 @@ const ProjectMapView = forwardRef<ProjectMapViewRef, ProjectMapViewProps>(
         )}
         <Box className='relative flex min-h-0 w-full flex-row overflow-hidden'>
           <Box
-            className={`all 300ms bg-white transition-all duration-300 ${isMobile ? 'flex h-full w-full flex-col' : 'flex-none overflow-visible'
-              }`}
+            className={`all 300ms bg-white transition-all duration-300 ${
+              isMobile ? 'flex h-full w-full flex-col' : 'flex-none overflow-visible'
+            }`}
             sx={{
               position: isMobile ? 'absolute' : 'relative',
               zIndex: isMobile ? (showPanelLeft ? 40 : -1) : 20,
@@ -625,7 +631,7 @@ const ProjectMapView = forwardRef<ProjectMapViewRef, ProjectMapViewProps>(
                 }
               }}
               floatingPanel={
-                <Box className='fixed bottom-8 left-1/2 z-35 w-[90%] -translate-x-1/2 pr-[8%] sm:pr-[6%] md:relative md:bottom-auto md:left-auto md:w-[450px] md:-translate-x-0 md:pr-0 md:max-h-full md:flex md:flex-col'>
+                <Box className='fixed bottom-8 left-1/2 z-35 w-[90%] -translate-x-1/2 pr-[8%] sm:pr-[6%] md:relative md:bottom-auto md:left-auto md:flex md:max-h-full md:w-[450px] md:-translate-x-0 md:flex-col md:pr-0'>
                   {activeView === ActiveView.weekly && weeklyOverlay}
                   <FloatingPanel
                     title={selectedGroup ? selectedGroup.groupName : ''}

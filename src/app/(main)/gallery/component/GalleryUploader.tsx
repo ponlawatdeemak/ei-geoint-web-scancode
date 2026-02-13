@@ -46,9 +46,6 @@ import { nanoid } from 'nanoid'
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
-dayjs.extend(utc)
-dayjs.extend(timezone)
-
 interface SelectedFile {
   id: string
   file: File

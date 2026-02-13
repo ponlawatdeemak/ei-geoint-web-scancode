@@ -107,7 +107,6 @@ export function useDownloads(params: {
       // Files
       const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
       for (const item of downloadItems) {
-        console.log(' Downloading file:', item.href)
         await downloadFileItem(item.href)
         await sleep(1000)
       }

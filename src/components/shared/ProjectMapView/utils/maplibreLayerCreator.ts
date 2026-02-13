@@ -58,7 +58,7 @@ const safeAddImage = (m: maplibregl.Map, name: string, img: HTMLImageElement | I
         // eslint-disable-next-line no-console
         console.warn('addImage failed for', name, e)
       }
-    } catch (_) { }
+    } catch (_) {}
   }
 }
 
@@ -84,6 +84,7 @@ const createTileLayers = (
   map: maplibregl.Map,
   visible: boolean,
 ): CreatedMapLibreLayers | null => {
+  // Fix from thaicom: append band and colormap params to tile URLs
   let data = cfg.template ?? cfg.data ?? cfg.tiles
   if (data) {
     const appendBand = (url: string) => {
@@ -97,7 +98,9 @@ const createTileLayers = (
 
         params.delete('bidx')
         params.delete('colormap_name')
-        currentBands.forEach((b) => params.append('bidx', b))
+        currentBands.forEach((b) => {
+          params.append('bidx', b)
+        })
         if (currentColormap) {
           params.append('colormap_name', currentColormap)
         }
@@ -186,10 +189,10 @@ const createTileLayers = (
     // Unregister existing handler before registering new one to avoid duplicates
     try {
       unregister(map, handlerId)
-    } catch { }
+    } catch {}
     register(map, handlerId, handler)
     removeHandlers.push(() => unregister(map, handlerId))
-  } catch { }
+  } catch {}
 
   return {
     sourceIds: createdSources,
@@ -430,7 +433,7 @@ const createGeoJsonLayers = (
       img.onload = () => {
         try {
           safeAddImage(map, iconName, img, { pixelRatio: 2 })
-        } catch { }
+        } catch {}
         URL.revokeObjectURL(url)
       }
       img.src = url
@@ -443,7 +446,7 @@ const createGeoJsonLayers = (
       img.onload = () => {
         try {
           safeAddImage(map, iconNamePhoto, img, { pixelRatio: 2 })
-        } catch { }
+        } catch {}
         URL.revokeObjectURL(url)
       }
       img.src = url
@@ -487,14 +490,14 @@ const createGeoJsonLayers = (
   if (!map.getLayer(fillLayerId)) {
     const paint = isItvVector
       ? {
-        'fill-color': '#0E94FA',
-        'fill-opacity': 0.3,
-      }
+          'fill-color': '#0E94FA',
+          'fill-opacity': 0.3,
+        }
       : {
-        'fill-color': fillColor,
-        'fill-opacity': 0.6,
-        'fill-outline-color': strokeColor,
-      }
+          'fill-color': fillColor,
+          'fill-opacity': 0.6,
+          'fill-outline-color': strokeColor,
+        }
     map.addLayer(
       {
         id: fillLayerId,
@@ -591,7 +594,7 @@ const createGeoJsonLayers = (
             img.onload = () => {
               try {
                 safeAddImage(m, iconName, img, { pixelRatio: 2 })
-              } catch { }
+              } catch {}
               URL.revokeObjectURL(url)
             }
             img.src = url
@@ -605,7 +608,7 @@ const createGeoJsonLayers = (
             img.onload = () => {
               try {
                 safeAddImage(map, iconNamePhoto, img, { pixelRatio: 2 })
-              } catch { }
+              } catch {}
               URL.revokeObjectURL(url)
             }
             img.src = url
@@ -687,7 +690,7 @@ const createGeoJsonLayers = (
     }
     register(map, handlerId, handler)
     removeHandlers.push(() => unregister(map, handlerId))
-  } catch { }
+  } catch {}
 
   return {
     sourceIds: createdSources,
@@ -857,7 +860,7 @@ const createVectorLayers = (
     }
     register(map, handlerId, handler)
     removeHandlers.push(() => unregister(map, handlerId))
-  } catch { }
+  } catch {}
 
   return {
     sourceIds: createdSources,
@@ -1169,7 +1172,7 @@ const createItvDrawLayers = (
     }
     register(map, handlerId, handler)
     removeHandlers.push(() => unregister(map, handlerId))
-  } catch { }
+  } catch {}
 
   return {
     sourceIds: createdSources,
@@ -1183,6 +1186,7 @@ const createItvRasterTileLayers = (
   map: maplibregl.Map,
   visible: boolean,
 ): CreatedMapLibreLayers | null => {
+  // Fix from thaicom: if bands are specified, append them to the tile URL(s)
   let data = cfg.template ?? cfg.data ?? cfg.tiles
   if (cfg.bands && cfg.bands.length > 0 && data) {
     const appendBand = (url: string) => {
@@ -1191,7 +1195,9 @@ const createItvRasterTileLayers = (
         const params = new URLSearchParams(search)
         params.delete('bidx')
         params.delete('colormap')
-        cfg.bands?.forEach((b) => params.append('bidx', b.toString()))
+        cfg.bands?.forEach((b) => {
+          params.append('bidx', b.toString())
+        })
         if (cfg.colormapName) {
           params.append('colormap', cfg.colormapName)
         }
@@ -1280,10 +1286,10 @@ const createItvRasterTileLayers = (
     // Unregister existing handler before registering new one to avoid duplicates
     try {
       unregister(map, handlerId)
-    } catch { }
+    } catch {}
     register(map, handlerId, handler)
     removeHandlers.push(() => unregister(map, handlerId))
-  } catch { }
+  } catch {}
 
   return {
     sourceIds: createdSources,
@@ -1553,7 +1559,7 @@ const createItvVectorTileLayers = (
     }
     register(map, handlerId, handler)
     removeHandlers.push(() => unregister(map, handlerId))
-  } catch { }
+  } catch {}
 
   return {
     sourceIds: createdSources,
@@ -1762,7 +1768,7 @@ const createItvAnnotationLayers = (
     }
     register(map, handlerId, handler)
     removeHandlers.push(() => unregister(map, handlerId))
-  } catch { }
+  } catch {}
 
   return {
     sourceIds: createdSources,

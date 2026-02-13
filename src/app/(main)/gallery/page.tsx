@@ -90,7 +90,7 @@ const GalleryPage = () => {
     <Box className='relative flex h-full w-full flex-col'>
       <div
         className={classNames('flex justify-between bg-white px-4 py-2', {
-          'lg:h-[53px]': !orgId,
+          'lg:h-[56px]': !orgId,
           'lg:h-[80px]': !!orgId,
         })}
       >
@@ -103,8 +103,8 @@ const GalleryPage = () => {
             </div>
           )}
           <div className='flex flex-col gap-2'>
-            <div className='flex items-center gap-4'>
-              <div className='text-base lg:text-2xl'>{t('menu.gallery')}</div>
+            <div className='flex items-center gap-4 lg:h-[40px]'>
+              <div className='text-base lg:text-2xl lg:h-[40px]'>{t('menu.gallery')}</div>
               {canUpload && (
                 <div>
                   <Button
@@ -116,7 +116,7 @@ const GalleryPage = () => {
                     variant='contained'
                     color='primary'
                     startIcon={isLg ? <Add /> : undefined}
-                    className='!min-w-0 !px-2 lg:!px-4'
+                    className='!min-w-0 !px-2 lg:!px-4 lg:h-[40px]'
                     disabled={!!imageProcessData && imageProcessData.status?.id !== ImageStatus.uploadPending}
                   >
                     {isLg ? t('gallery.title.upload') : <Add />}
