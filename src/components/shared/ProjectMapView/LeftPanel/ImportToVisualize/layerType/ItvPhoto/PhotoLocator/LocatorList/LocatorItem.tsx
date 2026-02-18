@@ -1,5 +1,5 @@
 import { ItvPhotoFeature, ItvPhotoLocatorTab } from '../../itv-photo'
-import { FC, memo, useMemo } from 'react'
+import { FC, memo, useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { Check } from '@mui/icons-material'
 import { Tooltip } from '@mui/material'
@@ -17,10 +17,20 @@ const LocatorItem: FC<LocatorItemProps> = ({ photo, onClick, selected, currentTa
     () => currentTab === ItvPhotoLocatorTab.NO_ADDRESS || currentTab === ItvPhotoLocatorTab.ALL,
     [currentTab],
   )
-  const thumbnailUrl = useMemo(() => {
-    const url = importToVisualize.getThumbnailUrl({ uploadId: photo.uploadId })
-    return url
-  }, [photo])
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    let url: string | null = null
+    const loadThumbnail = async () => {
+      const blob = await importToVisualize.getThumbnail({ uploadId: photo.uploadId })
+      url = URL.createObjectURL(blob)
+      setThumbnailUrl(url)
+    }
+    loadThumbnail()
+    return () => {
+      if (url) URL.revokeObjectURL(url)
+    }
+  }, [photo.uploadId])
 
   return (
     <button

@@ -17,7 +17,7 @@ type SearchContainerProps = {
 
 // --- SearchContainer Component ---
 const SearchContainer: React.FC<SearchContainerProps> = ({ onSelected }) => {
-  const { data, loading, search, selectedData } = useWeeklyMapStore()
+  const { data, loading, selectedData } = useWeeklyMapStore()
   const { t } = useTranslation('common')
   const [currentView, setCurrentView] = useState<View>('main')
 
@@ -39,12 +39,11 @@ const SearchContainer: React.FC<SearchContainerProps> = ({ onSelected }) => {
   }
 
   return (
-    <Box p={0}>
+    <Box p={0} className='h-full flex flex-col'>
       {currentView === 'select-area' && (
         <SelectAreaForm
           onBack={() => {
             setCurrentView('main')
-            search()
           }}
         />
       )}
@@ -52,7 +51,6 @@ const SearchContainer: React.FC<SearchContainerProps> = ({ onSelected }) => {
         <SelectModelForm
           onBack={() => {
             setCurrentView('main')
-            search()
           }}
         />
       )}

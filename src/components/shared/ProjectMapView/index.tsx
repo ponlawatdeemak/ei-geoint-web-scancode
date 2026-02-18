@@ -631,7 +631,7 @@ const ProjectMapView = forwardRef<ProjectMapViewRef, ProjectMapViewProps>(
                 }
               }}
               floatingPanel={
-                <Box className='fixed bottom-8 left-1/2 z-35 w-[90%] -translate-x-1/2 pr-[8%] sm:pr-[6%] md:relative md:bottom-auto md:left-auto md:flex md:max-h-full md:w-[450px] md:-translate-x-0 md:flex-col md:pr-0'>
+                <Box className='fixed bottom-8 left-1/2 z-35 w-[90%] -translate-x-1/2 pr-[8%] sm:pr-[6%] md:relative md:bottom-auto md:left-auto md:flex md:max-h-full md:w-112.5 md:translate-x-0 md:flex-col md:pr-0 md:pb-15'>
                   {activeView === ActiveView.weekly && weeklyOverlay}
                   <FloatingPanel
                     title={selectedGroup ? selectedGroup.groupName : ''}

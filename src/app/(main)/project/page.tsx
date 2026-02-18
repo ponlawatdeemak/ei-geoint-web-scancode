@@ -1,63 +1,57 @@
 'use client'
 
-import { useState, useMemo, useCallback, useEffect, type MouseEvent, useRef } from 'react'
-import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { useTranslation } from 'react-i18next'
-import { useSettings } from '@/hook/useSettings'
-import { useGlobalUI } from '@/providers/global-ui/GlobalUIContext'
-import Image from 'next/image'
-import service from '@/api'
-import SearchWrapper, { DisplayMode, FilterFieldConfig } from '@/components/layout/SearchWrapper'
-import { MuiTableColumn } from '@/components/common/display/MuiTableHOC'
-import { Language, Roles, SortType, TaskStatus } from '@interfaces/config'
-import { formatDateTime } from '@/utils/formatDate'
-import {
-  Button,
-  Chip,
-  IconButton,
-  Tooltip,
-  ButtonBase,
-  Dialog,
-  DialogContent,
-  useMediaQuery,
-  useTheme,
-  Divider,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-} from '@mui/material'
-import Link from 'next/link'
+import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+
 import AddIcon from '@mui/icons-material/Add'
-import TableRowsIcon from '@mui/icons-material/TableRows'
-import ViewModuleIcon from '@mui/icons-material/ViewModule'
+import ImageIcon from '@mui/icons-material/Image'
 import MapIcon from '@mui/icons-material/Map'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
-import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted'
-import EditIcon from '@mui/icons-material/Edit'
-import VisibilityIcon from '@mui/icons-material/Visibility'
-import PublicIcon from '@mui/icons-material/Public'
-import DeleteIcon from '@mui/icons-material/Delete'
-import ImageIcon from '@mui/icons-material/Image'
-import { weeklyIcon as WeeklyIcon } from '@/icons'
-import NavigationBar from '@/components/layout/NavigationBar'
-import { useProfileStore } from '@/hook/useProfileStore'
+import TableRowsIcon from '@mui/icons-material/TableRows'
+import ViewModuleIcon from '@mui/icons-material/ViewModule'
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  Divider,
+  IconButton,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
+  Tooltip,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material'
+import { useQuery } from '@tanstack/react-query'
+import centroid from '@turf/centroid'
+import type maplibregl from 'maplibre-gl'
+import type { GeoJSONSource } from 'maplibre-gl'
+import Link from 'next/link'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
+
+import service from '@/api'
+import { layerIdConfig } from '@/components/common/map/config/map'
 import { MapView } from '@/components/common/map/MapView'
 import { useMapStore } from '@/components/common/map/store/map'
-import maplibregl, { type GeoJSONSource } from 'maplibre-gl'
-import centroid from '@turf/centroid'
-import { SearchProjectResultItem } from '@interfaces/index'
-import { ProjectInfoWindow } from './components/ProjectInfoWindow'
-import { ProjectContextMenu } from './components/ProjectContextMenu'
-import { layerIdConfig } from '@/components/common/map/config/map'
-import { useQuery } from '@tanstack/react-query'
+import NavigationBar from '@/components/layout/NavigationBar'
+import SearchWrapper, { type DisplayMode } from '@/components/layout/SearchWrapper'
+import { useProfileStore } from '@/hook/useProfileStore'
+import { useSettings } from '@/hook/useSettings'
+import { weeklyIcon as WeeklyIcon } from '@/icons'
+import { type Language, Roles, SortType } from '@interfaces/config'
+import type { SearchProjectResultItem, GetLookupDtoOut } from '@interfaces/index'
 
-const initialFilters = {
-  keyword: '',
-  organizationId: '',
-  createdAtFrom: '',
-  createdAtTo: '',
-}
+import { ProjectCardItem } from './components/ProjectCardItem'
+import { ProjectContextMenu } from './components/ProjectContextMenu'
+import { ProjectInfoWindow } from './components/ProjectInfoWindow'
+import { useProjectActions } from './hooks/useProjectActions'
+import { useProjectMapPopup } from './hooks/useProjectMapPopup'
+import { useProjectSearch } from './hooks/useProjectSearch'
+import { useProjectTableConfig } from './hooks/useProjectTableConfig'
+
+
+export const MAP_ID = 'landing-map-view'
 
 export const statusColor: Record<number, 'primary' | 'warning' | 'success' | 'error'> = {
   1: 'primary',
@@ -66,7 +60,112 @@ export const statusColor: Record<number, 'primary' | 'warning' | 'success' | 'er
   4: 'error',
 }
 
-export const MAP_ID = 'landing-map-view'
+const initialFilters = {
+  keyword: '',
+  organizationId: '',
+  createdAtFrom: '',
+  createdAtTo: '',
+}
+
+const ensurePinImage = (
+  map: maplibregl.Map,
+  imageRef: React.MutableRefObject<HTMLImageElement | null>,
+  loadedRef: React.MutableRefObject<boolean>,
+): Promise<void> => {
+  if (map.hasImage('project-pin')) return Promise.resolve()
+  if (imageRef.current && loadedRef.current) {
+    try {
+      map.addImage('project-pin', imageRef.current)
+      return Promise.resolve()
+    } catch {
+      // fall through to load new image
+    }
+  }
+  return new Promise<void>((resolve, reject) => {
+    const img = document.createElement('img')
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      try {
+        if (!map.hasImage('project-pin')) {
+          map.addImage('project-pin', img)
+        }
+        imageRef.current = img
+        loadedRef.current = true
+        resolve()
+      } catch (e) {
+        reject(e as Error)
+      }
+    }
+    img.onerror = () => {
+      console.warn('Failed to load pin icon')
+      // reject(new Error('Failed to load pin icon'))
+      resolve() // Don't crash map if icon fails
+    }
+    img.src = '/map/pin.svg'
+  })
+}
+
+export const isValidCoord = (coord: number[]) => {
+  return (
+    Array.isArray(coord) &&
+    coord.length >= 2 &&
+    Number.isFinite(coord[0]) &&
+    Number.isFinite(coord[1]) &&
+    coord[0] >= -180 &&
+    coord[0] <= 180 &&
+    coord[1] >= -90 &&
+    coord[1] <= 90
+  )
+}
+
+export const parseDateToISO = (dateStr: string | undefined, isEndOfDay: boolean): string | undefined => {
+  if (!dateStr) return undefined
+  const parts = String(dateStr)
+    .split('-')
+    .map(Number)
+  if (parts.length !== 3) return undefined
+  const [y, m, d] = parts
+  const date = new Date(
+    y,
+    m - 1,
+    d,
+    isEndOfDay ? 23 : 0,
+    isEndOfDay ? 59 : 0,
+    isEndOfDay ? 59 : 0,
+    isEndOfDay ? 999 : 0,
+  )
+  return date.toISOString()
+}
+
+export const handlePrefixQuery = (
+  prefix: string,
+  value: string,
+  params: Record<string, unknown>,
+  cacheTaskStatuses: GetLookupDtoOut[],
+) => {
+  switch (prefix) {
+    case 'name':
+      params.name = value
+      break
+    case 'desc':
+      params.desc = value
+      break
+    case 'creator':
+      params.creator = value
+      break
+    case 'status': {
+      const statuses: GetLookupDtoOut[] = cacheTaskStatuses ?? []
+      const normalized = value.toLowerCase()
+      const found = statuses.find((s: GetLookupDtoOut) => {
+        const n = String(s?.name || '').toLowerCase()
+        const ne = String(s?.nameEn || '').toLowerCase()
+        return n === normalized || ne === normalized
+      })
+      params.statusId = found ? Number(found.id) : 0
+      break
+    }
+  }
+}
 
 const ProjectPage = () => {
   const PROJECT_SOURCE_ID = `${MAP_ID}-projects-source`
@@ -74,14 +173,10 @@ const ProjectPage = () => {
   const router = useRouter()
   const { t } = useTranslation('common')
   const { language } = useSettings()
-  const { showLoading, hideLoading, showAlert } = useGlobalUI()
-  const profile = useProfileStore((state) => state.profile)!
-  const [searchTrigger, setSearchTrigger] = useState<number>(0) // force re-search
-  const { mapLibre } = useMapStore()
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
-  const [isRefresh, setIsRefresh] = useState(false)
-  const autoRefreshIntervalRef = useRef<number | null>(null)
+  /* 
+  const { showLoading, hideLoading, showAlert } = useGlobalUI() 
+  */
+  const profile = useProfileStore((state) => state.profile)
 
   const { data: cacheTaskStatuses = [] } = useQuery({
     queryKey: ['task-status'],
@@ -94,380 +189,54 @@ const ProjectPage = () => {
     },
   })
 
+  const {
+    setSearchTrigger,
+    isRefresh,
+    selectedProject,
+    setSelectedProject,
+    popupCoordinates,
+    setPopupCoordinates,
+    onSearch,
+  } = useProjectSearch({ cacheTaskStatuses })
+
+  const { handleEdit, handleDelete, handleMultiDelete } = useProjectActions({ setSearchTrigger })
+
+  const { columns, filtersConfig } = useProjectTableConfig({
+    language: language as Language,
+    profile,
+    cacheTaskStatuses,
+    onEdit: handleEdit,
+    onDelete: handleDelete,
+  })
+  const { mapLibre } = useMapStore()
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  /* isRefresh state is now managed by useProjectSearch */
+  const autoRefreshIntervalRef = useRef<number | null>(null)
+
   // Queries
   const { data: weeklySubscriptionModel } = useQuery({
     queryKey: ['weekly-subscription-model'],
     queryFn: async () => {
       try {
-        // showLoading()
         return await service.weekly.getSubscriptionModel()
       } catch (error) {
-        hideLoading()
+        console.error(error)
         throw error
       }
     },
     retry: false,
   })
 
+  /* 
+  */
   const canManage = useMemo(
-    () => [Roles.superAdmin, Roles.admin, Roles.customerAdmin, Roles.user].includes(profile.roleId),
-    [profile.roleId],
+    () => [Roles.superAdmin, Roles.admin, Roles.customerAdmin, Roles.user].includes(profile?.roleId ?? -1),
+    [profile?.roleId],
   )
-  const canDelete = useMemo(() => [Roles.superAdmin, Roles.admin].includes(profile.roleId), [profile.roleId])
+  const canDelete = useMemo(() => [Roles.superAdmin, Roles.admin].includes(profile?.roleId ?? -1), [profile?.roleId])
 
-  const columns: MuiTableColumn<any>[] = useMemo(
-    () => [
-      {
-        id: 'name',
-        label: t('form.searchProject.column.name'),
-        className: 'min-w-60',
-        sortable: true,
-        render: (row) => row.name,
-      },
-      {
-        id: 'task',
-        label: t('form.searchProject.column.task'),
-        className: 'min-w-60',
-        align: 'right',
-        render: (row) => row.tasks.length,
-      },
-      {
-        id: 'status',
-        label: t('form.searchProject.column.status'),
-        className: 'min-w-40',
-        sortable: true,
-        render: (row: any) => {
-          if (!row.status) {
-            return null
-          }
-          return (
-            <Chip
-              className='text-white!'
-              label={language === Language.TH ? row.status.name : row.status.nameEn}
-              color={statusColor[Number(row.status.id)]}
-              size='small'
-            />
-          )
-        },
-      },
-      {
-        id: 'createdAt',
-        label: t('form.searchProject.column.createdAt'),
-        className: 'min-w-40',
-        sortable: true,
-        render: (row) => (row.createdAt ? formatDateTime(row.createdAt, language) : ''),
-      },
-      {
-        id: 'updatedAt',
-        label: t('form.searchProject.column.updatedAt'),
-        className: 'min-w-40',
-        sortable: true,
-        render: (row) => (row.updatedAt ? formatDateTime(row.updatedAt, language) : ''),
-      },
-      {
-        id: 'createdBy',
-        label: t('form.searchProject.column.createdBy'),
-        className: 'min-w-60',
-        sortable: true,
-        render: (row) => [row.createdByUser?.firstName, row.createdByUser?.lastName].filter(Boolean).join(' '),
-      },
-      {
-        id: 'actions',
-        label: t('table.actions'),
-        className: 'min-w-44',
-        align: 'center',
-        render: (row, { rowKey, removeKeysFromSelection, onEdit, onDelete }) => {
-          const isOwner = row.createdByUser?.id === profile.id
-          const canEditProject =
-            [Roles.superAdmin, Roles.admin, Roles.customerAdmin].includes(profile.roleId) ||
-            (profile.roleId === Roles.user && isOwner)
 
-          return (
-            <>
-              <Tooltip title={t('button.viewDetails')} arrow>
-                <IconButton
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    router.push(`/project/${row.id}/task?view=table`)
-                  }}
-                  color='primary'
-                  size='small'
-                >
-                  <FormatListBulletedIcon />
-                </IconButton>
-              </Tooltip>
-              {onEdit && canEditProject && (
-                <Tooltip title={t('button.edit')} arrow>
-                  <IconButton
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onEdit(row)
-                    }}
-                    color='primary'
-                    size='small'
-                  >
-                    <EditIcon />
-                  </IconButton>
-                </Tooltip>
-              )}
-              <Tooltip title={t('button.viewOnMap')} arrow>
-                <IconButton
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    router.push(`/project/${row.id}/task?view=map`)
-                  }}
-                  color='primary'
-                  size='small'
-                >
-                  <PublicIcon />
-                </IconButton>
-              </Tooltip>
-              {canDelete && onDelete && (
-                <Tooltip title={t('button.delete')} arrow>
-                  <IconButton
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      // provide onComplete callback so parent can notify when deletion finished
-                      const keyToRemove = rowKey(row)
-                      onDelete(row, () => {
-                        removeKeysFromSelection([keyToRemove])
-                      })
-                    }}
-                    color='error'
-                    size='small'
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </Tooltip>
-              )}
-            </>
-          )
-        },
-      },
-    ],
-    [t, language, router, canDelete, profile.id, profile.roleId], // Updated dependency array
-  )
-
-  const filtersConfig: FilterFieldConfig[] = useMemo(
-    () => [
-      {
-        name: 'keyword',
-        label: '',
-        type: 'text',
-        placeholder: 'form.searchProject.filter.keywordPlaceholder',
-        isPrimary: true,
-        autocompleteOptions: [
-          { label: t('form.searchProject.option.name'), value: 'name:' },
-          { label: t('form.searchProject.option.description'), value: 'desc:' },
-          { label: t('form.searchProject.option.status'), value: 'status:' },
-          { label: t('form.searchProject.option.createdBy'), value: 'creator:' },
-        ],
-        autocompleteSubOptions: {
-          'status:': cacheTaskStatuses.map((s: any) => ({
-            label: language === Language.TH ? s.name : s.nameEn,
-            value: language === Language.TH ? s.name : s.nameEn,
-          })),
-        },
-      },
-      {
-        name: 'organizationId',
-        label: 'form.searchProject.filter.organization',
-        type: 'select',
-        minWidth: 120,
-        options: async () => await service.organizations.getItem(),
-        disabled: profile.roleId > 2,
-      },
-      {
-        name: 'subscriptionId',
-        label: 'form.searchProject.filter.subscription',
-        type: 'select',
-        minWidth: 120,
-        options: async () => await service.subscriptions.getItemByOrg(profile.organizationId),
-      },
-      {
-        name: 'createdAt',
-        label: 'form.searchProject.filter.createdAtRange',
-        type: 'dateRange',
-        minWidth: 220,
-      },
-    ],
-    [profile.organizationId, profile.roleId, t, cacheTaskStatuses, language],
-  )
-
-  const parseDateToISO = (dateStr: string | undefined, isEndOfDay: boolean): string | undefined => {
-    if (!dateStr) return undefined
-    const parts = String(dateStr)
-      .split('-')
-      .map((v) => Number(v))
-    if (parts.length !== 3) return undefined
-    const [y, m, d] = parts
-    const date = new Date(
-      y,
-      m - 1,
-      d,
-      isEndOfDay ? 23 : 0,
-      isEndOfDay ? 59 : 0,
-      isEndOfDay ? 59 : 0,
-      isEndOfDay ? 999 : 0,
-    )
-    return date.toISOString()
-  }
-
-  const handlePrefixQuery = (prefix: string, value: string, params: Record<string, unknown>) => {
-    switch (prefix) {
-      case 'name':
-        params.name = value
-        break
-      case 'desc':
-        params.desc = value
-        break
-      case 'creator':
-        params.creator = value
-        break
-      case 'status': {
-        const statuses: any[] = cacheTaskStatuses ?? []
-        const normalized = value.toLowerCase()
-        const found = statuses.find((s: any) => {
-          const n = String(s?.name || '').toLowerCase()
-          const ne = String(s?.nameEn || '').toLowerCase()
-          return n === normalized || ne === normalized
-        })
-        params.statusId = found ? Number(found.id) : 0
-        break
-      }
-    }
-  }
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: force re-search
-  const onSearch = useCallback(
-    async (
-      filters: Record<string, string>,
-      page?: number,
-      rowsPerPage?: number,
-      sortState?: { orderBy: string; order: SortType },
-    ): Promise<{ rows: any[]; totalRows: number }> => {
-      // Close popup when searching
-      setSelectedProject(null)
-      setPopupCoordinates(null)
-      setIsRefresh(false)
-
-      const fromISO = parseDateToISO(filters.createdAtFrom, false)
-      const toISO = parseDateToISO(filters.createdAtTo, true)
-      const kw = String(filters.keyword || '').trim()
-
-      const params: Record<string, unknown> = {
-        organizationId: filters.organizationId,
-        subscriptionId: filters.subscriptionId,
-        from: fromISO,
-        to: toISO,
-      }
-
-      // support prefix queries: name:, desc:, creator:, status:
-      // if no prefix present, fall back to keyword search
-      if (kw) {
-        const colonIndex = kw.indexOf(':')
-        if (colonIndex > -1) {
-          const prefix = kw.slice(0, colonIndex).toLowerCase()
-          const value = kw.slice(colonIndex + 1).trim()
-
-          if (['name', 'desc', 'creator', 'status'].includes(prefix)) {
-            handlePrefixQuery(prefix, value, params)
-          } else {
-            params.name = kw
-          }
-        }
-      }
-
-      if (typeof page === 'number' && typeof rowsPerPage === 'number') {
-        params.offset = page * rowsPerPage
-        params.limit = rowsPerPage
-      }
-      if (sortState) {
-        params.sortField = sortState.orderBy
-        params.sortOrder = sortState.order
-      }
-
-      const { data, total } = await service.projects.search(params)
-
-      // Fetch thumbnails separately and merge into data
-      const projectIds = data.map((row: SearchProjectResultItem) => row.id)
-      const thumbnailMap = new Map<string, string | null>()
-      if (projectIds.length > 0) {
-        try {
-          const thumbnailsRes = await service.projects.getThumbnails(projectIds)
-          for (const item of thumbnailsRes.data) {
-            thumbnailMap.set(item.id, item.thumbnail)
-          }
-        } catch (err) {
-          console.log('Failed to fetch thumbnails:', err)
-        }
-      }
-
-      const dataWithThumbnails = data.map((row: SearchProjectResultItem) => ({
-        ...row,
-        thumbnail: thumbnailMap.get(row.id) || null,
-      }))
-
-      // Check if any project has inProgress status (TaskStatus.inProgress = 2)
-      const hasInProgress = dataWithThumbnails.some(
-        (row: SearchProjectResultItem) => row.status?.id === TaskStatus.inProgress,
-      )
-      console.log('hasInProgress project', hasInProgress)
-      setIsRefresh(hasInProgress)
-
-      return {
-        rows: dataWithThumbnails,
-        totalRows: total,
-      }
-    },
-    [searchTrigger, cacheTaskStatuses],
-  )
-
-  const deleteMany = useCallback(
-    (ids: string[], onComplete?: () => void) => {
-      showAlert({
-        status: 'confirm-delete',
-        showCancel: true,
-        onConfirm: async () => {
-          showLoading()
-          try {
-            await service.projects.delete({ ids })
-            onComplete?.()
-            setSearchTrigger((prev) => prev + 1) // trigger re-search
-          } catch (err: any) {
-            showAlert({
-              status: 'error',
-              errorCode: err?.message,
-            })
-          } finally {
-            hideLoading()
-          }
-        },
-      })
-    },
-    [showAlert, showLoading, hideLoading],
-  )
-
-  const handleEdit = useCallback(
-    (row: any | null) => {
-      const id = row?.id
-      if (id) router.push(`/project/${id}`)
-    },
-    [router],
-  )
-  const handleDelete = useCallback(
-    (row: any | null, onComplete?: () => void) => {
-      const id = row?.id
-      if (id) deleteMany([String(id)], onComplete)
-    },
-    [deleteMany],
-  )
-  const handleMultiDelete = useCallback(
-    (selectedRowKeys: (string | number)[], onComplete?: () => void) => {
-      deleteMany(selectedRowKeys as string[], onComplete)
-    },
-    [deleteMany],
-  )
 
   const searchParams = useSearchParams()
   const pathname = usePathname()
@@ -482,8 +251,6 @@ const ProjectPage = () => {
   })()
 
   const [displayMode, setDisplayMode] = useState<DisplayMode>(initialView)
-  const [selectedProject, setSelectedProject] = useState<SearchProjectResultItem | null>(null)
-  const [popupCoordinates, setPopupCoordinates] = useState<[number, number] | null>(null)
 
   // Keep state in sync with URL (handles back/forward or external changes)
   useEffect(() => {
@@ -504,12 +271,12 @@ const ProjectPage = () => {
       // avoid creating multiple intervals
       if (autoRefreshIntervalRef.current == null) {
         console.log('set interval')
-        autoRefreshIntervalRef.current = window.setInterval(
+        autoRefreshIntervalRef.current = globalThis.setInterval(
           () => {
             setSearchTrigger((prev) => prev + 1)
           },
           10 * 60 * 1000,
-        )
+        ) as unknown as number
       }
       return () => {
         // cleanup when unmounting or isRefresh flips
@@ -528,11 +295,11 @@ const ProjectPage = () => {
     }
     // no cleanup function needed in this branch
     return undefined
-  }, [isRefresh])
+  }, [isRefresh, setSearchTrigger])
 
   const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null)
 
-  const [menuRow, setMenuRow] = useState<any | null>(null)
+  const [menuRow, setMenuRow] = useState<SearchProjectResultItem | null>(null)
   const [mapRows, setMapRows] = useState<SearchProjectResultItem[]>([])
   const [homeExtent, setHomeExtent] = useState<[number, number, number, number] | null>(null)
   const mapRowsRef = useRef<SearchProjectResultItem[]>(mapRows)
@@ -553,7 +320,7 @@ const ProjectPage = () => {
     setTopMenuAnchorEl(null)
   }
 
-  const handleMenuOpen = useCallback((e: MouseEvent<HTMLElement>, row: any) => {
+  const handleMenuOpen = useCallback((e: MouseEvent<HTMLElement>, row: SearchProjectResultItem) => {
     setMenuAnchorEl(e.currentTarget)
     setMenuRow(row)
   }, [])
@@ -593,107 +360,23 @@ const ProjectPage = () => {
   )
 
   const renderCard = useCallback(
-    (rows: any[]) => {
+    (rows: (SearchProjectResultItem & { thumbnail?: string | null })[]) => {
       return (
         <div className='flex-1 overflow-auto p-4 pt-0'>
           <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3'>
-            {rows.map((row) => {
-              const data = {
-                image: row.thumbnail !== null ? `data:image/jpeg;base64,${row.thumbnail}` : '/images/bg_world_map.svg',
-                name: row.name,
-                detail: row.detail,
-                taskItem: row.tasks.length,
-                status: row.status && (
-                  <Chip
-                    className='text-white!'
-                    label={language === Language.TH ? row.status.name : row.status.nameEn}
-                    color={statusColor[Number(row.status.id)]}
-                    size='small'
-                  />
-                ),
-                createdAt: formatDateTime(row.createdAt, language),
-                updatedAt: formatDateTime(row.updatedAt, language),
-                createdBy: [row.createdByUser?.firstName, row.createdByUser?.lastName].filter(Boolean).join(' '),
-              }
-              return (
-                <div
-                  key={row.id}
-                  className='flex flex-col overflow-hidden rounded-lg border border-(--color-divider) bg-white shadow-sm'
-                >
-                  <div className='relative h-56 w-full bg-(--color-divider)'>
-                    {data.image && <Image className='z-0 object-cover' src={data.image} alt='Image' fill priority />}
-                    <Tooltip title={t('button.options')} arrow>
-                      <Button
-                        className='absolute! top-2 right-2 min-w-0! bg-white! px-1! text-(--color-text-primary)!'
-                        variant='contained'
-                        size='small'
-                        onClick={(e) => handleMenuOpen(e, row)}
-                      >
-                        <MoreVertIcon />
-                      </Button>
-                    </Tooltip>
-                  </div>
-                  <ButtonBase
-                    className='items-start! flex flex-1 flex-col gap-2 p-4!'
-                    onClick={() => router.push(`/project/${row.id}/task?view=card`)}
-                  >
-                    <Tooltip title={data.name} arrow>
-                      <div className='line-clamp-2 break-all text-left font-medium'>{data.name}</div>
-                    </Tooltip>
-                    <Tooltip title={data.detail} arrow>
-                      <div className='line-clamp-1 break-all text-left text-(--color-text-secondary) text-sm'>
-                        {data.detail}
-                      </div>
-                    </Tooltip>
-                    <div className='grid w-full grid-cols-2 items-center gap-2 text-sm md:grid-cols-3 md:pt-4'>
-                      <div className='flex gap-1'>
-                        <label className='shrink-0 text-(--color-text-secondary)'>
-                          {t('form.searchProject.card.task')}:
-                        </label>
-                        <label className='font-medium text-(--color-primary)'>
-                          {t('form.searchProject.card.taskItem', { count: data.taskItem })}
-                        </label>
-                      </div>
-                      <div className='flex items-center gap-1 md:col-span-2'>
-                        <label className='shrink-0 text-(--color-text-secondary)'>
-                          {t('form.searchProject.card.status')}:
-                        </label>
-                        {data.status}
-                      </div>
-                      <div className='flex gap-1'>
-                        <label className='shrink-0 text-(--color-text-secondary)'>
-                          {t('form.searchProject.card.createdAt')}:
-                        </label>
-                        <Tooltip title={data.createdAt} arrow>
-                          <label className='truncate'>{data.createdAt}</label>
-                        </Tooltip>
-                      </div>
-                      <div className='flex gap-1'>
-                        <label className='shrink-0 text-(--color-text-secondary)'>
-                          {t('form.searchProject.card.updatedAt')}:
-                        </label>
-                        <Tooltip title={data.updatedAt} arrow>
-                          <label className='truncate'>{data.updatedAt}</label>
-                        </Tooltip>
-                      </div>
-                      <div className='flex gap-1'>
-                        <label className='shrink-0 text-(--color-text-secondary)'>
-                          {t('form.searchProject.card.createdBy')}:
-                        </label>
-                        <Tooltip title={data.createdBy} arrow>
-                          <label className='truncate'>{data.createdBy}</label>
-                        </Tooltip>
-                      </div>
-                    </div>
-                  </ButtonBase>
-                </div>
-              )
-            })}
+            {rows.map((row) => (
+              <ProjectCardItem
+                key={row.id}
+                row={row}
+                language={language as Language}
+                handleMenuOpen={handleMenuOpen}
+              />
+            ))}
           </div>
         </div>
       )
     },
-    [language, t, handleMenuOpen, router],
+    [language, handleMenuOpen],
   )
 
   // Render pins as MapLibre symbol layer
@@ -733,40 +416,7 @@ const ProjectPage = () => {
       })
     }
 
-    const ensurePinImage = () => {
-      if (map.hasImage('project-pin')) return Promise.resolve()
-      if (pinImageRef.current && pinImageLoadedRef.current) {
-        try {
-          map.addImage('project-pin', pinImageRef.current)
-          return Promise.resolve()
-        } catch {
-          // fall through to load new image
-        }
-      }
-      return new Promise<void>((resolve, reject) => {
-        const img = document.createElement('img') as HTMLImageElement
-        img.crossOrigin = 'anonymous'
-        img.onload = () => {
-          try {
-            if (!map.hasImage('project-pin')) {
-              map.addImage('project-pin', img)
-            }
-            pinImageRef.current = img
-            pinImageLoadedRef.current = true
-            resolve()
-          } catch (e) {
-            reject(e as Error)
-          }
-        }
-        img.onerror = () => {
-          console.warn('Failed to load pin icon')
-          reject(new Error('Failed to load pin icon'))
-        }
-        img.src = '/map/pin.svg'
-      })
-    }
-
-    ensurePinImage()
+    ensurePinImage(map, pinImageRef, pinImageLoadedRef)
       .then(() => {
         if (!map.getLayer(PROJECT_LAYER_ID)) {
           map.addLayer(
@@ -885,25 +535,14 @@ const ProjectPage = () => {
       map.off('click', PROJECT_LAYER_ID, handleClick)
       map.off('contextmenu', PROJECT_LAYER_ID, handleContextMenu)
     }
-  }, [mapLibre, PROJECT_LAYER_ID])
+  }, [mapLibre, PROJECT_LAYER_ID, setSelectedProject, setPopupCoordinates])
 
   // Fit map bounds when data changes
   useEffect(() => {
     const map = mapLibre[MAP_ID]
     if (!map || mapRows.length === 0) return
 
-    const isValidCoord = (coord: number[]) => {
-      return (
-        Array.isArray(coord) &&
-        coord.length >= 2 &&
-        Number.isFinite(coord[0]) &&
-        Number.isFinite(coord[1]) &&
-        coord[0] >= -180 &&
-        coord[0] <= 180 &&
-        coord[1] >= -90 &&
-        coord[1] <= 90
-      )
-    }
+
 
     const allCoordinates: number[][] = []
     mapRows.forEach((project) => {
@@ -962,93 +601,17 @@ const ProjectPage = () => {
     }
   }, [mapLibre, mapRows])
 
-  // Create MapLibre popup with React component (desktop) or use state for Dialog (mobile)
-  useEffect(() => {
-    const map = mapLibre[MAP_ID]
-    if (!map || !selectedProject || !popupCoordinates) return
-
-    // On mobile, don't create popup - will use Dialog instead
-    if (isMobile) return
-
-    let cleanup: (() => void) | null = null
-
-    import('maplibre-gl').then((maplibregl) => {
-      const popupContent = document.createElement('div')
-
-      Promise.all([
-        import('react-dom/client'),
-        import('@mui/material/styles'),
-        import('@/styles/theme'),
-        import('react-i18next'),
-        import('@/i18n/i18next'),
-      ]).then(([{ createRoot }, { ThemeProvider }, themeModule, { I18nextProvider }, i18nextModule]) => {
-        const root = createRoot(popupContent)
-        const theme = themeModule.default
-        const i18n = i18nextModule.default
-
-        root.render(
-          <ThemeProvider theme={theme}>
-            <I18nextProvider i18n={i18n}>
-              <ProjectInfoWindow
-                project={selectedProject}
-                onClose={() => {
-                  setSelectedProject(null)
-                  setPopupCoordinates(null)
-                }}
-                onEdit={(() => {
-                  const isOwner = selectedProject.createdByUser?.id === profile.id
-                  const canEdit =
-                    [Roles.superAdmin, Roles.admin, Roles.customerAdmin].includes(profile.roleId) ||
-                    (profile.roleId === Roles.user && isOwner)
-
-                  return canEdit
-                    ? () => {
-                        router.push(`/project/${selectedProject.id}`)
-                      }
-                    : undefined
-                })()}
-                onView={() => {
-                  router.push(`/project/${selectedProject.id}`)
-                }}
-                onDelete={
-                  canDelete
-                    ? () => {
-                        handleDelete(selectedProject, () => {
-                          setSelectedProject(null)
-                          setPopupCoordinates(null)
-                        })
-                      }
-                    : undefined
-                }
-                onOpenMap={() => {
-                  router.push(`/project/${selectedProject.id}/task?view=map`)
-                }}
-              />
-            </I18nextProvider>
-          </ThemeProvider>,
-        )
-
-        const popup = new maplibregl.Popup({
-          closeButton: false,
-          closeOnClick: false,
-          offset: 32,
-          maxWidth: '600px',
-        })
-          .setLngLat(popupCoordinates)
-          .setDOMContent(popupContent)
-          .addTo(map)
-
-        cleanup = () => {
-          popup.remove()
-          if (root) root.unmount()
-        }
-      })
-    })
-
-    return () => {
-      if (cleanup) cleanup()
-    }
-  }, [mapLibre, selectedProject, popupCoordinates, router, handleDelete, isMobile, canManage, canDelete])
+  // Create MapLibre popup with React component (desktop)
+  useProjectMapPopup({
+    isMobile,
+    selectedProject,
+    popupCoordinates,
+    setSelectedProject,
+    setPopupCoordinates,
+    profile,
+    handleDelete,
+    canDelete,
+  })
 
   useEffect(() => {
     mapRowsRef.current = mapRows
@@ -1242,8 +805,8 @@ const ProjectPage = () => {
         onDelete={handleMenuDelete}
         showEdit={
           menuRow
-            ? [Roles.superAdmin, Roles.admin, Roles.customerAdmin].includes(profile.roleId) ||
-              (profile.roleId === Roles.user && menuRow.createdByUser?.id === profile.id)
+            ? [Roles.superAdmin, Roles.admin, Roles.customerAdmin].includes(profile?.roleId ?? -1) ||
+              (profile?.roleId === Roles.user && menuRow.createdByUser?.id === profile?.id)
             : false
         }
         showDelete={canDelete}
@@ -1255,25 +818,25 @@ const ProjectPage = () => {
         onClose={closePinMenu}
         anchorPosition={pinMenuAnchorPosition}
         project={pinMenuProject}
-        onEdit={(project) => {
+        onEdit={(project: SearchProjectResultItem) => {
           router.push(`/project/${project.id}`)
           closePinMenu()
         }}
-        onView={(project) => {
+        onView={(project: SearchProjectResultItem) => {
           router.push(`/project/${project.id}`)
           closePinMenu()
         }}
-        onOpenMap={(project) => {
+        onOpenMap={(project: SearchProjectResultItem) => {
           router.push(`/project/${project.id}/task?view=map`)
           closePinMenu()
         }}
-        onDelete={(project) => {
+        onDelete={(project: SearchProjectResultItem) => {
           handleDelete(project, closePinMenu)
         }}
         showEdit={
           pinMenuProject
-            ? [Roles.superAdmin, Roles.admin, Roles.customerAdmin].includes(profile.roleId) ||
-              (profile.roleId === Roles.user && pinMenuProject.createdByUser?.id === profile.id)
+            ? [Roles.superAdmin, Roles.admin, Roles.customerAdmin].includes(profile?.roleId ?? -1) ||
+              (profile?.roleId === Roles.user && pinMenuProject.createdByUser?.id === profile?.id)
             : false
         }
         showDelete={canDelete}
@@ -1289,7 +852,7 @@ const ProjectPage = () => {
           onMultiDelete={canDelete ? handleMultiDelete : undefined}
           renderCard={renderCard}
           renderMap={renderMap}
-          initialFilters={{ ...initialFilters, organizationId: profile.roleId > 2 ? profile.organizationId : '' }}
+          initialFilters={{ ...initialFilters, organizationId: (profile?.roleId ?? 99) > 2 ? (profile?.organizationId || '') : '' }}
           displayMode={displayMode}
           onDisplayModeChange={handleDisplayModeChange}
           hideModeToggles={true}
@@ -1319,10 +882,10 @@ const ProjectPage = () => {
                   setPopupCoordinates(null)
                 }}
                 onEdit={(() => {
-                  const isOwner = selectedProject.createdByUser?.id === profile.id
+                  const isOwner = selectedProject.createdByUser?.id === profile?.id
                   const canEdit =
-                    [Roles.superAdmin, Roles.admin, Roles.customerAdmin].includes(profile.roleId) ||
-                    (profile.roleId === Roles.user && isOwner)
+                    [Roles.superAdmin, Roles.admin, Roles.customerAdmin].includes(profile?.roleId ?? -1) ||
+                    (profile?.roleId === Roles.user && isOwner)
 
                   return canEdit
                     ? () => {

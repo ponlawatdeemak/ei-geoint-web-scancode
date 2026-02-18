@@ -31,6 +31,7 @@ import { layerIdConfig } from '@/components/common/map/config/map'
 import { app6eData } from './data/app6e'
 
 import ItvDialog from '../../../ItvDialog'
+import { cropCanvasImage } from '@/utils/crop-image'
 
 export interface SelectedSymbol {
   sidc: string
@@ -291,8 +292,13 @@ const ItvAnnotation: FC<Props> = ({
           ctx.drawImage(imgElement, 0, 0)
           URL.revokeObjectURL(url)
 
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-          map.addImage(imageId, imageData)
+          // Crop left/right
+          const croppedCanvas = cropCanvasImage(canvas, false)
+          const croppedCtx = croppedCanvas.getContext('2d')
+          if (croppedCtx) {
+            const imageData = croppedCtx.getImageData(0, 0, croppedCanvas.width, croppedCanvas.height)
+            map.addImage(imageId, imageData)
+          }
 
           loadedCount++
           if (loadedCount === totalItems) {
@@ -551,7 +557,6 @@ const ItvAnnotation: FC<Props> = ({
               color='primary'
               className={`${isMobile ? 'flex-1' : ''}`}
               startIcon={<SaveIcon />}
-              disabled={items.length === 0}
               onClick={onSave}
             >
               {t('button.save')}

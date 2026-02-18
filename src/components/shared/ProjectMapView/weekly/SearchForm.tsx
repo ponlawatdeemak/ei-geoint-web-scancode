@@ -30,6 +30,7 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSelectAreaClick, onSelectMode
             disabled={loading}
             value={startDate}
             onChange={(newValue) => {
+              if (newValue?.isSame(startDate, 'day')) return
               setStartDate(newValue)
               search()
             }}
@@ -57,6 +58,7 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSelectAreaClick, onSelectMode
             disabled={loading}
             value={endDate}
             onChange={(newValue) => {
+              if (newValue?.isSame(endDate, 'day')) return
               setEndDate(newValue)
               search()
             }}

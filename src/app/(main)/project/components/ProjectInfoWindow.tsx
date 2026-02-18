@@ -1,6 +1,6 @@
 'use client'
 
-import { SearchProjectResultItem } from '@interfaces/index'
+import type { SearchProjectResultItem } from '@interfaces/index'
 import { Button, Chip, IconButton, Tooltip } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import EditIcon from '@mui/icons-material/Edit'
@@ -33,7 +33,7 @@ export const ProjectInfoWindow = ({
 }: ProjectInfoWindowProps) => {
   const { t } = useTranslation('common')
   const { language } = useSettings()
-  const profile = useProfileStore((state) => state.profile)!
+  const profile = useProfileStore((state) => state.profile)
 
   const handleClose = () => {
     // Blur any focused element before closing to prevent aria-hidden focus issue
@@ -86,13 +86,13 @@ export const ProjectInfoWindow = ({
         </Tooltip>
         <div className='grid w-full grid-cols-2 items-center gap-2 text-sm md:grid-cols-3 md:pt-2'>
           <div className='flex gap-1'>
-            <label className='shrink-0 text-(--color-text-secondary)'>{t('form.searchProject.card.task')}:</label>
-            <label className='font-medium text-(--color-primary)'>
+            <span className='shrink-0 text-(--color-text-secondary)'>{t('form.searchProject.card.task')}:</span>
+            <span className='font-medium text-(--color-primary)'>
               {t('form.searchProject.card.taskItem', { count: project.tasks.length })}
-            </label>
+            </span>
           </div>
           <div className='flex items-center gap-1 md:col-span-2'>
-            <label className='shrink-0 text-(--color-text-secondary)'>{t('form.searchProject.card.status')}:</label>
+            <span className='shrink-0 text-(--color-text-secondary)'>{t('form.searchProject.card.status')}:</span>
             {project.status && (
               <Chip
                 className='text-white!'
@@ -103,26 +103,26 @@ export const ProjectInfoWindow = ({
             )}
           </div>
           <div className='flex gap-1'>
-            <label className='shrink-0 text-(--color-text-secondary)'>{t('form.searchProject.card.createdAt')}:</label>
+            <span className='shrink-0 text-(--color-text-secondary)'>{t('form.searchProject.card.createdAt')}:</span>
             <Tooltip title={formatDateTime(project.createdAt || '', language)} arrow>
-              <label className='truncate'>{formatDateTime(project.createdAt || '', language)}</label>
+              <span className='truncate'>{formatDateTime(project.createdAt || '', language)}</span>
             </Tooltip>
           </div>
           <div className='flex gap-1'>
-            <label className='shrink-0 text-(--color-text-secondary)'>{t('form.searchProject.card.updatedAt')}:</label>
+            <span className='shrink-0 text-(--color-text-secondary)'>{t('form.searchProject.card.updatedAt')}:</span>
             <Tooltip title={formatDateTime(project.updatedAt || '', language)} arrow>
-              <label className='truncate'>{formatDateTime(project.updatedAt || '', language)}</label>
+              <span className='truncate'>{formatDateTime(project.updatedAt || '', language)}</span>
             </Tooltip>
           </div>
           <div className='flex gap-1'>
-            <label className='shrink-0 text-(--color-text-secondary)'>{t('form.searchProject.card.createdBy')}:</label>
+            <span className='shrink-0 text-(--color-text-secondary)'>{t('form.searchProject.card.createdBy')}:</span>
             <Tooltip
               title={[project.createdByUser?.firstName, project.createdByUser?.lastName].filter(Boolean).join(' ')}
               arrow
             >
-              <label className='truncate'>
+              <span className='truncate'>
                 {[project.createdByUser?.firstName, project.createdByUser?.lastName].filter(Boolean).join(' ')}
-              </label>
+              </span>
             </Tooltip>
           </div>
         </div>
@@ -175,7 +175,7 @@ export const ProjectInfoWindow = ({
           {onDelete && (
             <>
               {(onEdit || onOpenMap) && <div className='h-8 w-px bg-gray-200' />}
-              {[Roles.superAdmin, Roles.admin].includes(profile.roleId) && (
+              {profile && [Roles.superAdmin, Roles.admin].includes(profile.roleId) && (
                 <div className='flex items-center'>
                   <Button
                     variant='text'

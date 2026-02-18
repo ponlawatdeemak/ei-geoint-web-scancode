@@ -1,9 +1,9 @@
-import React from 'react'
-import { Box, Checkbox, FormControlLabel, FormGroup, IconButton, Typography } from '@mui/material'
-import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew'
+import { Box, Button, Checkbox, Divider, FormControlLabel, FormGroup, Typography } from '@mui/material'
+import SaveIcon from '@mui/icons-material/Save'
 import { useTranslation } from 'react-i18next'
 import { useSettings } from '@/hook/useSettings'
 import { AreaItem, useWeeklyMapStore } from './store/useWeeklyMapStore'
+import { useState } from 'react'
 
 type SelectAreaFormProps = {
   onBack: () => void
@@ -12,7 +12,8 @@ type SelectAreaFormProps = {
 const SelectAreaForm: React.FC<SelectAreaFormProps> = ({ onBack }) => {
   const { t } = useTranslation('common')
   const { language } = useSettings()
-  const { allAreas, selectedAreas, setSelectedAreas } = useWeeklyMapStore()
+  const { allAreas, selectedAreas, setSelectedAreas, search } = useWeeklyMapStore()
+  const [localSelectedAreas, setLocalSelectedAreas] = useState<AreaItem[]>(selectedAreas)
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = event.target
@@ -22,49 +23,79 @@ const SelectAreaForm: React.FC<SelectAreaFormProps> = ({ onBack }) => {
 
     let newSelectedAreas: AreaItem[]
     if (checked) {
-      newSelectedAreas = [...selectedAreas, area]
+      newSelectedAreas = [...localSelectedAreas, area]
     } else {
-      newSelectedAreas = selectedAreas.filter((item) => item.id !== areaId)
+      newSelectedAreas = localSelectedAreas.filter((item) => item.id !== areaId)
     }
-    setSelectedAreas(newSelectedAreas)
+    setLocalSelectedAreas(newSelectedAreas)
+  }
+
+  const onSave = () => {
+    setSelectedAreas(localSelectedAreas)
+    search()
+    onBack()
   }
 
   return (
-    <Box className='w-full' sx={{ border: '1px solid #ddd', borderRadius: 1, overflow: 'hidden' }}>
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          py: 1,
-          px: 1,
-          bgcolor: '#f4f6f8',
-        }}
-      >
-        <IconButton size='small' onClick={onBack}>
-          <ArrowBackIosNewIcon fontSize='small' />
-        </IconButton>
-        <Typography variant='subtitle1' sx={{ fontWeight: 'bold', ml: 1 }}>
-          {t('button.selectArea')}
-        </Typography>
+    <Box className='w-full flex flex-col h-full'>
+      <Box className='flex flex-col shrink min-h-0' sx={{ border: '1px solid #ddd', borderRadius: 1, overflow: 'hidden' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            py: 1,
+            px: 1,
+            bgcolor: '#f4f6f8',
+          }}
+        >
+          <Typography variant='subtitle1' sx={{ fontWeight: 'bold', ml: 1 }}>
+            {t('button.selectArea')}
+          </Typography>
+        </Box>
+
+        <FormGroup sx={{ p: 2, flexDirection: 'column', overflowY: 'auto' }}>
+          {allAreas.map((item) => (
+            <Box key={item.id}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    size='small'
+                    checked={localSelectedAreas.some((area) => area.id === item.id)}
+                    onChange={handleChange}
+                    name={String(item.id)}
+                  />
+                }
+                label={<span className='!text-sm'>{language === 'th' ? item.name : item.nameEn}</span>}
+              />
+            </Box>
+          ))}
+        </FormGroup>
       </Box>
 
-      <FormGroup sx={{ p: 2, flexDirection: 'column' }}>
-        {allAreas.map((item) => (
-          <Box key={item.id}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  size='small'
-                  checked={selectedAreas.some((area) => area.id === item.id)}
-                  onChange={handleChange}
-                  name={String(item.id)}
-                />
-              }
-              label={<span className='!text-sm'>{language === 'th' ? item.name : item.nameEn}</span>}
-            />
-          </Box>
-        ))}
-      </FormGroup>
+      {/* Buttons */}
+      <Box sx={{ p: 2, px: 4, bgcolor: 'background.paper', zIndex: 100, mt: 'auto' }}>
+        <div className='flex flex-col gap-4'>
+          <Divider />
+          <div className='flex items-center justify-center gap-2'>
+            <Button
+              variant='outlined'
+              onClick={onBack}
+              className='w-[96.16px] h-[36.5px]'
+            >
+              {t('button.back')}
+            </Button>
+            <Button
+              variant='contained'
+              color='primary'
+              onClick={onSave}
+              startIcon={<SaveIcon />}
+              className='w-[96.16px] h-[36.5px]'
+            >
+              {t('button.save')}
+            </Button>
+          </div>
+        </div>
+      </Box>
     </Box>
   )
 }

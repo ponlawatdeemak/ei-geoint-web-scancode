@@ -1,6 +1,7 @@
 import { FC, useCallback, useMemo } from 'react'
 import Image from 'next/image'
 // import PhotoItem, { PhotoListItem } from './PhotoItem'
+import EditIcon from '@mui/icons-material/Edit'
 import Empty from '@/components/common/empty'
 import { useTranslation } from 'react-i18next'
 import { IconButton, List, ListItem, ListItemIcon, ListItemText, Tooltip } from '@mui/material'
@@ -18,10 +19,11 @@ import CircleIcon from '@mui/icons-material/Circle'
 
 interface Props {
   features: ItvFeatureProperties[]
+  onEdit: (id: string) => void
   onDelete: (id: string) => void
   mapId: string
 }
-const DrawList: FC<Props> = ({ features, onDelete, mapId }) => {
+const DrawList: FC<Props> = ({ features, onEdit, onDelete, mapId }) => {
   const { t } = useTranslation('common')
   const { mapLibre } = useMapStore()
 
@@ -171,6 +173,19 @@ const DrawList: FC<Props> = ({ features, onDelete, mapId }) => {
                     })()}
                   />
 
+                  <Tooltip title={t('button.edit')}>
+                    <IconButton
+                      size='small'
+                      color='primary'
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        console.log('Edit clicked for feature ID: ', row.id)
+                        onEdit(row.id)
+                      }}
+                    >
+                      <EditIcon fontSize='small' />
+                    </IconButton>
+                  </Tooltip>
                   <Tooltip title={t('button.delete')} arrow>
                     <IconButton
                       size='small'

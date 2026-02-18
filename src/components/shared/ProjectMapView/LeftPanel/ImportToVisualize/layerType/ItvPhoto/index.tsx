@@ -219,23 +219,25 @@ const ItvPhoto: FC<Props> = ({
               />
             )}
 
-            <div className='flex flex-col gap-4'>
-              <Divider />
-              <div className='flex items-center justify-center gap-2'>
-                <Button variant='outlined' onClick={onClose} startIcon={<CloseIcon />}>
-                  {t('button.cancel')}
-                </Button>
-                <Button
-                  variant='contained'
-                  color='primary'
-                  disabled={uploadIdListDelete.length === 0}
-                  onClick={onSave}
-                  startIcon={<SaveIcon />}
-                >
-                  {t('button.save')}
-                </Button>
+            {uploadIdListDelete.length > 0 && (
+              <div className='flex flex-col gap-4'>
+                <Divider />
+                <div className='flex items-center justify-center gap-2'>
+                  <Button variant='outlined' onClick={onClose} startIcon={<CloseIcon />}>
+                    {t('button.cancel')}
+                  </Button>
+                  <Button
+                    variant='contained'
+                    color='primary'
+                    disabled={uploadIdListDelete.length === 0}
+                    onClick={onSave}
+                    startIcon={<SaveIcon />}
+                  >
+                    {t('button.save')}
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}

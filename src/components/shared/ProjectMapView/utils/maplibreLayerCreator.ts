@@ -16,6 +16,7 @@ import {
 } from '@interfaces/index'
 import { hexToRGBAArray, getColorByModelId } from '@/utils/color'
 import { DefaultAoiColor } from '@interfaces/config/color.config'
+import { cropCanvasImage } from '@/utils/crop-image'
 import type { FeatureLike } from './helpers'
 import { layerIdConfig } from '@/components/common/map/config/map'
 import useMapStore from '@/components/common/map/store/map'
@@ -1609,7 +1610,22 @@ const createItvAnnotationLayers = (
         const img = new window.Image(width, height)
         img.onload = () => {
           try {
-            safeAddImage(map, imageName, img as any)
+            // Create canvas from image
+            const canvas = document.createElement('canvas')
+            canvas.width = img.width
+            canvas.height = img.height
+            const ctx = canvas.getContext('2d')
+            if (ctx) {
+              ctx.drawImage(img, 0, 0)
+
+              // Crop left/right
+              const croppedCanvas = cropCanvasImage(canvas, false)
+              const croppedCtx = croppedCanvas.getContext('2d')
+              if (croppedCtx) {
+                const croppedImageData = croppedCtx.getImageData(0, 0, croppedCanvas.width, croppedCanvas.height)
+                safeAddImage(map, imageName, croppedImageData as any)
+              }
+            }
             URL.revokeObjectURL(url)
           } catch (e) {
             console.error(`Failed to add symbol image ${imageName}:`, e)
@@ -1719,7 +1735,22 @@ const createItvAnnotationLayers = (
               const img = new window.Image(width, height)
               img.onload = () => {
                 try {
-                  safeAddImage(m, imageName, img as any)
+                  // Create canvas from image
+                  const canvas = document.createElement('canvas')
+                  canvas.width = img.width
+                  canvas.height = img.height
+                  const ctx = canvas.getContext('2d')
+                  if (ctx) {
+                    ctx.drawImage(img, 0, 0)
+
+                    // Crop left/right
+                    const croppedCanvas = cropCanvasImage(canvas, false)
+                    const croppedCtx = croppedCanvas.getContext('2d')
+                    if (croppedCtx) {
+                      const croppedImageData = croppedCtx.getImageData(0, 0, croppedCanvas.width, croppedCanvas.height)
+                      safeAddImage(m, imageName, croppedImageData as any)
+                    }
+                  }
                   URL.revokeObjectURL(url)
                 } catch (e) {
                   console.error(`Failed to add symbol image ${imageName}:`, e)

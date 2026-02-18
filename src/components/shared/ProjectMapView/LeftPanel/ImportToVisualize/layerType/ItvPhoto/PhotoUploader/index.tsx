@@ -15,7 +15,7 @@ import { Point } from 'geojson'
 import PhotoLoading from '../PhotoLoading'
 
 const MAX_UPLOAD_COUNT = 100
-const MAX_FILE_SIZE = 10 // MB
+const MAX_FILE_SIZE = 25 // MB
 const accept = '.heic, .heif, .tiff, .tif, .jpg, .jpeg, .png'
 const acceptType = ['image/jpeg', 'image/png', 'image/tiff', 'image/heic', 'image/heif']
 

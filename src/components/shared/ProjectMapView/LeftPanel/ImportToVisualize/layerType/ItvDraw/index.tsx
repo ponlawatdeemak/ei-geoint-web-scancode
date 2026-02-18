@@ -66,6 +66,7 @@ const ItvDraw: FC<Props> = ({
   const menuId = useId()
 
   const [drawType, setDrawType] = useState<ItvDrawType | null>(null)
+  const [editingFeature, setEditingFeature] = useState<ItvDrawFeature | null>(null)
   const { mapLibre } = useMapStore()
   const sourceId = 'draw-list-source'
   const pointLayerId = 'draw-list-point'
@@ -229,10 +230,13 @@ const ItvDraw: FC<Props> = ({
 
       const source = m.getSource(sourceId) as maplibregl.GeoJSONSource
       const items = layerInfo?.features || []
-      if (source && items.length > 0) {
+      // Filter out the editing feature if one is selected
+      const visibleItems = editingFeature ? items.filter((item) => item.id !== editingFeature.id) : items
+
+      if (source && visibleItems.length > 0) {
         const geojson: GeoJSON.FeatureCollection = {
           type: 'FeatureCollection',
-          features: items.map((item) => ({
+          features: visibleItems.map((item) => ({
             type: 'Feature',
             geometry: item.geometry,
             properties: {
@@ -267,41 +271,7 @@ const ItvDraw: FC<Props> = ({
       if (map.getLayer(pointLayerId)) map.removeLayer(pointLayerId)
       if (map.getSource(sourceId)) map.removeSource(sourceId)
     }
-  }, [map, ensureDrawLayer, layerInfo?.features])
-
-  useEffect(() => {
-    if (!map) return
-
-    const source = map.getSource(sourceId) as maplibregl.GeoJSONSource
-    if (!source) return
-
-    const items = layerInfo?.features || []
-
-    const geojson: GeoJSON.FeatureCollection = {
-      type: 'FeatureCollection',
-      features: items.map((item) => ({
-        type: 'Feature',
-        geometry: item.geometry,
-        properties: {
-          id: item.id,
-          drawType: item.drawType,
-          drawSize: item.drawSize,
-          drawBorderSize: item.drawBorderSize,
-          drawBorderColor: item.drawBorderColor,
-          drawFillColor: item.drawFillColor,
-          drawPolygonType: item.drawPolygonType,
-          drawDegree: item.drawDegree,
-          drawText: item.drawText,
-          drawTextColor: item.drawTextColor,
-          drawTextHaloColor: item.drawTextHaloColor,
-          drawTextHaloSize: item.drawTextHaloSize,
-          fillOpacity: 0.6,
-        },
-      })),
-    }
-
-    source.setData(geojson)
-  }, [map, layerInfo?.features])
+  }, [map, ensureDrawLayer, layerInfo?.features, editingFeature])
 
   useEffect(() => {
     if (itvMode === ItvMode.Add || editingLayerName) {
@@ -329,18 +299,16 @@ const ItvDraw: FC<Props> = ({
         }
         const res = await importToVisualize.createLayer(param)
         onSaveComplete?.(res.data)
-      } else {
-        if (layerInfo?.id) {
-          const param: UpdateItvLayerDtoIn = {
-            projectId,
-            id: layerInfo?.id,
-            name: values.name,
-          }
-          await importToVisualize.updateLayer(param)
-          setEditingLayerName(false)
-          const newLayer = { ...layerInfo, name: values.name }
-          setLayerInfo(newLayer)
+      } else if (layerInfo?.id) {
+        const param: UpdateItvLayerDtoIn = {
+          projectId,
+          id: layerInfo?.id,
+          name: values.name,
         }
+        await importToVisualize.updateLayer(param)
+        setEditingLayerName(false)
+        const newLayer = { ...layerInfo, name: values.name }
+        setLayerInfo(newLayer)
       }
 
       showAlert({ status: 'success', title: t('alert.saveSuccess') })
@@ -409,6 +377,17 @@ const ItvDraw: FC<Props> = ({
     setOpenDrawMenu(false)
   }
 
+  const onEdit = useCallback(
+    (id: string) => {
+      const feature = featureList.find((item) => item.id === id)
+      if (!feature) return
+
+      setEditingFeature(feature as ItvDrawFeature)
+      setDrawType(feature.drawType || null)
+    },
+    [featureList],
+  )
+
   const onDelete = useCallback(
     (id: string) => {
       if (!layerInfo) return
@@ -421,6 +400,47 @@ const ItvDraw: FC<Props> = ({
       setLayerInfo(newLayer)
     },
     [layerInfo, setLayerInfo],
+  )
+
+  const handleDrawFormSubmit = useCallback(
+    (data: {
+      drawType: ItvDrawType | null
+      properties: Record<string, string | number>
+      geometry: GeoJSON.Geometry
+    }) => {
+      if (!layerInfo) return
+
+      const featureData: ItvDrawFeature = {
+        id: editingFeature?.id || nanoid(),
+        drawType: drawType,
+        drawSize: data?.properties?.drawSize ? Number(data.properties.drawSize) : null,
+        drawBorderSize: data?.properties?.drawBorderSize ? Number(data.properties.drawBorderSize) : null,
+        drawBorderColor: (data?.properties?.drawBorderColor as string) || null,
+        drawFillColor: (data?.properties?.drawFillColor as string) || null,
+        drawPolygonType: (data?.properties?.drawPolygonType as string) || null,
+        drawDegree: data?.properties?.drawDegree ? Number(data.properties.drawDegree) : null,
+        drawText: (data?.properties?.drawText as string) || null,
+        drawTextColor: (data?.properties?.drawTextColor as string) || null,
+        drawTextHaloColor: (data?.properties?.drawTextHaloColor as string) || null,
+        drawTextHaloSize: data?.properties?.drawTextHaloSize ? Number(data.properties.drawTextHaloSize) : null,
+        geometry: data.geometry as Point | LineString | Polygon | null,
+      }
+
+      const newFeatures = editingFeature
+        ? (layerInfo.features || []).map((item) => (item.id === editingFeature.id ? featureData : item))
+        : [...(layerInfo.features || []), featureData]
+
+      const newLayer: ItvLayer = {
+        ...layerInfo,
+        features: newFeatures,
+      } as ItvLayer
+
+      setLayerInfo(newLayer)
+      setDrawType(null)
+      setEditingFeature(null)
+      setShowForm(true)
+    },
+    [layerInfo, editingFeature, drawType, setLayerInfo],
   )
 
   return (
@@ -469,7 +489,7 @@ const ItvDraw: FC<Props> = ({
 
               {/* Lists */}
               <div className='flex-1 overflow-y-auto px-1 pb-4'>
-                {layerInfo && <DrawList mapId={mapId} features={featureList} onDelete={onDelete} />}
+                {layerInfo && <DrawList mapId={mapId} features={featureList} onEdit={onEdit} onDelete={onDelete} />}
               </div>
 
               {/* Buttons */}
@@ -496,34 +516,11 @@ const ItvDraw: FC<Props> = ({
               mapId={mapId}
               drawType={drawType}
               setDrawType={setDrawType}
-              onSubmit={(data) => {
-                if (!layerInfo) return
-
-                const newFeature: ItvDrawFeature = {
-                  id: nanoid(),
-                  drawType: drawType,
-                  drawSize: data?.properties?.drawSize ? Number(data.properties.drawSize) : null,
-                  drawBorderSize: data?.properties?.drawBorderSize ? Number(data.properties.drawBorderSize) : null,
-                  drawBorderColor: (data?.properties?.drawBorderColor as string) || null,
-                  drawFillColor: (data?.properties?.drawFillColor as string) || null,
-                  drawPolygonType: (data?.properties?.drawPolygonType as string) || null,
-                  drawDegree: data?.properties?.drawDegree ? Number(data.properties.drawDegree) : null,
-                  drawText: (data?.properties?.drawText as string) || null,
-                  drawTextColor: (data?.properties?.drawTextColor as string) || null,
-                  drawTextHaloColor: (data?.properties?.drawTextHaloColor as string) || null,
-                  drawTextHaloSize: data?.properties?.drawTextHaloSize
-                    ? Number(data.properties.drawTextHaloSize)
-                    : null,
-                  geometry: data.geometry as Point | LineString | Polygon | null,
-                }
-
-                const newLayer: ItvLayer = {
-                  ...layerInfo,
-                  features: [...(layerInfo.features || []), newFeature],
-                } as ItvLayer
-
-                setLayerInfo(newLayer)
+              editingFeature={editingFeature}
+              onSubmit={handleDrawFormSubmit}
+              onCancel={() => {
                 setDrawType(null)
+                setEditingFeature(null)
                 setShowForm(true)
               }}
             />

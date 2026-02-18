@@ -1,18 +1,22 @@
-import { Tabs, Tab, IconButton, Button, useMediaQuery, useTheme } from '@mui/material'
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import SymbolForm, { defaultSymbolFormValues } from './SymbolForm'
-import LabelForm, { defaultLabelFormValues } from './LabelForm'
-import { useTranslation } from 'react-i18next'
-import { SelectedSymbol } from '..'
+import type { Map as MapBoxMap, MapMouseEvent } from 'maplibre-gl'
+
+import { Tabs, Tab, IconButton, Button, useMediaQuery, useTheme } from '@mui/material'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import CloseIcon from '@mui/icons-material/Close'
+import { useTranslation } from 'react-i18next'
 import ms from 'milsymbol'
-import type { Map as MapBoxMap, MapMouseEvent } from 'maplibre-gl'
-import useMapStore from '@/components/common/map/store/map'
-import { AnnotationItem, AnnotationLabelItem, AnnotationSymbolItem } from '@interfaces/entities'
 import { nanoid } from 'nanoid'
+
+import { AnnotationItem, AnnotationLabelItem, AnnotationSymbolItem } from '@interfaces/entities'
+import useMapStore from '@/components/common/map/store/map'
 import { useGlobalUI } from '@/providers/global-ui/GlobalUIContext'
+import { cropCanvasImage } from '@/utils/crop-image'
+
+import { SelectedSymbol } from '..'
+import SymbolForm, { defaultSymbolFormValues } from './SymbolForm'
+import LabelForm, { defaultLabelFormValues } from './LabelForm'
 
 type Props = {
   initialData?: SelectedSymbol
@@ -40,6 +44,7 @@ const AnnotationForm: React.FC<Props> = ({ initialData, editItem, mapId, onEditS
   const [mapClickGeometry, setMapClickGeometry] = useState<{ type: 'Point'; coordinates: [number, number] } | null>(
     editItem?.geometry || null,
   )
+  const [croppedSymbolUrl, setCroppedSymbolUrl] = useState<string>('')
   const { t } = useTranslation('common')
   const { showAlert } = useGlobalUI()
   const symbolDataRef = useRef<{
@@ -136,12 +141,53 @@ const AnnotationForm: React.FC<Props> = ({ initialData, editItem, mapId, onEditS
       const properties = { ...cleanProperties, size: symbolSize }
       const sym = new ms.Symbol(currentSidc, properties)
 
+      // Return the data URL directly from symbol
       return sym.toDataURL()
     } catch (error) {
       console.error('Error generating symbol:', error)
       return ''
     }
   }, [currentSidc, labelValues])
+
+  // Crop symbol image asynchronously for preview
+  useEffect(() => {
+    if (!symbolUrl) {
+      setCroppedSymbolUrl('')
+      return
+    }
+
+    const cropSymbol = () => {
+      try {
+        const img = new globalThis.Image()
+        img.onload = () => {
+          // Create canvas and draw image
+          const canvas = document.createElement('canvas')
+          canvas.width = img.width
+          canvas.height = img.height
+          const ctx = canvas.getContext('2d')
+          if (!ctx) {
+            setCroppedSymbolUrl(symbolUrl)
+            return
+          }
+
+          ctx.drawImage(img, 0, 0)
+
+          // Crop the canvas
+          const croppedCanvas = cropCanvasImage(canvas, false)
+          setCroppedSymbolUrl(croppedCanvas.toDataURL())
+        }
+        img.onerror = () => {
+          setCroppedSymbolUrl(symbolUrl)
+        }
+        img.src = symbolUrl
+      } catch (error) {
+        console.error('Error cropping symbol:', error)
+        setCroppedSymbolUrl(symbolUrl)
+      }
+    }
+
+    cropSymbol()
+  }, [symbolUrl])
 
   // Add symbol to map function
   const addSymbolToMap = useCallback(
@@ -207,9 +253,13 @@ const AnnotationForm: React.FC<Props> = ({ initialData, editItem, mapId, onEditS
             },
           })
 
-          // Add image to map - convert canvas to ImageData
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-          mapInstance.addImage(sourceId, imageData)
+          // Crop canvas and add image to map
+          const croppedCanvas = cropCanvasImage(canvas, false)
+          const croppedCtx = croppedCanvas.getContext('2d')
+          if (croppedCtx) {
+            const imageData = croppedCtx.getImageData(0, 0, croppedCanvas.width, croppedCanvas.height)
+            mapInstance.addImage(sourceId, imageData)
+          }
 
           // Mark recreation as complete
           isRecreatingRef.current = false
@@ -329,10 +379,10 @@ const AnnotationForm: React.FC<Props> = ({ initialData, editItem, mapId, onEditS
 
       {/* Symbol Preview Section */}
       <div className='flex shrink-0 items-center justify-center gap-4 py-8'>
-        {symbolUrl && (
+        {(croppedSymbolUrl || symbolUrl) && (
           <div className='relative flex items-center gap-2'>
             <Image
-              src={symbolUrl}
+              src={croppedSymbolUrl || symbolUrl}
               alt='Symbol Preview'
               width={40}
               height={40}

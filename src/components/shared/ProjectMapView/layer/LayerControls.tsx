@@ -113,18 +113,21 @@ const BandSelector = ({
         <div className='text-(--color-text-primary) text-sm'>{t('map.bandComposition')}</div>
         <div className='flex overflow-hidden rounded border border-(--color-gray-border) text-xs'>
           <button
+            type='button'
             className={`px-2 py-1 ${mode === 'rgb' ? 'bg-primary text-white' : 'bg-white text-(--color-text-secondary)'}`}
             onClick={() => handleModeChange('rgb')}
           >
             RGB
           </button>
           <button
+            type='button'
             className={`px-2 py-1 ${mode === 'gray' ? 'bg-primary text-white' : 'bg-white text-(--color-text-secondary)'}`}
             onClick={() => handleModeChange('gray')}
           >
             Gray
           </button>
           <button
+            type='button'
             className={`px-2 py-1 ${mode === 'color' ? 'bg-primary text-white' : 'bg-white text-(--color-text-secondary)'}`}
             onClick={() => handleModeChange('color')}
           >
@@ -225,6 +228,9 @@ const LayerControls: React.FC<Props> = ({
   )
   const lengthLayer = visibleLayers.length
 
+  console.log('selectedGroup ', selectedGroup)
+  console.log('group ', group)
+
   return (
     <Box className='h-full overflow-y-auto pr-2'>
       {visibleLayers.map((layer, index) => {
@@ -260,6 +266,7 @@ const LayerControls: React.FC<Props> = ({
                     <div className='pt-1.5 text-(--color-text-secondary) text-sm'>
                       {t('map.buildings')}
                       <span className='font-medium text-primary'>
+                        {' '}
                         {itemCount} {t('map.items')}
                       </span>
                     </div>
@@ -276,7 +283,6 @@ const LayerControls: React.FC<Props> = ({
                 )}
               </Box>
             </Box>
-
             {isTileLayer && handleLayerConfigChange && (currentConfig as any)?.imageType === 1 && (
               <BandSelector
                 layerId={layer.id}
@@ -287,7 +293,6 @@ const LayerControls: React.FC<Props> = ({
                 onChange={(bands, colormap) => handleLayerConfigChange(layer.id, { bands, colormapName: colormap })}
               />
             )}
-
             {!isTileLayer && !hideConfidenceSliderForKeys.includes(layer.key) && (
               <Box className='mt-4 mb-2 rounded-lg bg-(--color-background-light) p-4 py-2'>
                 <Box className='mt-2 grid w-full grid-cols-2 gap-1'>

@@ -27,7 +27,7 @@ import { useTranslation } from 'react-i18next'
 import { useWeeklyMapStore } from './store/useWeeklyMapStore'
 import { Roles, SortType } from '@interfaces/config'
 import { TaskDownloadItem, TaskFeature, TaskLayer } from '@interfaces/index'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useProfileStore } from '@/hook/useProfileStore'
 import SelectDownloadFileTypeDialog from '@/components/dialog/SelectDownloadFileTypeDialog'
 import { useGlobalUI } from '@/providers/global-ui/GlobalUIContext'
@@ -74,14 +74,8 @@ const SearchResult: React.FC<SearchResultProps> = ({ onSelected }) => {
     setOrder(order === SortType.ASC ? SortType.DESC : SortType.ASC)
   }
 
-  // Set default sort order to DESC on first mount
-  useEffect(() => {
-    setOrder(SortType.DESC)
-  }, [setOrder])
-
   const download = useCallback(
     async (menuRow: TaskFeature | null, fileTypes: string[]) => {
-      // const layerData = await weekly.postSearchLayers(menuRow?.layer || [])
       const keyModelSelect = selectedModels.flatMap((m) => m.keys)
       // Merge all downloads from all layers in all features
       const downloadItems = (menuRow?.layer || [])

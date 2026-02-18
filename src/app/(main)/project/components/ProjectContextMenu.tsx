@@ -4,7 +4,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility'
 import PublicIcon from '@mui/icons-material/Public'
 import DeleteIcon from '@mui/icons-material/Delete'
 import { useTranslation } from 'react-i18next'
-import { SearchProjectResultItem } from '@interfaces/index'
+import type { SearchProjectResultItem } from '@interfaces/index'
 
 interface ProjectContextMenuProps {
   open: boolean

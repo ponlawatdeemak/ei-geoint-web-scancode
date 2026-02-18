@@ -44,7 +44,7 @@ import { useGlobalUI } from '@/providers/global-ui/GlobalUIContext'
 import { layerIdConfig } from '@/components/common/map/config/map'
 import { ItvDrawPolygonType, ItvDrawType } from '@interfaces/config/app.config'
 import { DefaultAoiColor } from '@interfaces/config/color.config'
-import { itvDrawConfig } from '../itv-draw'
+import { itvDrawConfig, ItvDrawFeature } from '../itv-draw'
 
 // Utils
 import { nanoid } from 'nanoid'
@@ -56,11 +56,13 @@ interface Props {
   mapId: string
   drawType: ItvDrawType | null
   setDrawType?: (value: ItvDrawType | null) => void
+  editingFeature?: ItvDrawFeature | null
   onSubmit?: (data: {
     drawType: ItvDrawType | null
     properties: Record<string, string | number>
     geometry: GeoJSON.Geometry
   }) => void
+  onCancel?: () => void
 }
 
 type TabInfo = { key: 'type' | 'border' | 'fill'; label: string }
@@ -69,7 +71,7 @@ type TabInfo = { key: 'type' | 'border' | 'fill'; label: string }
 const RESULT_SOURCE = 'itv-draw-result-source'
 const RESULT_LAYER = 'itv-draw-result-layer'
 
-const DrawForm: FC<Props> = ({ mapId, drawType, setDrawType, onSubmit }) => {
+const DrawForm: FC<Props> = ({ mapId, drawType, setDrawType, editingFeature, onSubmit, onCancel }) => {
   // ========== Hooks ==========
   const { t } = useTranslation('common')
   const { showAlert } = useGlobalUI()
@@ -157,7 +159,20 @@ const DrawForm: FC<Props> = ({ mapId, drawType, setDrawType, onSubmit }) => {
     return defaults
   }, [currentConfig, getDefaultFieldValue])
 
-  const [formValues, setFormValues] = useState<Record<string, string | number>>(() => getDefaultFormValues())
+  const [formValues, setFormValues] = useState<Record<string, string | number>>(() => {
+    const defaults = getDefaultFormValues()
+    // Populate from editingFeature if available
+    if (editingFeature) {
+      const editingProps: Record<string, string | number> = {}
+      Object.entries(editingFeature).forEach(([key, value]) => {
+        if (typeof value === 'string' || typeof value === 'number') {
+          editingProps[key] = value
+        }
+      })
+      return { ...defaults, ...editingProps }
+    }
+    return defaults
+  })
 
   // ========== Map Layer Management ==========
   const clearLayer = useCallback(() => {
@@ -268,13 +283,15 @@ const DrawForm: FC<Props> = ({ mapId, drawType, setDrawType, onSubmit }) => {
   )
 
   const handleCancel = useCallback(() => {
-    if (setDrawType) {
+    if (onCancel) {
+      onCancel()
+    } else if (setDrawType) {
       setDrawType(null)
       setIsDrawingComplete(false)
       resultFeatureCollectionRef.current.features = []
       setResultFeatures([])
     }
-  }, [setDrawType, setResultFeatures])
+  }, [setDrawType, setResultFeatures, onCancel])
 
   const handleOk = useCallback(() => {
     const geometry = resultFeatureCollectionRef.current.features[0]?.geometry || null
@@ -466,7 +483,7 @@ const DrawForm: FC<Props> = ({ mapId, drawType, setDrawType, onSubmit }) => {
       if (drawType === ItvDrawType.LINE) {
         terraDraw.setMode('linestring')
       } else if (drawType === ItvDrawType.POLYGON) {
-        const polygonType = (formValues.drawPolygonType as string) || ItvDrawPolygonType.RECTANGLE
+        const polygonType = (formValues.drawPolygonType as string) ?? ItvDrawPolygonType.RECTANGLE
         terraDraw.setMode(polygonType)
       }
 
@@ -483,15 +500,32 @@ const DrawForm: FC<Props> = ({ mapId, drawType, setDrawType, onSubmit }) => {
     } catch (error) {
       console.error('Error initializing terra-draw:', error)
     }
-  }, [map, drawType, isDrawingComplete, handleTerraDrawFinish, formValues.drawPolygonType])
+  }, [map, drawType, isDrawingComplete, handleTerraDrawFinish, formValues.drawPolygonType, formValues])
 
   // Handle polygon type change by switching terra-draw modes
   useEffect(() => {
     if (!terraDrawRef.current || drawType !== ItvDrawType.POLYGON) return
 
-    const polygonType = (formValues.drawPolygonType as string) || ItvDrawPolygonType.RECTANGLE
+    const polygonType = (formValues.drawPolygonType as string) ?? ItvDrawPolygonType.RECTANGLE
     terraDrawRef.current.setMode(polygonType)
   }, [formValues, drawType])
+
+  // ========== Effects: Pre-populate when editing ==========
+  useEffect(() => {
+    if (!editingFeature || !editingFeature.geometry) return
+
+    const feature: GeoJSON.Feature<GeoJSON.Geometry, GeoJSON.GeoJsonProperties> = {
+      type: 'Feature',
+      id: editingFeature.id,
+      geometry: editingFeature.geometry,
+      properties: { ...editingFeature, drawType },
+    }
+
+    resultFeatureCollectionRef.current.features = [feature]
+    setResultFeatures([feature])
+
+    setIsDrawingComplete(false)
+  }, [editingFeature, drawType, setResultFeatures])
 
   // ========== Effects: Map Event Listeners ==========
   useEffect(() => {

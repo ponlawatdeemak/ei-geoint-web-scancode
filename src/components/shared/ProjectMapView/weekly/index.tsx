@@ -197,11 +197,21 @@ const Weekly: React.FC<WeeklyProps> = ({
   useEffect(() => {
     // This runs when selectedAreas changes, or on mount
     if (selectedAreas.length > 0 && !didInitialSearch.current) {
+      // Check if dates are already initialized in the store (e.g. from a previous mount)
+      // This prevents re-triggering search when navigating back/remounting while keeping state
+      const { startDate, endDate } = useWeeklyMapStore.getState()
+
+      // Removed data check to be safer - if dates are set, we assume initialized.
+      if (startDate && endDate) {
+        didInitialSearch.current = true
+        return
+      }
+
       didInitialSearch.current = true
 
       // // TODO: set for test
-      const startDate = dayjs().subtract(2, 'month').startOf('month')
-      setStartDate(startDate)
+      const initialStartDate = dayjs().subtract(2, 'month').startOf('month')
+      setStartDate(initialStartDate)
       // setEndDate(dayjs().endOf('month'))
 
       // setStartDate(dayjs().startOf('month'))
@@ -338,7 +348,7 @@ const Weekly: React.FC<WeeklyProps> = ({
     }
 
     return (
-      <Box className='absolute bottom-0 left-2 z-35 w-[88%] sm:w-[95%] md:top-4 md:bottom-auto md:left-auto md:w-112.5 md:translate-x-0'>
+      <Box className='absolute bottom-0 left-2 z-35 w-[88%] sm:w-[95%] md:top-0 md:bottom-auto md:left-auto md:w-112.5 md:translate-x-0'>
         <FloatingPanel
           icon={
             <span
@@ -681,7 +691,7 @@ const Weekly: React.FC<WeeklyProps> = ({
 
   return (
     <Box className='flex h-full w-full flex-col'>
-      <Box className='mb-2 pb-5'>
+      <Box className='mb-2 flex flex-1 flex-col pb-5'>
         <SearchContainer onSelected={handleOnSelected} />
       </Box>
     </Box>

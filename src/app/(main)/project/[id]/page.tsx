@@ -11,7 +11,9 @@ export default function Page() {
   const params = useParams() as { id?: string }
   const { id } = params
   const { showAlert } = useGlobalUI()
-  const profile = useProfileStore((state) => state.profile)!
+  const profile = useProfileStore((state) => state.profile)
+
+  if (!profile) return null
 
   return (
     <div className='flex h-full flex-col'>

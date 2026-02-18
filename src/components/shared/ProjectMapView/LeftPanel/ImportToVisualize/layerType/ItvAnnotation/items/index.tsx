@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/a11y/useSemanticElements: <explanation> */
 'use client'
 
-import React, { useMemo } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import Image from 'next/image'
 import { IconButton, Tooltip } from '@mui/material'
 import EditIcon from '@mui/icons-material/Edit'
@@ -10,18 +10,54 @@ import InboxIcon from '@mui/icons-material/Inbox'
 import ms from 'milsymbol'
 import { AnnotationItem, AnnotationLabelItem } from '@interfaces/entities'
 import { useTranslation } from 'react-i18next'
+import { cropCanvasImage } from '@/utils/crop-image'
 
-const getSymbolUrl = (sidc: string, annotationLabel: AnnotationLabelItem, size: number) => {
+const getSymbolUrlAsync = (sidc: string, annotationLabel: AnnotationLabelItem, size: number): Promise<string> => {
   try {
     const cleanProperties = Object.fromEntries(
       Object.entries(annotationLabel).map(([key, value]) => [key, value ?? undefined]),
     )
     const properties = { ...cleanProperties, size: size }
     const sym = new ms.Symbol(sidc, properties)
-    return sym.toDataURL()
+    const { width, height } = sym.getSize()
+
+    // Create canvas
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d')
+
+    if (!ctx) return Promise.resolve('')
+
+    // Draw SVG to canvas
+    const svgString = sym.asSVG()
+    const svg = new Blob([svgString], { type: 'image/svg+xml' })
+    const url = URL.createObjectURL(svg)
+    const img = new window.Image(width, height)
+
+    return new Promise<string>((resolve) => {
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0)
+
+        // Crop left/right
+        const croppedCanvas = cropCanvasImage(canvas, false)
+        const dataUrl = croppedCanvas.toDataURL()
+
+        URL.revokeObjectURL(url)
+        resolve(dataUrl)
+      }
+
+      img.onerror = () => {
+        console.error('Error loading symbol image for item')
+        URL.revokeObjectURL(url)
+        resolve('')
+      }
+
+      img.src = url
+    })
   } catch (error) {
     console.error('Error generating symbol icon:', error)
-    return ''
+    return Promise.resolve('')
   }
 }
 
@@ -31,15 +67,27 @@ const ItemsList: React.FC<{
   onEdit?: (id: string) => void
   onItemClick?: (item: AnnotationItem) => void
 }> = ({ itemList, onDelete, onEdit, onItemClick }) => {
-  const itemsWithIcon = useMemo(
-    () =>
-      itemList.map((item) => ({
-        ...item,
-        iconUrl: getSymbolUrl(item.sidc, item?.annotationLabel || {}, item.annotationSymbol?.symbolSize || 40),
-      })),
-    [itemList],
-  )
+  const [itemsWithIcon, setItemsWithIcon] = useState<(AnnotationItem & { iconUrl: string })[]>([])
   const { t } = useTranslation('common')
+
+  // Generate symbol URLs asynchronously
+  useEffect(() => {
+    const generateUrls = async () => {
+      const items = await Promise.all(
+        itemList.map(async (item) => ({
+          ...item,
+          iconUrl: await getSymbolUrlAsync(
+            item.sidc,
+            item?.annotationLabel || {},
+            item.annotationSymbol?.symbolSize || 40,
+          ),
+        })),
+      )
+      setItemsWithIcon(items)
+    }
+
+    generateUrls()
+  }, [itemList])
 
   const handleEdit = (id: string) => {
     onEdit?.(id)

@@ -1,4 +1,5 @@
 import { api, apiAccessToken } from '@/api/core'
+import { APIService } from '@interfaces/dto/core'
 import {
   CreateItvLayerDtoIn,
   UpdateItvLayerDtoIn,
@@ -53,8 +54,14 @@ const importToVisualizeApi = {
   async updatePhotoLatLong(payload: UpdatePhotoLatLongDtoIn): Promise<void> {
     return (await api.put('/thaicom-image-geotag/update-photo-lat-long', payload)).data
   },
-  getThumbnailUrl(query: GetThumbnailDtoIn, isNative?: boolean): string {
-    return `${process.env.API_URL}/thaicom-image-geotag/get-thumbnail/${query.uploadId}?accessToken=${apiAccessToken}${isNative ? '&isNative=true' : ''}`
+  async getThumbnail(query: GetThumbnailDtoIn, isNative?: boolean): Promise<Blob> {
+    const params = new URLSearchParams()
+    if (isNative) params.append('isNative', 'true')
+    const queryString = params.toString() ? `?${params.toString()}` : ''
+    const response = await api.get(`/thaicom-image-geotag/get-thumbnail/${query.uploadId}${queryString}`, APIService.WebAPI, {
+      responseType: 'blob',
+    })
+    return response.data
   },
   async getDownload(query: GetDownloadDtoIn): Promise<GetDownloadDtoOut> {
     return (await api.get(`/thaicom-image-geotag/get-download/${query.uploadId}`)).data

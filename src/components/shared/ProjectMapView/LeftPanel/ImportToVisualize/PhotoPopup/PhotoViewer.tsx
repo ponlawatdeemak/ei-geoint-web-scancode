@@ -1,6 +1,6 @@
 import { ItvFeatureProperties } from '@interfaces/entities'
 import { Dialog, DialogContent, IconButton } from '@mui/material'
-import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { FC, useEffect, useMemo, useState } from 'react'
 import CloseIcon from '@mui/icons-material/Close'
 import Slider from 'react-slick'
 import Image from 'next/image'
@@ -52,11 +52,34 @@ const PhotoViewer: FC<PhotoViewerProps> = ({ imageList, onClose, startIndex }) =
   const [currentIndex, setCurrentIndex] = useState(startIndex)
   const [nav1, setNav1] = useState<Slider | null>(null)
   const [nav2, setNav2] = useState<Slider | null>(null)
+  const [thumbnailUrls, setThumbnailUrls] = useState<Record<string, string>>({})
+  const [nativeUrls, setNativeUrls] = useState<Record<string, string>>({})
 
-  const thumbnailUrl = useCallback((uploadId: string, isNative?: boolean) => {
-    const url = importToVisualize.getThumbnailUrl({ uploadId }, isNative)
-    return url
-  }, [])
+  useEffect(() => {
+    const urls: Record<string, string> = {}
+    const native: Record<string, string> = {}
+    const loadThumbnails = async () => {
+      await Promise.all(
+        imageList.map(async (feature) => {
+          if (feature.photoUploadId) {
+            const [thumbBlob, nativeBlob] = await Promise.all([
+              importToVisualize.getThumbnail({ uploadId: feature.photoUploadId }),
+              importToVisualize.getThumbnail({ uploadId: feature.photoUploadId }, true),
+            ])
+            urls[feature.photoUploadId] = URL.createObjectURL(thumbBlob)
+            native[feature.photoUploadId] = URL.createObjectURL(nativeBlob)
+          }
+        })
+      )
+      setThumbnailUrls(urls)
+      setNativeUrls(native)
+    }
+    loadThumbnails()
+    return () => {
+      Object.values(urls).forEach(URL.revokeObjectURL)
+      Object.values(native).forEach(URL.revokeObjectURL)
+    }
+  }, [imageList])
 
   useEffect(() => {
     setCurrentIndex(startIndex)
@@ -122,14 +145,16 @@ const PhotoViewer: FC<PhotoViewerProps> = ({ imageList, onClose, startIndex }) =
                   </div>
                 </div>
                 <div className='relative h-[65vh] w-full'>
-                  <Image
-                    src={thumbnailUrl(feature.photoUploadId as string, true)}
-                    fill
-                    alt={'Popup Photo'}
-                    draggable={false}
-                    objectFit='contain'
-                    unoptimized
-                  />
+                  {nativeUrls[feature.photoUploadId as string] && (
+                    <Image
+                      src={nativeUrls[feature.photoUploadId as string]}
+                      fill
+                      alt={'Popup Photo'}
+                      draggable={false}
+                      objectFit='contain'
+                      unoptimized
+                    />
+                  )}
                 </div>
               </div>
             ))}
@@ -143,14 +168,16 @@ const PhotoViewer: FC<PhotoViewerProps> = ({ imageList, onClose, startIndex }) =
             {imageList.map((feature, index) => (
               <div key={feature.id} className='h-[15vh] w-[25vw]!'>
                 <div className='relative h-full w-full'>
-                  <Image
-                    src={thumbnailUrl(feature.photoUploadId as string)}
-                    fill
-                    alt={'Popup Photo'}
-                    draggable={false}
-                    objectFit='contain'
-                    className={currentIndex === index ? 'grayscale-0' : 'grayscale-100'}
-                  />
+                  {thumbnailUrls[feature.photoUploadId as string] && (
+                    <Image
+                      src={thumbnailUrls[feature.photoUploadId as string]}
+                      fill
+                      alt={'Popup Photo'}
+                      draggable={false}
+                      objectFit='contain'
+                      className={currentIndex === index ? 'grayscale-0' : 'grayscale-100'}
+                    />
+                  )}
                 </div>
               </div>
             ))}
