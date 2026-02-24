@@ -65,6 +65,7 @@ interface GalleryUploaderProps {
   serviceId: ServiceConfig | null
   open: boolean
   onClose: () => void
+  searchParamsOrgId?: string | null
 }
 // 100MB
 const MULTIPART_THRESHOLD = 100 * 1024 * 1024 // 100MB
@@ -119,7 +120,7 @@ const clearAllResumeStates = () => {
   })
 }
 
-const GalleryUploader: React.FC<GalleryUploaderProps> = ({ serviceId, open, onClose }) => {
+const GalleryUploader: React.FC<GalleryUploaderProps> = ({ serviceId, open, onClose, searchParamsOrgId }) => {
   const inputId = useId()
   const theme = useTheme()
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('md'))
@@ -155,14 +156,10 @@ const GalleryUploader: React.FC<GalleryUploaderProps> = ({ serviceId, open, onCl
     setSelectedImage,
     wssImageData,
     setWssImageData,
-
     selectedImage,
   } = useImages()
 
-  // for test scan code
-  // const accept = serviceId === ServiceConfig.optical ? '.tiff,.tif,.zip' : '.tiff,.tif,.zip'
   const accept = '.tiff,.tif,.zip'
-
   const createdUrlsRef = useRef<string[]>([])
   const inputRef = useRef<HTMLInputElement | null>(null)
   const [tagSuggestions, setTagSuggestions] = useState<Array<{ id: string; name: string }>>([])
@@ -230,8 +227,8 @@ const GalleryUploader: React.FC<GalleryUploaderProps> = ({ serviceId, open, onCl
           if (ifds && ifds.length > 0) {
             try {
               UTIF.decodeImages(ab, ifds)
-            } catch (_) {
-              // ignore
+            } catch (e) {
+              console.warn('Failed to decode TIFF images:', e)
             }
             const first = ifds[0]
             const width = (first.width as number) || (first.t256 as number) || (first.ImageWidth as number) || 0
@@ -320,7 +317,7 @@ const GalleryUploader: React.FC<GalleryUploaderProps> = ({ serviceId, open, onCl
       }
       setUploadStep(ImageUploadStep.Upload)
       const userId = profile.id
-      const orgId = profile.organizationId
+      const orgId = searchParamsOrgId ? searchParamsOrgId : profile.organizationId
 
       for (let i = 0; i < files.length; i++) {
         const fileData = files[i]
@@ -902,7 +899,7 @@ const GalleryUploader: React.FC<GalleryUploaderProps> = ({ serviceId, open, onCl
       <DialogTitle className='px-4 py-4 text-left sm:px-6 sm:py-5'>
         {t('gallery.uploadDialog.title', { service: serviceLabel })}
       </DialogTitle>
-      <DialogContent className='px-4 py-4 sm:px-6 sm:py-5'>
+      <DialogContent className='px-4 py-4 sm:px-6 sm:py-5 2xl:px-8 2xl:py-6'>
         <div className='mx-auto w-full max-w-2xl'>
           <input
             ref={inputRef}

@@ -22,6 +22,8 @@ export const DefaultModelColorConfig = {
   // weekly
   'planet-weekly-objectdetection-road': '#ffc107CC',
   'planet-weekly-objectdetection-building': '#e91e63CC',
+  'planet-weekly-changedetection-road': '#ff6f00CC',
+  'planet-weekly-changedetection-building': '#880e4fCC',
 } as const
 
 export type ModelColorKey = keyof typeof DefaultModelColorConfig

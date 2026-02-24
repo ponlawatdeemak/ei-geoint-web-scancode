@@ -107,9 +107,10 @@ const DateStepper: React.FC = () => {
   return data.length === 0 ? null : (
     <>
       {isMobile ? (
-        <Box className='mb-4 flex min-w-fit transform items-center justify-center gap-3'>
+        <Box className='mb-1 flex min-w-fit transform items-center justify-center gap-2'>
           {selectedData && (
-            <Box className='absolute bottom-15 left-1/2 ml-2 -translate-x-1/2 whitespace-nowrap font-semibold text-[0.8rem] text-primary'>
+            <Box className='absolute bottom-18
+             left-1/2 ml-2 -translate-x-1/2 whitespace-nowrap font-semibold text-[0.75rem] text-primary'>
               {formatDate(selectedData.date || '', language)}
             </Box>
           )}
@@ -130,8 +131,9 @@ const DateStepper: React.FC = () => {
                 }}
                 disabled={activeIndex === sortedData.length - 1}
                 variant='outlined'
-                className='weekly-compare'
-                endIcon={<ChevronRightIcon />}
+                size='small'
+                className='weekly-compare !text-xs !py-0.5'
+                endIcon={<ChevronRightIcon fontSize='small' />}
               >
                 {t('button.next')}
               </Button>
@@ -144,8 +146,9 @@ const DateStepper: React.FC = () => {
                 }}
                 disabled={activeIndex === -1 || (activeIndex === 0 && page === 1)}
                 variant='outlined'
-                className='weekly-compare'
-                startIcon={<ChevronLeftIcon />}
+                size='small'
+                className='weekly-compare !text-xs !py-0.5'
+                startIcon={<ChevronLeftIcon fontSize='small' />}
               >
                 {t('button.previous')}
               </Button>
@@ -155,7 +158,7 @@ const DateStepper: React.FC = () => {
       ) : (
         // desktop stepper
         // - click next/back จะเป็นการเลื่อน "Page"
-        <div className='flex items-center gap-2 pr-12 pb-2'>
+        <div className='flex items-center gap-2 pr-8 pl-8 pb-2'>
           <IconButton onClick={handleBack} disabled={activeIndex === 0} className='shrink-0'>
             <ChevronLeftIcon className='rounded-2xl bg-white/20 text-white hover:bg-white/50' />
           </IconButton>

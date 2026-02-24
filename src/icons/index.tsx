@@ -137,3 +137,9 @@ export const redPinIcon = (props: SvgIconProps) => (
     />
   </SvgIcon>
 )
+
+export const WeeklyChartIcon = (props: SvgIconProps) => (
+  <SvgIcon width='20' height='19' viewBox='0 0 20 19' fill='none' {...props}>
+    <path d='M1.5 19L0 17.5L7.5 10L11.5 14L18.6 6L20 7.4L11.5 17L7.5 13L1.5 19ZM1.5 13L0 11.5L7.5 4L11.5 8L18.6 0L20 1.4L11.5 11L7.5 7L1.5 13Z' fill='currentColor'/>
+  </SvgIcon>
+)

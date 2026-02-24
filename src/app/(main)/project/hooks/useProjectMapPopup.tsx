@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Roles } from '@interfaces/config'
@@ -79,13 +78,7 @@ export const useProjectMapPopup = ({
         const maplibregl = await import('maplibre-gl')
         const popupContent = document.createElement('div')
 
-        const [
-          { createRoot },
-          { ThemeProvider },
-          themeModule,
-          { I18nextProvider },
-          i18nextModule,
-        ] = await Promise.all([
+        const [{ createRoot }, { ThemeProvider }, themeModule, { I18nextProvider }, i18nextModule] = await Promise.all([
           import('react-dom/client'),
           import('@mui/material/styles'),
           import('@/styles/theme'),
@@ -116,7 +109,7 @@ export const useProjectMapPopup = ({
           closeButton: false,
           closeOnClick: false,
           offset: 32,
-          maxWidth: '600px',
+          maxWidth: '1200px',
         })
           .setLngLat(popupCoordinates)
           .setDOMContent(popupContent)

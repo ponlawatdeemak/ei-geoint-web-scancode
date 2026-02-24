@@ -1,5 +1,5 @@
 import { Box, IconButton, Tooltip } from '@mui/material'
-import { ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import ClearIcon from '@mui/icons-material/Clear'
 import RemoveIcon from '@mui/icons-material/Remove'
 import AspectRatioIcon from '@mui/icons-material/AspectRatio'
@@ -13,8 +13,6 @@ export interface FloatingPanelProps {
   isMinimized: boolean
   onClose: () => void
   onToggleMinimize: () => void
-  minWidth?: number
-  maxWidth?: number
 }
 
 export function FloatingPanel({
@@ -25,12 +23,12 @@ export function FloatingPanel({
   isMinimized,
   onClose,
   onToggleMinimize,
-}: FloatingPanelProps) {
+}: Readonly<FloatingPanelProps>) {
   const { t } = useTranslation('common')
   if (!isOpen) return null
 
   return (
-    <Box className='flex max-h-[180px] w-full flex-col rounded-lg border border-(--color-gray-border) bg-white shadow-lg md:max-h-full md:min-w-md'>
+    <Box className='flex max-h-[80vh] w-full flex-col rounded-lg border border-(--color-gray-border) bg-white shadow-lg md:max-h-[80vh] md:min-w-md'>
       {/* Header */}
       <Box className='flex items-center justify-between border-(--color-gray-border) border-b-[0] px-4 py-3 pb-1'>
         <Box className='flex min-w-0 flex-1 items-center gap-2'>
@@ -62,7 +60,7 @@ export interface PanelSectionProps {
   value: ReactNode
 }
 
-export function PanelSection({ label, value }: PanelSectionProps) {
+export function PanelSection({ label, value }: Readonly<PanelSectionProps>) {
   return (
     <Box className='mb-3 last:mb-0'>
       <div className='mb-1 font-medium text-(--color-text-secondary) text-xs'>{label}</div>

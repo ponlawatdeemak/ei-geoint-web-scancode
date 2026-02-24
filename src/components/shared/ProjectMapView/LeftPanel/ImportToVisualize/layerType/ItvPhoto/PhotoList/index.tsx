@@ -78,11 +78,11 @@ const PhotoList: FC<Props> = ({ features, onEdit, onDelete, projectId }) => {
     return result
   }, [features])
   return (
-    <div className='flex flex-col gap-2'>
+    <div className='flex flex-1 flex-col gap-2 overflow-hidden'>
       {features.length === 0 ? (
         <Empty message={t('empty.noList')} />
       ) : (
-        <div className='h-[calc(100vh-520px)] overflow-auto sm:h-[calc(100vh-550px)] md:h-[calc(100vh-540px)]'>
+        <div className='flex-1 overflow-auto'>
           <List sx={{ p: 0, gap: 2 }}>
             {photoList.map((row) => {
               return (

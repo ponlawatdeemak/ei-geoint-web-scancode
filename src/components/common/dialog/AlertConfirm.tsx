@@ -77,7 +77,7 @@ const AlertConfirm: React.FC<AlertConfirmProps> = ({
       slotProps={{
         paper: {
           className: 'rounded-xl',
-          sx: { minWidth: 340, maxWidth: 400, boxShadow: 3 },
+          sx: { minWidth: '21.25rem', maxWidth: '50%', boxShadow: 3 },
         },
       }}
     >

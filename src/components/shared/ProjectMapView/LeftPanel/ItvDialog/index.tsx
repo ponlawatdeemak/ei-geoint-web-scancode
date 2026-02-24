@@ -7,6 +7,7 @@ import * as Yup from 'yup'
 import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import InputLabel from '@/components/common/input/InputLabel'
+import useResponsive from '@/hook/responsive'
 
 interface ItvDialogProps {
   projectId: string
@@ -19,6 +20,7 @@ interface ItvDialogProps {
 
 const ItvDialog: FC<ItvDialogProps> = ({ onSave, onCancel, mode, layerType, values }) => {
   const { t } = useTranslation('common')
+  const { is2K } = useResponsive()
 
   const showUrl = useMemo(
     () => layerType === ItvLayerType.VECTOR_TILE || layerType === ItvLayerType.RASTER_TILE,
@@ -55,7 +57,7 @@ const ItvDialog: FC<ItvDialogProps> = ({ onSave, onCancel, mode, layerType, valu
   }
 
   return (
-    <Dialog fullWidth maxWidth='sm' open={true}>
+    <Dialog fullWidth maxWidth={is2K ? 'md' : 'sm'} open={true}>
       <DialogTitle>
         {mode === ItvMode.Add ? t('itv.label.add') : t('itv.label.edit')} {t(itvConfig[layerType]?.label || '')}
       </DialogTitle>

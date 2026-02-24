@@ -4,6 +4,7 @@ import TaskForm from './TaskForm'
 import { useTranslation } from 'react-i18next'
 import ProjectForm from './ProjectForm'
 import { ImageActionData } from '../../use-images'
+import useResponsive from '@/hook/responsive'
 
 interface Props {
   onClose: () => void
@@ -12,6 +13,7 @@ interface Props {
 
 const TaskCreator: FC<Props> = ({ onClose, imageData }) => {
   const { t } = useTranslation('common')
+  const { is2K } = useResponsive()
 
   const [showProjectForm, setShowProjectForm] = useState(false)
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null)
@@ -34,7 +36,7 @@ const TaskCreator: FC<Props> = ({ onClose, imageData }) => {
   }, [])
 
   return (
-    <Dialog open fullWidth maxWidth='sm'>
+    <Dialog open fullWidth maxWidth={is2K ? 'lg' : 'sm'}>
       <DialogTitle>
         {showProjectForm ? t('gallery.action.task.titleProject') : t('gallery.action.task.titleTask')}
       </DialogTitle>

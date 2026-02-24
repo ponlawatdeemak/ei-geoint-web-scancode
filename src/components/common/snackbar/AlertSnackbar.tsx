@@ -28,7 +28,7 @@ const AlertSnackbar: React.FC<AlertSnackbarProps> = ({ className = '', alertInfo
       )}
     >
       <Alert
-        className='!rounded-[10px] min-h-[66px] min-w-[300px] shadow-[6px_6px_10px_0_rgba(0,0,0,0.18)] [&_>div]:self-center'
+        className='!rounded-[10px] min-h-[66px] min-w-76 shadow-[6px_6px_10px_0_rgba(0,0,0,0.18)] [&_>div]:self-center'
         variant='filled'
         iconMapping={{
           success: <CheckCircle className='!h-9 !w-9' />,

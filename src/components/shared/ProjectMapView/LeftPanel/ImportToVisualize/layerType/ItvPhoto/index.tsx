@@ -179,7 +179,7 @@ const ItvPhoto: FC<Props> = ({
   }, [])
 
   return (
-    <div>
+    <div className='h-full'>
       {showDialog && (
         <ItvDialog
           projectId={projectId}
@@ -192,7 +192,7 @@ const ItvPhoto: FC<Props> = ({
       )}
 
       {showForm && (
-        <div>
+        <div className='flex h-full flex-col'>
           {layerInfo && (
             <PhotoUploader
               setPhotoList={setPhotoList}
@@ -204,7 +204,7 @@ const ItvPhoto: FC<Props> = ({
             />
           )}
 
-          <div className='mt-4 space-y-3 sm:mt-6 sm:space-y-4'>
+          <div className='mt-4 flex flex-1 flex-col space-y-3 overflow-hidden sm:mt-6 sm:space-y-4'>
             {layerInfo && (
               <PhotoList features={featureList} onEdit={onEditLatlng} onDelete={onDeletePhoto} projectId={projectId} />
             )}

@@ -14,6 +14,7 @@ export type Settings = {
   areaUnit: string
   lengthUnit: string
   sidebarCollapsed?: boolean
+  copyLocationType?: string
 }
 
 const SETTINGS_KEY = 'app_settings'
@@ -23,6 +24,7 @@ const defaultSettings: Settings = {
   areaUnit: 'sqkm',
   lengthUnit: 'km',
   sidebarCollapsed: false,
+  copyLocationType: 'DD',
 }
 
 function loadSettings(): Settings {
@@ -38,6 +40,7 @@ type SettingsStore = Settings & {
   setAreaUnit: (areaUnit: string) => void
   setLengthUnit: (lengthUnit: string) => void
   setSidebarCollapsed: (sidebarCollapsed: boolean) => void
+  setCopyLocationType: (copyLocationType: string) => void
 }
 
 export const useSettingsStore = create<SettingsStore>((set) => ({
@@ -72,6 +75,15 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setSidebarCollapsed: (sidebarCollapsed) => {
     set((state) => {
       const next = { ...state, sidebarCollapsed }
+      if (globalThis.window !== undefined) {
+        globalThis.localStorage.setItem(SETTINGS_KEY, JSON.stringify(next))
+      }
+      return next
+    })
+  },
+  setCopyLocationType: (copyLocationType) => {
+    set((state) => {
+      const next = { ...state, copyLocationType }
       if (globalThis.window !== undefined) {
         globalThis.localStorage.setItem(SETTINGS_KEY, JSON.stringify(next))
       }
@@ -120,9 +132,11 @@ export function useSettings() {
     areaUnit,
     lengthUnit,
     sidebarCollapsed,
+    copyLocationType: useSettingsStore((s) => s.copyLocationType),
     setLanguage: setLanguageAndI18n,
     setAreaUnit,
     setLengthUnit,
     setSidebarCollapsed,
+    setCopyLocationType: useSettingsStore((s) => s.setCopyLocationType),
   }
 }

@@ -512,7 +512,8 @@ const DrawForm: FC<Props> = ({ mapId, drawType, setDrawType, editingFeature, onS
 
   // ========== Effects: Pre-populate when editing ==========
   useEffect(() => {
-    if (!editingFeature || !editingFeature.geometry) return
+    if (!editingFeature) return
+    if (!editingFeature.geometry) return
 
     const feature: GeoJSON.Feature<GeoJSON.Geometry, GeoJSON.GeoJsonProperties> = {
       type: 'Feature',
@@ -586,13 +587,17 @@ const DrawForm: FC<Props> = ({ mapId, drawType, setDrawType, editingFeature, onS
     }
 
     if (key.toLowerCase().includes('color')) {
+      const sketchStyle = {
+        picker: { zoom: 2 },
+      } as any
       return (
         <div key={key} className='flex flex-col space-y-2'>
           <InputLabel required>{t(`itv.draw.${key}`) || key}</InputLabel>
           <div className='flex justify-center'>
             <SketchPicker
               disableAlpha={true}
-              className='w-[84%]! pb-5! shadow-none!'
+              styles={sketchStyle}
+              className='w-[84%]! pb-5! shadow-none! 2k:[&.sketch-picker>div:first-child]:pointer-events-none 2k:[&_.hue-horizontal]:pointer-events-none'
               color={(formValues[key] as string) ?? '#000000'}
               onChange={(color) => handleFieldChange(key, color.hex)}
             />

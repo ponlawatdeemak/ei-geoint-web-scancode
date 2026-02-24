@@ -160,7 +160,7 @@ const LayerGroupList: React.FC<Props> = ({
                               className={`ml-1 flex w-full items-center justify-between ${selectedGroup === group.groupId ? 'text-white' : ''}`}
                             >
                               <div
-                                className={`grid w-full ${isReordering ? 'grid-cols-[32px_1fr_40px] gap-4' : 'grid-cols-[16px_1fr_40px] gap-1'}`}
+                                className={`grid w-full ${isReordering ? 'grid-cols-[32px_1fr_40px] gap-4' : 'grid-cols-[1rem_1fr_2.5rem] gap-1'}`}
                               >
                                 <div className='flex items-center'>
                                   {isReordering ? (

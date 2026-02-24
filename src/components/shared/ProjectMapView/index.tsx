@@ -55,6 +55,7 @@ import { useDownloads } from './hooks/useDownloads'
 import { useFeaturePopup } from './hooks/useFeaturePopup'
 import ServiceIcon from './layer/LayerIcon/ServiceIcon'
 import RootModelIcon from './layer/LayerIcon/RootModelIcon'
+import useResponsive from '@/hook/responsive'
 
 type ProjectMapViewProps = {
   task?: Task // only in pageLevel task
@@ -75,6 +76,7 @@ export enum ActiveView {
 
 export type ProjectMapViewRef = {
   setActiveView: (view: ActiveView) => void
+  isEditingItv: boolean
 }
 
 const ProjectMapView = forwardRef<ProjectMapViewRef, ProjectMapViewProps>(
@@ -98,11 +100,13 @@ const ProjectMapView = forwardRef<ProjectMapViewRef, ProjectMapViewProps>(
     const task = propTask
     const profile = useProfileStore((state) => state.profile)
     const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+    const { is2K } = useResponsive()
     const { t, i18n } = useTranslation('common')
     const { showAlert } = useGlobalUI()
     const { loading } = useWeeklyMapStore()
     const { mapLibre } = useMapStore()
     const [isPanelOpen, setIsPanelOpen] = useState(false)
+    const [isEditingItv, setIsEditingItv] = useState(false)
     const [isWeeklyPanelOpen, setIsWeeklyPanelOpen] = useState(false)
     const [isPanelMinimized, setIsPanelMinimized] = useState(false)
     const [selectedGroup, setSelectedGroup] = useState<ProjectMapViewGroup | null>(null)
@@ -126,6 +130,7 @@ const ProjectMapView = forwardRef<ProjectMapViewRef, ProjectMapViewProps>(
     // Expose methods to parent via ref
     useImperativeHandle(ref, () => ({
       setActiveView,
+      isEditingItv,
     }))
 
     // Extract all layers from featureLayers
@@ -519,8 +524,8 @@ const ProjectMapView = forwardRef<ProjectMapViewRef, ProjectMapViewProps>(
           <Box
             className='flex h-full flex-col items-center gap-2 border-x border-r-(--color-gray-border) bg-(--color-background-dark) transition-all duration-300'
             sx={{
-              width: showPanelLeft ? '60px' : '0',
-              minWidth: showPanelLeft ? '60px' : '0',
+              width: showPanelLeft ? '4rem' : '0',
+              minWidth: showPanelLeft ? '4rem' : '0',
               padding: showPanelLeft ? '1rem' : '0',
               opacity: showPanelLeft ? 1 : 0,
             }}
@@ -529,6 +534,7 @@ const ProjectMapView = forwardRef<ProjectMapViewRef, ProjectMapViewProps>(
               activeView={activeView}
               setActiveView={setActiveView}
               weeklySubscriptionModel={weeklySubscriptionModel}
+              isEditingItv={isEditingItv}
             />
           </Box>
         )}
@@ -539,10 +545,10 @@ const ProjectMapView = forwardRef<ProjectMapViewRef, ProjectMapViewProps>(
             }`}
             sx={{
               position: isMobile ? 'absolute' : 'relative',
-              zIndex: isMobile ? (showPanelLeft ? 40 : -1) : 20,
+              zIndex: isMobile ? (showPanelLeft ? 120 : -1) : 20,
               width: isMobile ? (showPanelLeft ? '100%' : '0') : showPanelLeft ? '30%' : '0',
-              maxWidth: isMobile ? 'auto' : showPanelLeft ? '480px' : '0',
-              minWidth: isMobile ? '0' : showPanelLeft ? '384px' : '0',
+              maxWidth: isMobile ? 'auto' : showPanelLeft ? '30rem' : '0',
+              minWidth: isMobile ? '0' : showPanelLeft ? '24rem' : '0',
               opacity: showPanelLeft ? 1 : 0,
               pointerEvents: showPanelLeft ? 'auto' : 'none',
             }}
@@ -597,6 +603,7 @@ const ProjectMapView = forwardRef<ProjectMapViewRef, ProjectMapViewProps>(
               mapId={mapId}
               mapLibre={mapLibre}
               onUpdateItvLayers={setAllItvLayers}
+              onEditingItvChange={setIsEditingItv}
             />
           </Box>
 
@@ -631,7 +638,7 @@ const ProjectMapView = forwardRef<ProjectMapViewRef, ProjectMapViewProps>(
                 }
               }}
               floatingPanel={
-                <Box className='fixed bottom-8 left-1/2 z-35 w-[90%] -translate-x-1/2 pr-[8%] sm:pr-[6%] md:relative md:bottom-auto md:left-auto md:flex md:max-h-full md:w-112.5 md:translate-x-0 md:flex-col md:pr-0 md:pb-15'>
+                <Box className='fixed bottom-8 left-1/2 z-[110] w-[90%] -translate-x-1/2 pr-[8%] sm:pr-[6%] md:relative md:bottom-auto md:left-auto md:flex md:max-h-full md:w-md md:-translate-x-0 md:flex-col md:pr-0 md:pb-15'>
                   {activeView === ActiveView.weekly && weeklyOverlay}
                   <FloatingPanel
                     title={selectedGroup ? selectedGroup.groupName : ''}
@@ -673,7 +680,7 @@ const ProjectMapView = forwardRef<ProjectMapViewRef, ProjectMapViewProps>(
             )}
 
             {/* Floating action buttons shown when a group is opened */}
-            {selectedGroup?.rootModelId === RootModelConfig.changeDetection && selectedGroup && (
+            {activeView !== ActiveView.weekly && selectedGroup?.rootModelId === RootModelConfig.changeDetection && selectedGroup && (
               <GroupCompareButtons
                 selectedGroup={selectedGroup}
                 currentMapExtent={currentMapExtent}

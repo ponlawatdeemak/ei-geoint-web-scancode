@@ -110,7 +110,7 @@ const SearchResult: React.FC<SearchResultProps> = ({ onSelected }) => {
   }, [profile])
 
   return (
-    <Paper sx={{ width: '100%', boxShadow: 'none' }}>
+    <Paper sx={{ width: '100%', boxShadow: 'none', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       {loading ? (
         <Box className='flex items-center justify-center p-4'>
           <CircularProgress />
@@ -143,7 +143,7 @@ const SearchResult: React.FC<SearchResultProps> = ({ onSelected }) => {
               </Box>
             </IconButton>
           </Box>
-          <List sx={{ p: 0 }}>
+          <List sx={{ p: 0, overflowY: 'auto', flex: 1 }}>
             {data.map((row, i) => {
               const isSelected = selectedData && selectedData.date === row.date
               const modelData = txtModel(row, selectedModels)

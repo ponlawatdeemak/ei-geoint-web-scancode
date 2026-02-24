@@ -365,7 +365,7 @@ const SearchPanel = ({ onChange, loading = false, children }: SearchPanelProps) 
   )
 
   return (
-    <div className='flex w-full flex-col gap-4 p-4 lg:h-[96px] lg:flex-row lg:justify-between lg:p-0 2xl:h-[40px]'>
+    <div className='flex w-full flex-col gap-4 p-4 lg:h-24 lg:flex-row lg:justify-between lg:p-0 2xl:h-10'>
       <div className='md:flex md:flex-col md:gap-4 lg:w-[80%] 2xl:flex-row'>
         <div className='flex flex-1 gap-2'>
           <Autocomplete
@@ -405,7 +405,7 @@ const SearchPanel = ({ onChange, loading = false, children }: SearchPanelProps) 
             )}
           />
 
-          <IconButton onClick={openFilterDialog} size='small' className='md:!hidden'>
+          <IconButton onClick={openFilterDialog} size='small' className='md:hidden!'>
             <FilterAltOutlinedIcon />
           </IconButton>
         </div>
@@ -421,7 +421,7 @@ const SearchPanel = ({ onChange, loading = false, children }: SearchPanelProps) 
         </div>
       </div>
 
-      <div className='hidden lg:block lg:w-[80px]'>{children}</div>
+      <div className='hidden lg:block lg:w-20'>{children}</div>
       <Dialog open={filterDialogOpen} onClose={closeFilterDialog} fullWidth maxWidth='sm'>
         <DialogTitle>{t('filter.dialogTitle')}</DialogTitle>
         <DialogContent>

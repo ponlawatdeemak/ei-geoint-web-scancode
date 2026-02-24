@@ -4,17 +4,31 @@ import LayersIcon from '@mui/icons-material/Layers'
 import DateRangeIcon from '@mui/icons-material/DateRange'
 import { useTranslation } from 'react-i18next'
 import { ActiveView } from '.'
+import { useGlobalUI } from '@/providers/global-ui/GlobalUIContext'
 
 type Props = {
   activeView: number
   setActiveView: (v: number) => void
   weeklySubscriptionModel?: unknown[]
+  isEditingItv?: boolean
 }
 
-const LeftSidebarButtons: React.FC<Props> = ({ activeView, setActiveView, weeklySubscriptionModel }) => {
+const LeftSidebarButtons: React.FC<Props> = ({ activeView, setActiveView, weeklySubscriptionModel, isEditingItv }) => {
+  const { showAlert } = useGlobalUI()
   const { t } = useTranslation('common')
 
   const isDisabled = !weeklySubscriptionModel || weeklySubscriptionModel.length === 0
+
+  const handleWeeklyClick = () => {
+    if (isEditingItv) {
+      showAlert?.({
+        status: 'warning',
+        content: t('alert.closeItvLayerFirst'),
+      })
+      return
+    }
+    setActiveView(ActiveView.weekly)
+  }
 
   return (
     <>
@@ -33,7 +47,7 @@ const LeftSidebarButtons: React.FC<Props> = ({ activeView, setActiveView, weekly
           size='small'
           variant={activeView === ActiveView.weekly ? 'contained' : 'outlined'}
           className={`h-11.25 w-11.25 min-w-0! border-transparent! ${isDisabled ? '' : 'text-white!'}`}
-          onClick={() => setActiveView(ActiveView.weekly)}
+          onClick={handleWeeklyClick}
           disabled={isDisabled}
         >
           <DateRangeIcon />

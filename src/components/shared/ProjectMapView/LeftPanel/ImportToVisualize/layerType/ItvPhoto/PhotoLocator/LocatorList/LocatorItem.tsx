@@ -38,7 +38,7 @@ const LocatorItem: FC<LocatorItemProps> = ({ photo, onClick, selected, currentTa
       onClick={() => onClick?.(photo)}
       className={`flex cursor-pointer flex-col items-center justify-center py-2 hover:bg-[#E0E9FF] lg:px-4`}
     >
-      <div className='relative flex aspect-7/5 w-full max-w-[300px] items-center justify-center overflow-hidden'>
+      <div className='relative flex aspect-7/5 w-full max-w-76 items-center justify-center overflow-hidden'>
         {thumbnailUrl && (
           <Image fill src={thumbnailUrl} alt={'Photo Thumbnail'} draggable={false} className='object-contain' />
         )}
@@ -50,8 +50,8 @@ const LocatorItem: FC<LocatorItemProps> = ({ photo, onClick, selected, currentTa
       </div>
       <div className='flex w-full flex-wrap items-center justify-center pt-2 pb-1'>
         <Tooltip title={photo.fileName || ''} arrow>
-          <div className='flex min-w-0 items-center truncate text-[12px]'>
-            <span className='max-w-[200px] truncate'>{photo.fileName}</span>
+          <div className='flex min-w-0 items-center truncate text-xs'>
+            <span className='max-w-50 truncate'>{photo.fileName}</span>
           </div>
         </Tooltip>
       </div>

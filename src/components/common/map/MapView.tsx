@@ -233,11 +233,9 @@ export function MapView({
       />
 
       {floatingPanel && (
-        <div className='pointer-events-none absolute inset-0 z-30'>
+        <div className='pointer-events-none absolute inset-0 z-[110]'>
           <div className='absolute top-4 right-4 bottom-4 flex flex-col justify-start pointer-events-none'>
-            <div className='pointer-events-auto max-h-full flex flex-col w-auto'>
-              {floatingPanel}
-            </div>
+            <div className='pointer-events-auto max-h-full flex flex-col w-auto'>{floatingPanel}</div>
           </div>
         </div>
       )}

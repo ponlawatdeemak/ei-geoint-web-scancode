@@ -8,11 +8,7 @@ interface UseTaskDisplayModeProps {
   isLayerLoading: boolean
 }
 
-export const useTaskDisplayMode = ({
-  projectMapViewRef,
-  isLayerLoading,
-}: UseTaskDisplayModeProps) => {
-
+export const useTaskDisplayMode = ({ projectMapViewRef, isLayerLoading }: UseTaskDisplayModeProps) => {
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()

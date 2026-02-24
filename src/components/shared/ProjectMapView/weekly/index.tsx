@@ -348,7 +348,7 @@ const Weekly: React.FC<WeeklyProps> = ({
     }
 
     return (
-      <Box className='absolute bottom-0 left-2 z-35 w-[88%] sm:w-[95%] md:top-0 md:bottom-auto md:left-auto md:w-112.5 md:translate-x-0'>
+      <Box className='absolute bottom-0 left-2 z-[105] w-[88%] sm:w-[95%] md:top-0 md:bottom-auto md:left-auto md:w-112.5 md:translate-x-0'>
         <FloatingPanel
           icon={
             <span
@@ -691,7 +691,7 @@ const Weekly: React.FC<WeeklyProps> = ({
 
   return (
     <Box className='flex h-full w-full flex-col'>
-      <Box className='mb-2 flex flex-1 flex-col pb-5'>
+      <Box className='mb-2 flex min-h-0 flex-1 flex-col'>
         <SearchContainer onSelected={handleOnSelected} />
       </Box>
     </Box>

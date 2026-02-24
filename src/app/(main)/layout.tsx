@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import Header from '@/components/layout/Header'
 import { useProfileStore, fetchAndStoreProfile } from '@/hook/useProfileStore'
 import UploadProgress from '../../components/common/display/UploadProgress'
@@ -11,10 +11,13 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   }, [])
 
   const profile = useProfileStore((state) => state.profile)
+  const isSafari = useMemo(() => {
+    return navigator?.userAgent?.includes('Safari') && !navigator?.userAgent?.includes('Chrome')
+  }, [])
 
   return (
-    <div className='flex min-h-screen flex-col'>
-      <div className='flex flex-shrink-0'>
+    <div className={`${isSafari ? 'is-safari' : ''} flex min-h-screen flex-col`}>
+      <div className='flex shrink-0'>
         <Header />
       </div>
       <div className='flex-1 overflow-hidden'>

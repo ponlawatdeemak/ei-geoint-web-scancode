@@ -18,6 +18,7 @@ import dayjs from 'dayjs'
 import { FC, memo, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ImageActionData } from '../../use-images'
+import useResponsive from '@/hook/responsive'
 
 type TagOption = { id: string; name: string } | string
 
@@ -31,6 +32,7 @@ type Props = {
 
 const UpdateImage: FC<Props> = ({ visible, setVisible, imageId, imageData, onSuccess }) => {
   const { t } = useTranslation('common')
+  const { is2K } = useResponsive()
   const [tagSuggestions, setTagSuggestions] = useState<Array<{ id: string; name: string }>>([])
   const tagFetchTimerRef = useRef<number | null>(null)
   const [loading, setLoading] = useState(false)
@@ -74,7 +76,7 @@ const UpdateImage: FC<Props> = ({ visible, setVisible, imageId, imageData, onSuc
   }
 
   return (
-    <Dialog open={visible} maxWidth='sm' fullWidth>
+    <Dialog open={visible} maxWidth={is2K ? 'md' : 'sm'} fullWidth>
       <DialogTitle>{t('gallery.action.edit.title')}</DialogTitle>
       <DialogContent>
         <div className='flex flex-col gap-4'>

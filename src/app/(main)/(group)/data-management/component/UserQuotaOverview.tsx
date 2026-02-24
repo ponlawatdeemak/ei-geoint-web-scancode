@@ -132,12 +132,12 @@ const UserCountCard = ({ icon, label, count, limit, percent }: UserCountCardProp
           {isUnlimited ? (
             <>
               <span className='font-bold text-sm md:text-lg'>{count}</span>
-              <span className='text-[#4F524F] text-[8px] md:text-[10px]'>{t('dataManagement.unlimited')}</span>
+              <span className='text-[#4F524F] text-[0.5rem] md:text-[0.625rem]'>{t('dataManagement.unlimited')}</span>
             </>
           ) : (
             <>
               <span className='font-bold text-xs md:text-sm'>{percent}%</span>
-              <span className='text-[#4F524F] text-[8px] md:text-[10px]'>
+              <span className='text-[#4F524F] text-[0.5rem] md:text-[0.625rem]'>
                 {count}/{limit}
               </span>
             </>

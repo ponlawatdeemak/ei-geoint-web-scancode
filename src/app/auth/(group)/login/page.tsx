@@ -25,6 +25,7 @@ const LoginPage = () => {
     showLoading()
     try {
       const data = await service.auth.login({ userName: username, password })
+      console.log('data', data)
       setOtpToken(data.token)
       setOtpEmail(data.email)
       setOtpRef(data.ref)

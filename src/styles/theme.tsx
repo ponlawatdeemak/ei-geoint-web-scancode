@@ -1,7 +1,18 @@
 'use client'
-import { createTheme } from '@mui/material/styles'
+import { createTheme, responsiveFontSizes } from '@mui/material/styles'
+declare module '@mui/material/styles' {
+  interface BreakpointOverrides {
+    xs: true // removes default breakpoints if you don't want them
+    sm: true
+    md: true
+    lg: true
+    xl: true
+    '2k': true
+    '4k': true
+  }
+}
 
-const theme = createTheme({
+let theme = createTheme({
   cssVariables: true,
   breakpoints: {
     values: {
@@ -10,10 +21,13 @@ const theme = createTheme({
       md: 768,
       lg: 1024,
       xl: 1280,
+      '2k': 2160,
+      '4k': 3840,
     },
   },
   typography: {
     fontFamily: 'var(--font)',
+    htmlFontSize: 16,
   },
   palette: {
     primary: {
@@ -183,4 +197,126 @@ const theme = createTheme({
   },
 })
 
-export default theme
+const isSafari = navigator?.userAgent?.includes('Safari') && !navigator?.userAgent?.includes('Chrome')
+
+theme = createTheme(theme, {
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        svg: {
+          [theme.breakpoints.up('2k')]: {
+            fontSize: isSafari ? '0.8rem !important' : '1.5rem',
+          },
+          //   [theme.breakpoints.up('4k')]: {
+          //     fontSize: '1.5rem !important',
+          //   },
+        },
+        html: {
+          [theme.breakpoints.up('2k')]: {
+            fontSize: '150%',
+          },
+          [theme.breakpoints.up('4k')]: {
+            fontSize: '200%',
+          },
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          [theme.breakpoints.up('2k')]: {
+            height: '1.5rem',
+          },
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          borderRadius: 4, // Mobile default
+          [theme.breakpoints.up('2k')]: {
+            borderRadius: 6, // Desktop expansion
+          },
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          [theme.breakpoints.up('2k')]: {
+            minWidth: 96,
+            padding: '9px 24px',
+          },
+        },
+        startIcon: {
+          [theme.breakpoints.up('2k')]: {
+            '& > *:nth-of-type(1)': {
+              fontSize: '1.5rem !important',
+            },
+          },
+        },
+      },
+    },
+    MuiDialogPaper: {
+      styleOverrides: {
+        root: {
+          [theme.breakpoints.up('2k')]: {
+            maxWidth: '1024px',
+          },
+        },
+        paper: {
+          [theme.breakpoints.up('2k')]: {
+            maxWidth: '1024px',
+          },
+        },
+      },
+    },
+    MuiDialogTitle: {
+      styleOverrides: {
+        root: {
+          [theme.breakpoints.up('2k')]: {
+            padding: '24px 36px',
+          },
+        },
+      },
+    },
+    MuiDialogActions: {
+      styleOverrides: {
+        root: {
+          [theme.breakpoints.up('2k')]: {
+            padding: 12,
+          },
+        },
+      },
+    },
+    MuiMenuItem: {
+      styleOverrides: {
+        root: {
+          [theme.breakpoints.up('2k')]: {
+            padding: '9px 24px',
+          },
+        },
+      },
+    },
+    MuiDateCalendar: {
+      styleOverrides: {
+        root: {
+          [theme.breakpoints.up('2k')]: {
+            width: '15rem',
+          },
+        },
+      },
+    },
+    MuiAutocomplete: {
+      styleOverrides: {
+        root: {
+          '.MuiInputAdornment-root': {
+            maxHeight: '1em !important',
+          },
+        },
+      },
+    },
+  },
+})
+
+export default responsiveFontSizes(theme)

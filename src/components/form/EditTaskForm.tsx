@@ -68,6 +68,7 @@ import { ImagesMode } from '../common/images/images'
 import { ProcessCompleteIcon } from '../common/images/svg'
 import SarAnalysisAreaForm from '@/components/form/SarAnalysisAreaForm'
 import { nanoid } from 'nanoid'
+import useResponsive from '@/hook/responsive'
 
 type Props = {
   projectId?: string
@@ -110,15 +111,16 @@ const ImagePreview: React.FC<{
   loading?: boolean
   viewOnly?: boolean
 }> = ({ image, onRemove, language, titleLabel, captureDateLabel, hashtagLabel, formatDateFn, loading, viewOnly }) => {
+  const { is2K } = useResponsive()
   if (!image) return null
   return (
     <div className='relative flex flex-col items-start rounded-lg bg-(--color-background-default) sm:flex-row'>
-      <div className='relative h-24 w-full flex-shrink-0 overflow-hidden rounded sm:m-4 sm:w-24'>
+      <div className='relative h-24 w-full shrink-0 overflow-hidden rounded sm:m-4 sm:w-24'>
         {image.imageUrl ? (
           <Image className='object-cover' src={image.imageUrl} alt={image.image.name} fill />
         ) : (
           <div className='flex h-full w-full items-center justify-center sm:h-auto'>
-            <ProcessCompleteIcon width={70} height={70} />
+            <ProcessCompleteIcon width={is2K ? 105 : 70} height={is2K ? 105 : 70} />
           </div>
         )}
       </div>
@@ -1380,7 +1382,7 @@ const EditTaskForm: React.FC<Props> = ({
           '& .MuiDialog-paper': {
             width: '100%',
             maxWidth: 'none',
-            [theme.breakpoints.up('md')]: { width: '90%' },
+            [theme.breakpoints.up('md')]: { width: '90%', height: '90%' },
           },
         }}
       >

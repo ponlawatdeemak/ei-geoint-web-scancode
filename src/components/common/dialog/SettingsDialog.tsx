@@ -11,6 +11,7 @@ import { useSettings, languageFlags } from '@/hook/useSettings'
 import { useTranslation } from 'react-i18next'
 import InputLabel from '@/components/common/input/InputLabel'
 import { Divider } from '@mui/material'
+import useResponsive from '@/hook/responsive'
 
 export const areaUnits = [
   { code: 'rai', label: 'unit.area.rai', abbr: 'unit.area.raiAbbr' },
@@ -34,6 +35,7 @@ const SettingsDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ open
   const { t } = useTranslation('common')
   const { language, setLanguage, areaUnit, setAreaUnit, lengthUnit, setLengthUnit } = useSettings()
   const [form, setForm] = useState({ language, areaUnit, lengthUnit })
+  const { is2K } = useResponsive()
 
   useEffect(() => {
     if (open) {
@@ -49,7 +51,7 @@ const SettingsDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ open
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth='xs' fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth={is2K ? 'md' : 'xs'} fullWidth>
       <DialogTitle>{t('form.settings.formTitle')}</DialogTitle>
       <DialogContent>
         <div className='grid gap-2'>

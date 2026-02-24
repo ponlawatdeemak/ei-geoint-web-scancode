@@ -58,9 +58,13 @@ const importToVisualizeApi = {
     const params = new URLSearchParams()
     if (isNative) params.append('isNative', 'true')
     const queryString = params.toString() ? `?${params.toString()}` : ''
-    const response = await api.get(`/thaicom-image-geotag/get-thumbnail/${query.uploadId}${queryString}`, APIService.WebAPI, {
-      responseType: 'blob',
-    })
+    const response = await api.get(
+      `/thaicom-image-geotag/get-thumbnail/${query.uploadId}${queryString}`,
+      APIService.WebAPI,
+      {
+        responseType: 'blob',
+      },
+    )
     return response.data
   },
   async getDownload(query: GetDownloadDtoIn): Promise<GetDownloadDtoOut> {

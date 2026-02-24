@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useForm, Controller, type Resolver } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as Yup from 'yup'
-import { useProfileStore } from '@/hook/useProfileStore'
+import { useProfileStore, fetchAndStoreProfile } from '@/hook/useProfileStore'
 import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
 import FormControl from '@mui/material/FormControl'
@@ -103,6 +103,25 @@ const EditUserForm: React.FC<Props> = ({ userId }) => {
       setOrganizations(orgs)
     }
 
+    const determineViewOnlyMode = (fetchedUser: any) => {
+      if (!userId || profile?.roleId === undefined || fetchedUser.roleId === undefined) {
+        return false
+      }
+
+      const pRoleId = Number(profile.roleId)
+      const fRoleId = Number(fetchedUser.roleId)
+
+      const isThcomAdminEdit = pRoleId === Roles.admin && fRoleId === Roles.admin
+      const isSuperAdminEdit =
+        pRoleId === Roles.superAdmin && fRoleId === Roles.superAdmin && profile.id === fetchedUser.id
+
+      if (isThcomAdminEdit || isSuperAdminEdit) {
+        return false
+      }
+
+      return pRoleId >= fRoleId
+    }
+
     const populateUser = async (id?: string) => {
       if (!id) return
       const fetched = await service.users.get(id)
@@ -125,22 +144,7 @@ const EditUserForm: React.FC<Props> = ({ userId }) => {
           fetched.userSubscriptions.map((s) => s.subscriptionId),
         )
       }
-      // set view-only mode when current profile's roleId is greater-equal than
-      // the fetched user's roleId (editing mode only)
-      if (userId && profile?.roleId !== undefined && fetched.roleId !== undefined) {
-        const pRoleId = Number(profile.roleId)
-        const fRoleId = Number(fetched.roleId)
-
-        const isThcomAdminEdit = pRoleId === Roles.admin && fRoleId === Roles.admin
-        const isSuperAdminEdit =
-          pRoleId === Roles.superAdmin && fRoleId === Roles.superAdmin && profile.id === fetched.id
-
-        if (isThcomAdminEdit || isSuperAdminEdit) {
-          setViewOnly(false)
-        } else {
-          setViewOnly(pRoleId >= fRoleId)
-        }
-      }
+      setViewOnly(determineViewOnlyMode(fetched))
       setShowResendPasswordButton(fetched.isLoginFirstTime)
     }
 
@@ -207,6 +211,11 @@ const EditUserForm: React.FC<Props> = ({ userId }) => {
           isActive: data.isActive,
           subscriptionIds: data.subscriptionIds ?? [],
         })
+
+        // If editing current user, sync profile to zustand store
+        if (userId === profile.id) {
+          await fetchAndStoreProfile()
+        }
       } else {
         await service.users.create({
           roleId: data.roleId as number,

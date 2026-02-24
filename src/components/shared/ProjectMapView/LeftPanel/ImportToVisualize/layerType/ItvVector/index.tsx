@@ -163,7 +163,7 @@ const ItvVector: FC<Props> = ({
   }, [])
 
   return (
-    <div>
+    <div className='h-full'>
       {showDialog && (
         <ItvDialog
           projectId={projectId}
@@ -176,7 +176,7 @@ const ItvVector: FC<Props> = ({
       )}
 
       {showForm && (
-        <div>
+        <div className='flex h-full flex-col overflow-hidden'>
           {layerInfo && (
             <VectorUploader
               layerInfo={layerInfo}
@@ -186,7 +186,7 @@ const ItvVector: FC<Props> = ({
             />
           )}
 
-          <div className='mt-4 space-y-3 sm:mt-6 sm:space-y-4'>
+          <div className='mt-4 flex flex-1 flex-col space-y-3 overflow-hidden sm:mt-6 sm:space-y-4'>
             {layerInfo && <VectorList features={featureList} onDelete={onDeleteVector} projectId={projectId} />}
 
             <div className='flex flex-col gap-4'>

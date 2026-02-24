@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/a11y/useSemanticElements: <explanation> */
 'use client'
 
-import React, { useMemo, useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { IconButton, Tooltip } from '@mui/material'
 import EditIcon from '@mui/icons-material/Edit'
@@ -11,6 +11,8 @@ import ms from 'milsymbol'
 import { AnnotationItem, AnnotationLabelItem } from '@interfaces/entities'
 import { useTranslation } from 'react-i18next'
 import { cropCanvasImage } from '@/utils/crop-image'
+import useResponsive from '@/hook/responsive'
+import Empty from '@/components/common/empty'
 
 const getSymbolUrlAsync = (sidc: string, annotationLabel: AnnotationLabelItem, size: number): Promise<string> => {
   try {
@@ -33,7 +35,7 @@ const getSymbolUrlAsync = (sidc: string, annotationLabel: AnnotationLabelItem, s
     const svgString = sym.asSVG()
     const svg = new Blob([svgString], { type: 'image/svg+xml' })
     const url = URL.createObjectURL(svg)
-    const img = new window.Image(width, height)
+    const img = new globalThis.Image(width, height)
 
     return new Promise<string>((resolve) => {
       img.onload = () => {
@@ -69,6 +71,7 @@ const ItemsList: React.FC<{
 }> = ({ itemList, onDelete, onEdit, onItemClick }) => {
   const [itemsWithIcon, setItemsWithIcon] = useState<(AnnotationItem & { iconUrl: string })[]>([])
   const { t } = useTranslation('common')
+  const { is2K } = useResponsive()
 
   // Generate symbol URLs asynchronously
   useEffect(() => {
@@ -99,9 +102,8 @@ const ItemsList: React.FC<{
 
   if (itemsWithIcon.length === 0) {
     return (
-      <div className='flex flex-col items-center justify-center gap-2 py-6'>
-        <InboxIcon className='text-(--color-gray-border)' sx={{ fontSize: 60 }} />
-        <p className='text-center text-[#B3B5B3] text-sm'>ไม่มีรายการวาด</p>
+      <div className='flex h-full flex-col items-center justify-center gap-2 py-6'>
+        <Empty message={t('empty.noList')} />
       </div>
     )
   }
@@ -122,7 +124,16 @@ const ItemsList: React.FC<{
           }}
         >
           <div className='flex items-center gap-2 overflow-hidden'>
-            {item.iconUrl && <Image src={item.iconUrl} alt={item.id} width={20} height={20} className='shrink-0' />}
+            {item.iconUrl && (
+              <Image
+                src={item.iconUrl}
+                alt={item.id}
+                style={{ width: '1.25rem' }}
+                width={20}
+                height={20}
+                className='shrink-0'
+              />
+            )}
             <p className='truncate font-medium text-sm'>{item.annotationSymbol?.icon?.name}</p>
           </div>
           <div className='flex items-center gap-0'>

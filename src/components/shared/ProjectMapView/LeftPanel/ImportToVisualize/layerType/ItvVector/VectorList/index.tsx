@@ -22,11 +22,11 @@ const VectorList: FC<Props> = ({ features, onDelete, projectId }) => {
     })
   }, [features])
   return (
-    <div className='flex flex-col gap-2'>
+    <div className='flex flex-1 flex-col gap-2 overflow-hidden'>
       {features.length === 0 ? (
         <Empty message={t('empty.noList')} />
       ) : (
-        <div className='h-[calc(100vh-510px)] overflow-auto sm:h-[calc(100vh-550px)] md:h-[calc(100vh-540px)]'>
+        <div className='h-full overflow-auto'>
           <List sx={{ p: 0, gap: 2 }}>
             {vectorList.map((row, i) => {
               return <VectorItem key={i} feature={row} onDelete={onDelete} projectId={projectId} />

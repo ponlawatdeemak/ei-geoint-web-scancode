@@ -69,7 +69,7 @@ const PhotoViewer: FC<PhotoViewerProps> = ({ imageList, onClose, startIndex }) =
             urls[feature.photoUploadId] = URL.createObjectURL(thumbBlob)
             native[feature.photoUploadId] = URL.createObjectURL(nativeBlob)
           }
-        })
+        }),
       )
       setThumbnailUrls(urls)
       setNativeUrls(native)

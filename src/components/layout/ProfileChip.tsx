@@ -62,7 +62,7 @@ const ProfileChip = ({ className, disabled, ...props }: ButtonProps) => {
         />
         <Divider className='my-1' />
         <MenuItem className='rounded-sm! text-error!' onClick={() => signOut()}>
-          <ListItemIcon className='text-inherit!'>
+          <ListItemIcon className='2k:mr-2 text-inherit!'>
             <LogoutIcon fontSize='small' />
           </ListItemIcon>
           <ListItemText>{t('menu.signOut')}</ListItemText>

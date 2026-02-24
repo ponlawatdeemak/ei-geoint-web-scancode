@@ -39,7 +39,7 @@ const SearchContainer: React.FC<SearchContainerProps> = ({ onSelected }) => {
   }
 
   return (
-    <Box p={0} className='h-full flex flex-col'>
+    <Box p={0} className='flex h-full min-h-0 flex-col'>
       {currentView === 'select-area' && (
         <SelectAreaForm
           onBack={() => {

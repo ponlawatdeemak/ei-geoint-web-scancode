@@ -90,11 +90,12 @@ const LayerMenu: FC<LayerMenuProps> = ({ group, selectedGroup, pageLevel, onDown
                   setMenuGroup(null)
                   router.push(`/project/${group.projectId}/task/${group.taskId}/map`)
                 }}
+                className='2k:gap-2'
               >
                 <ListItemIcon>
                   <PublicIcon fontSize='small' />
                 </ListItemIcon>
-                {t('button.openMap')}
+                <ListItemText>{t('button.openMap')}</ListItemText>
               </MenuItem>
             )}
             {isTaskLayer && !isViewer && (
@@ -105,11 +106,12 @@ const LayerMenu: FC<LayerMenuProps> = ({ group, selectedGroup, pageLevel, onDown
                   setMenuGroup(null)
                   onDownloadGroup(group.groupId)
                 }}
+                className='2k:gap-2'
               >
                 <ListItemIcon>
                   <DownloadIcon fontSize='small' />
                 </ListItemIcon>
-                {t('button.download')}
+                <ListItemText>{t('button.download')}</ListItemText>
               </MenuItem>
             )}
             {isTaskLayer && isOrgApiSharingEnabled && !isViewer && (
@@ -119,11 +121,12 @@ const LayerMenu: FC<LayerMenuProps> = ({ group, selectedGroup, pageLevel, onDown
                   setMenuAnchorEl(null)
                   setShowShareApiDialog(true)
                 }}
+                className='2k:gap-2'
               >
                 <ListItemIcon>
                   <ShareIcon fontSize='small' />
                 </ListItemIcon>
-                {t('dialog.shareApi.title')}
+                <ListItemText>{t('dialog.shareApi.title')}</ListItemText>
               </MenuItem>
             )}
             {itvMenu?.map((item) => (
@@ -135,7 +138,7 @@ const LayerMenu: FC<LayerMenuProps> = ({ group, selectedGroup, pageLevel, onDown
                   setMenuGroup(null)
                   onMenuSelect(item, group)
                 }}
-                className={item.value === ItvMenuType.delete ? 'text-error!' : ''}
+                className={`2k:gap-2 ${item.value === ItvMenuType.delete ? 'text-error!' : ''}`}
               >
                 <ListItemIcon>{item.icon}</ListItemIcon>
                 <ListItemText>{t(item.label)}</ListItemText>

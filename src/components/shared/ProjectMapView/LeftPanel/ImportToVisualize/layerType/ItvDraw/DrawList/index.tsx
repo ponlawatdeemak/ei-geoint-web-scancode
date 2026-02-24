@@ -139,7 +139,7 @@ const DrawList: FC<Props> = ({ features, onEdit, onDelete, mapId }) => {
                   key={row.id}
                   onClick={() => onListItemClick(row)}
                   className={classNames(
-                    'group border-white border-b-2 bg-(--color-background-light) pr-1! pl-4! last:border-b-0',
+                    'group 2k:gap-2 border-white border-b-2 bg-(--color-background-light) pr-1! pl-4! last:border-b-0',
                     {
                       'cursor-pointer hover:bg-(--color-background-dark) hover:text-white': row.geometry,
                     },

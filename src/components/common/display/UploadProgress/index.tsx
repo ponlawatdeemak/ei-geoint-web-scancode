@@ -16,10 +16,12 @@ import { usePathname } from 'next/navigation'
 import { checkIsInProgress, ImageUploadStep } from '../../images/images'
 import LinearProgressWithLabel from './LinearProgressWithLabel'
 import { SearchImagesResultItem } from '@interfaces/dto/images'
+import useResponsive from '@/hook/responsive'
 
 const UploadProgress = () => {
   const [isMinimized, setIsMinimized] = useState(false)
   const [messages, setMessages] = useState<string[]>([])
+  const { is2K } = useResponsive()
 
   const {
     imageProcessData,
@@ -295,10 +297,10 @@ const UploadProgress = () => {
         <div
           style={{ boxShadow: '0px 3px 5px -1px #00000033, 0px 6px 10px 0px #00000024, 0px 1px 18px 0px #0000001F' }}
           className={classNames(
-            'fixed right-4 bottom-18 z-50 w-[300px] rounded-sm bg-white px-4',
+            'fixed right-4 bottom-18 z-50 w-76 rounded-sm bg-white px-4',
             'transition-all duration-200 ease-in-out',
 
-            { 'h-[55px]': isMinimized, 'h-[140px]': !isMinimized },
+            { 'h-14': isMinimized, 'h-36': !isMinimized },
           )}
         >
           {isMinimized ? (
@@ -306,7 +308,7 @@ const UploadProgress = () => {
               {uploadStep === ImageUploadStep.Upload ? (
                 <div className='mr-2 flex flex-1 items-center gap-2'>
                   <LinearProgress className='flex-1' variant='determinate' value={uploadProgress} />
-                  <Typography variant='body2' className='!font-semibold !text-gray min-w-[35px]'>
+                  <Typography variant='body2' className='min-w-9 font-semibold! text-gray!'>
                     {`${Math.round(uploadProgress)}%`}
                   </Typography>
                 </div>
@@ -327,7 +329,7 @@ const UploadProgress = () => {
           ) : (
             <div className='relative h-full w-full'>
               <IconButton
-                className='!absolute !right-0'
+                className='absolute! right-0!'
                 onClick={(e) => {
                   e.stopPropagation()
                   setIsMinimized(!isMinimized)
@@ -341,12 +343,16 @@ const UploadProgress = () => {
               <div className='flex flex-col gap-2 py-6'>
                 <div className='flex gap-4'>
                   <div>
-                    {imageProcessData?.fileType === 'image/tiff' && <UploadProgressTifIcon />}
-                    {imageProcessData?.fileType === 'application/zip' && <UploadProgressZipIcon />}
+                    {imageProcessData?.fileType === 'image/tiff' && (
+                      <UploadProgressTifIcon width={is2K ? 80 : undefined} height={is2K ? 80 : undefined} />
+                    )}
+                    {imageProcessData?.fileType === 'application/zip' && (
+                      <UploadProgressZipIcon width={is2K ? 80 : undefined} height={is2K ? 80 : undefined} />
+                    )}
                   </div>
                   <div className='flex flex-col text-sm'>
-                    <div className='w-[70px] text-gray'>{t('gallery.uploadProgress.imageName')}:</div>
-                    <div className='w-[200px]'>
+                    <div className='w-18 text-gray'>{t('gallery.uploadProgress.imageName')}:</div>
+                    <div className='w-51'>
                       <Tooltip title={imageProcessData?.name || '-'} arrow>
                         <Typography noWrap>{imageProcessData?.name || '-'}</Typography>
                       </Tooltip>

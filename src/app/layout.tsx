@@ -8,6 +8,7 @@ import Providers from '@/providers'
 import theme from '@/styles/theme'
 import { ThemeProvider } from '@mui/material/styles'
 import { Prompt } from 'next/font/google'
+import { useMemo } from 'react'
 
 const font = Prompt({
   weight: ['300', '400', '500', '700'],

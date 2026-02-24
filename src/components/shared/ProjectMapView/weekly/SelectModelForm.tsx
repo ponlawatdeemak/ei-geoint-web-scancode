@@ -87,8 +87,11 @@ const SelectModelForm: FC<SelectModelFormProps> = ({ onBack }) => {
   }, [selectedAreas, allModels])
 
   return (
-    <Box className='w-full flex flex-col h-full'>
-      <Box className='flex flex-col shrink min-h-0' sx={{ border: '1px solid #ddd', borderRadius: 1, overflow: 'hidden' }}>
+    <Box className='flex h-full w-full flex-col'>
+      <Box
+        className='flex min-h-0 shrink flex-col'
+        sx={{ border: '1px solid #ddd', borderRadius: 1, overflow: 'hidden' }}
+      >
         <Box
           sx={{
             display: 'flex',
@@ -124,20 +127,10 @@ const SelectModelForm: FC<SelectModelFormProps> = ({ onBack }) => {
         <div className='flex flex-col gap-4'>
           <Divider />
           <div className='flex items-center justify-center gap-2'>
-            <Button
-              variant='outlined'
-              onClick={onBack}
-              className='w-[96.16px] h-[36.5px]'
-            >
+            <Button variant='outlined' onClick={onBack}>
               {t('button.back')}
             </Button>
-            <Button
-              variant='contained'
-              color='primary'
-              onClick={onSave}
-              startIcon={<SaveIcon />}
-              className='w-[96.16px] h-[36.5px]'
-            >
+            <Button variant='contained' color='primary' onClick={onSave} startIcon={<SaveIcon />}>
               {t('button.save')}
             </Button>
           </div>

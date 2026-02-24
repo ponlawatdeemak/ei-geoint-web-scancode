@@ -1,4 +1,3 @@
-
 import { useMemo } from 'react'
 import { Chip } from '@mui/material'
 import { useTranslation } from 'react-i18next'
@@ -139,7 +138,8 @@ export const useProjectTableConfig = ({
         label: 'form.searchProject.filter.subscription',
         type: 'select',
         minWidth: 120,
-        options: async () => (profile?.organizationId ? await service.subscriptions.getItemByOrg(profile.organizationId) : []),
+        options: async () =>
+          profile?.organizationId ? await service.subscriptions.getItemByOrg(profile.organizationId) : [],
       },
       {
         name: 'createdAt',

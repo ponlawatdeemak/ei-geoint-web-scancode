@@ -117,7 +117,7 @@ const ImageInfo = ({ selectedImage, pageUse = 'gallery', mode }: ImageInfoProps)
           <div className='flex flex-wrap items-center justify-between gap-6'>
             {(isLg || pageUse === 'itv') && <div className=''>{selectedImage?.name}</div>}
             {isEditor && (
-              <div className='flex flex-wrap gap-2 [&>.MuiIconButton-root]:h-[40px] [&>.MuiIconButton-root]:w-[40px] [&>.MuiIconButton-root]:rounded-[4px]! [&>.MuiIconButton-root]:bg-(--color-background-light)!'>
+              <div className='flex flex-wrap gap-2 [&>.MuiIconButton-root]:h-10! [&>.MuiIconButton-root]:w-10! [&>.MuiIconButton-root]:rounded-sm! [&>.MuiIconButton-root]:bg-(--color-background-light)!'>
                 {isShowAction && (
                   <>
                     <Tooltip title={t('gallery.imagesSelector.contextMenu.show')} arrow>

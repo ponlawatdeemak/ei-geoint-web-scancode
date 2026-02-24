@@ -58,8 +58,8 @@ const PhotoItem: FC<Props> = ({ feature, onEdit, onDelete, projectId }) => {
           {/* <Typography noWrap className='text-gray' variant='body2' component='div'>
             {feature.fileName || '-'}
           </Typography> */}
-          <div className='flex min-w-0 items-center truncate text-[12px]'>
-            <span className='max-w-[200px] truncate'>{feature.fileName}</span>
+          <div className='flex min-w-0 items-center truncate text-xs'>
+            <span className='max-w-50 truncate'>{feature.fileName}</span>
           </div>
         </Tooltip>
       )
@@ -108,7 +108,7 @@ const PhotoItem: FC<Props> = ({ feature, onEdit, onDelete, projectId }) => {
       )}
       onClick={onListItemClick}
     >
-      <ListItemIcon sx={{ color: 'inherit', minWidth: '36px' }}>
+      <ListItemIcon sx={{ color: 'inherit', minWidth: '2.25rem' }}>
         {isGroup ? <Filter /> : <ImageOutlined />}
       </ListItemIcon>
       <ListItemText primary={title} secondary={subtitle} />

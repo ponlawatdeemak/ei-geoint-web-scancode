@@ -46,7 +46,7 @@ const ItvGallery: FC<Props> = ({ projectId, onClose, onSaveComplete }) => {
         '& .MuiDialog-paper': {
           width: '100%',
           maxWidth: 'none',
-          [theme.breakpoints.up('md')]: { width: '90%' },
+          [theme.breakpoints.up('md')]: { width: '90%', height: '90%' },
         },
       }}
     >

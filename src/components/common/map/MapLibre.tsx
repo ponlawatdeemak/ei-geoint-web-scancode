@@ -6,6 +6,7 @@ import maplibregl, { MapLibreEvent, MapStyleDataEvent, StyleSpecification } from
 import { googleProtocol } from './utils/google'
 import { useSession } from 'next-auth/react'
 import { layerIdConfig, thaiExtent } from './config/map'
+import useResponsive from '@/hook/responsive'
 
 interface MapLibreProps {
   mapId: string
@@ -17,6 +18,7 @@ interface MapLibreProps {
 const MapLibre: FC<MapLibreProps> = ({ mapId, mapStyle, isInteractive = true, isHideAttributionControl = false }) => {
   const { setMapLibre } = useMapStore()
   const { data: session } = useSession()
+  const { is2K } = useResponsive()
 
   const [resolvedStyle, setResolvedStyle] = useState<string | StyleSpecification>(mapStyle)
 
@@ -143,6 +145,7 @@ const MapLibre: FC<MapLibreProps> = ({ mapId, mapStyle, isInteractive = true, is
 
   return (
     <ReactMap
+      pixelRatio={is2K ? 2 : 1}
       initialViewState={viewState}
       mapStyle={resolvedStyle}
       onLoad={onLoad}

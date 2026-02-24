@@ -50,7 +50,6 @@ import { useProjectMapPopup } from './hooks/useProjectMapPopup'
 import { useProjectSearch } from './hooks/useProjectSearch'
 import { useProjectTableConfig } from './hooks/useProjectTableConfig'
 
-
 export const MAP_ID = 'landing-map-view'
 
 export const statusColor: Record<number, 'primary' | 'warning' | 'success' | 'error'> = {
@@ -120,9 +119,7 @@ export const isValidCoord = (coord: number[]) => {
 
 export const parseDateToISO = (dateStr: string | undefined, isEndOfDay: boolean): string | undefined => {
   if (!dateStr) return undefined
-  const parts = String(dateStr)
-    .split('-')
-    .map(Number)
+  const parts = String(dateStr).split('-').map(Number)
   if (parts.length !== 3) return undefined
   const [y, m, d] = parts
   const date = new Date(
@@ -228,15 +225,13 @@ const ProjectPage = () => {
     retry: false,
   })
 
-  /* 
-  */
+  /*
+   */
   const canManage = useMemo(
     () => [Roles.superAdmin, Roles.admin, Roles.customerAdmin, Roles.user].includes(profile?.roleId ?? -1),
     [profile?.roleId],
   )
   const canDelete = useMemo(() => [Roles.superAdmin, Roles.admin].includes(profile?.roleId ?? -1), [profile?.roleId])
-
-
 
   const searchParams = useSearchParams()
   const pathname = usePathname()
@@ -365,12 +360,7 @@ const ProjectPage = () => {
         <div className='flex-1 overflow-auto p-4 pt-0'>
           <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3'>
             {rows.map((row) => (
-              <ProjectCardItem
-                key={row.id}
-                row={row}
-                language={language as Language}
-                handleMenuOpen={handleMenuOpen}
-              />
+              <ProjectCardItem key={row.id} row={row} language={language as Language} handleMenuOpen={handleMenuOpen} />
             ))}
           </div>
         </div>
@@ -541,8 +531,6 @@ const ProjectPage = () => {
   useEffect(() => {
     const map = mapLibre[MAP_ID]
     if (!map || mapRows.length === 0) return
-
-
 
     const allCoordinates: number[][] = []
     mapRows.forEach((project) => {
@@ -852,7 +840,10 @@ const ProjectPage = () => {
           onMultiDelete={canDelete ? handleMultiDelete : undefined}
           renderCard={renderCard}
           renderMap={renderMap}
-          initialFilters={{ ...initialFilters, organizationId: (profile?.roleId ?? 99) > 2 ? (profile?.organizationId || '') : '' }}
+          initialFilters={{
+            ...initialFilters,
+            organizationId: (profile?.roleId ?? 99) > 2 ? profile?.organizationId || '' : '',
+          }}
           displayMode={displayMode}
           onDisplayModeChange={handleDisplayModeChange}
           hideModeToggles={true}

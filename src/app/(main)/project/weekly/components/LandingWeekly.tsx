@@ -223,7 +223,7 @@ const LandingWeekly: React.FC = () => {
                 setIsWeeklyPanelOpen(true)
               }}
               floatingPanel={
-                <Box className='fixed bottom-8 left-1/2 z-35 w-[90%] -translate-x-1/2 pr-[8%] sm:pr-[6%] md:relative md:bottom-auto md:left-auto md:w-[450px] md:translate-x-0 md:pr-0'>
+                <Box className='fixed bottom-8 left-1/2 z-35 w-[90%] -translate-x-1/2 pr-[8%] sm:pr-[6%] md:relative md:bottom-auto md:left-auto md:w-md md:translate-x-0 md:pr-0'>
                   {weeklyOverlay}
                 </Box>
               }

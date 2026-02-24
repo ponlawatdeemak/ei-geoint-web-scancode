@@ -37,6 +37,7 @@ import ImageIcon from '@mui/icons-material/Image'
 import { weeklyIcon as WeeklyIcon } from '@/icons'
 import NavigationBar from '@/components/layout/NavigationBar'
 import { useProfileStore, type UserProfile } from '@/hook/useProfileStore'
+import { useGlobalUI } from '@/providers/global-ui/GlobalUIContext'
 import ProjectMapView, { type ProjectMapViewRef } from '@/components/shared/ProjectMapView'
 import type { Task, TaskModel } from '@interfaces/entities'
 
@@ -61,6 +62,7 @@ export default function TaskSearchPage() {
   const router = useRouter()
   const { t } = useTranslation('common')
   const { language } = useSettings()
+  const { showAlert } = useGlobalUI()
   const profile = useProfileStore((state) => state.profile)
 
   const params = useParams() as { id?: string }
@@ -348,6 +350,14 @@ export default function TaskSearchPage() {
                   size='small'
                   startIcon={<WeeklyIcon />}
                   onClick={() => {
+                    // Check if editing itvLayer
+                    if (projectMapViewRef.current?.isEditingItv) {
+                      showAlert?.({
+                        status: 'warning',
+                        content: t('alert.closeItvLayerFirst'),
+                      })
+                      return
+                    }
                     handleDisplayModeChange('map')
                     setShouldOpenWeekly(true)
                   }}
@@ -384,6 +394,15 @@ export default function TaskSearchPage() {
                 {weeklySubscriptionModel && weeklySubscriptionModel?.length > 0 && (
                   <MenuItem
                     onClick={() => {
+                      // Check if editing itvLayer
+                      if (projectMapViewRef.current?.isEditingItv) {
+                        showAlert?.({
+                          status: 'warning',
+                          content: t('alert.closeItvLayerFirst'),
+                        })
+                        handleTopMenuClose()
+                        return
+                      }
                       handleDisplayModeChange('map')
                       setShouldOpenWeekly(true)
                     }}
@@ -438,14 +457,14 @@ export default function TaskSearchPage() {
           >
             {(canManageTask ||
               (menuRow && profile.roleId === Roles.user && menuRow.createdByUser?.id === profile.id)) && (
-              <MenuItem onClick={handleMenuEdit}>
+              <MenuItem onClick={handleMenuEdit} className='2k:gap-2'>
                 <ListItemIcon>
                   <EditIcon fontSize='small' />
                 </ListItemIcon>
                 <ListItemText>{t('button.edit')}</ListItemText>
               </MenuItem>
             )}
-            <MenuItem onClick={handleMenuOpenMap}>
+            <MenuItem onClick={handleMenuOpenMap} className='2k:gap-2'>
               <ListItemIcon>
                 <PublicIcon fontSize='small' />
               </ListItemIcon>
@@ -453,7 +472,7 @@ export default function TaskSearchPage() {
             </MenuItem>
             {(canManageTask ||
               (menuRow && profile.roleId === Roles.user && menuRow.createdByUser?.id === profile.id)) && (
-              <MenuItem className='text-error!' onClick={handleMenuDelete}>
+              <MenuItem className={`2k:gap-2 ${'text-error!'}`} onClick={handleMenuDelete}>
                 <ListItemIcon className='text-inherit!'>
                   <DeleteIcon fontSize='small' color='error' />
                 </ListItemIcon>

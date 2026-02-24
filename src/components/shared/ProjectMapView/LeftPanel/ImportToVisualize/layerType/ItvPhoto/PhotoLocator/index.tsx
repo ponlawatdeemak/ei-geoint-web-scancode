@@ -424,21 +424,23 @@ const PhotoLocator: FC<PhotoLocatorProps> = ({ photoList, setPhotoList, onClose,
   return (
     <Dialog open={true} fullScreen>
       <DialogContent className='overflow-hidden! p-0!'>
-        <div className='flex h-full flex-col'>
+        <div className='flex h-full flex-col overflow-hidden'>
           <div className='flex h-14 items-center gap-4 bg-[#2E82D6] px-6 text-2xl text-white'>
             <IconButton size='small' onClick={onClose} className='ml-2'>
               <CloseIcon fontSize='small' sx={{ color: 'white' }} />
             </IconButton>
             <div>{t('itv.upload.locator.title')}</div>
           </div>
-          <div className='flex h-[calc(100%-56px)]'>
-            <div className={`w-full p-4 lg:w-[50%] lg:p-6 ${isMobile && showMapMobile ? 'hidden' : ''}`}>
+          <div className='flex flex-1 overflow-hidden'>
+            <div
+              className={`w-full p-4 lg:w-[50%] lg:p-6 ${isMobile && showMapMobile ? 'hidden' : ''} flex flex-col overflow-hidden`}
+            >
               <div className='relative pt-2'>
                 {isMobile && (
                   <IconButton
                     size='small'
                     onClick={() => setShowMapMobile(true)}
-                    className='absolute! top-[-12px]! right-[-12px]! z-10!'
+                    className='absolute! -top-3! -right-3! z-10!'
                   >
                     <CloseIcon fontSize='small' />
                   </IconButton>

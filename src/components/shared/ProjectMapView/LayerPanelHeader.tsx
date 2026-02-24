@@ -93,7 +93,7 @@ const LayerPanelHeader: React.FC<Props> = ({
             )}
           <Menu id={menuId} open={openItvMenu} onClose={handleClose} anchorEl={anchorRef.current}>
             {Object.values(itvConfig).map((item) => (
-              <MenuItem key={item.value} className='h-[40px] min-w-[270px]' onClick={() => onMenuItemClick(item.value)}>
+              <MenuItem key={item.value} className='h-10 min-w-64 2k:gap-2' onClick={() => onMenuItemClick(item.value)}>
                 <ListItemIcon>{item.icon}</ListItemIcon>
                 <ListItemText>{t(item.label)}</ListItemText>
               </MenuItem>
@@ -102,7 +102,7 @@ const LayerPanelHeader: React.FC<Props> = ({
 
           {isReordering ? (
             <div className='my-2 ml-auto flex items-center gap-2'>
-              <Button variant='text' onClick={onCancelReorder} className='min-w-[60px] text-(--color-text-secondary)!'>
+              <Button variant='text' onClick={onCancelReorder} className='min-w-16 text-(--color-text-secondary)!'>
                 {t('button.cancel')}
               </Button>
               <Button
@@ -110,7 +110,7 @@ const LayerPanelHeader: React.FC<Props> = ({
                 color='primary'
                 onClick={onSaveReorder}
                 disabled={!hasOrderChanged}
-                className='min-w-[60px]'
+                className='min-w-16'
               >
                 {t('button.ok')}
               </Button>

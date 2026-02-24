@@ -78,7 +78,7 @@ const PhotoPopup: FC<Props> = ({ featureList }) => {
             const blob = await importToVisualize.getThumbnail({ uploadId: feature.photoUploadId })
             urls[feature.photoUploadId] = URL.createObjectURL(blob)
           }
-        })
+        }),
       )
       setThumbnailUrls(urls)
     }

@@ -89,22 +89,22 @@ const ResultTable: FC<Props> = ({
     [setAction],
   )
 
-  const columns: MuiTableColumn<SearchImagesResultItem>[] = useMemo(
-    () => [
+  const columns: MuiTableColumn<SearchImagesResultItem>[] = useMemo(() => {
+    const result = [
       {
         id: 'fileName',
         label: t('itv.popup.name'),
         sortable: true,
         // กำหนดความกว้างของ Column นี้ให้คงที่ (เช่น 300px)
         width: 300,
-        render: (row) => (
+        render: (row: SearchImagesResultItem) => (
           <div className='flex items-center gap-2'>
             {/* ส่วน Icon ล็อกขนาดไว้ */}
             <div className='relative flex h-[40px] w-[50px] shrink-0 items-center justify-center overflow-hidden'>
               <ImgExampleIcon width={24} height={24} />
             </div>
             <div
-              className='max-w-[150px] truncate font-medium text-sm'
+              className='max-w-60 truncate font-medium text-sm'
               title={row.fileName || ''} // เอาเมาส์วางแล้วยังเห็นชื่อเต็มได้
             >
               {row.fileName}
@@ -117,7 +117,7 @@ const ResultTable: FC<Props> = ({
         label: t('gallery.imagesSelector.detail.imagingDate'), // 'Imaging Date'
         // ปรับความกว้างให้ยาวขึ้นเล็กน้อยเพื่อให้วันที่ไม่เบียดกัน
         width: 160,
-        render: (row) => (
+        render: (row: SearchImagesResultItem) => (
           <div className='whitespace-nowrap px-2 text-sm'>
             {row.imagingDate ? formatDateTime(row.imagingDate, language) : '-'}
           </div>
@@ -128,27 +128,27 @@ const ResultTable: FC<Props> = ({
         label: t('gallery.imagesSelector.detail.createdBy'), // 'Created By'
         // กำหนดความกว้างคงที่เพื่อให้ truncate ทำงาน
         width: 180,
-        render: (row) => {
+        render: (row: SearchImagesResultItem) => {
           const user = row.createdByUser
           const fullName = user?.firstName && user?.lastName ? `${user?.firstName} ${user?.lastName}` : '-'
 
           return (
-            <div className='max-w-[140px] truncate text-sm' title={fullName !== '-' ? fullName : ''}>
+            <div className='max-w-32 truncate text-sm' title={fullName !== '-' ? fullName : ''}>
               {fullName}
             </div>
           )
         },
       },
-      {
+    ]
+    if (pageUse === 'gallery' && isEditor) {
+      result.push({
         id: 'actions',
         label: t('table.actions'), // 'Actions'
         align: 'right',
-        render: (row) => {
+        render: (row: SearchImagesResultItem) => {
           const isInProgress = checkIsInProgress(Number(row.statusId))
           const isAbortOrFail = [ImageStatus.aborted, ImageStatus.failed].includes(Number(row.statusId))
           const isShowAction = !isInProgress && !isAbortOrFail
-
-          if (!isEditor) return null
 
           return (
             <div className='flex items-center justify-end gap-1'>
@@ -242,10 +242,10 @@ const ResultTable: FC<Props> = ({
             </div>
           )
         },
-      },
-    ],
-    [t, language, isEditor, isViewer, canEdit, checkCanDelete, onActionClick],
-  )
+      } as any)
+    }
+    return result
+  }, [t, language, isEditor, isViewer, canEdit, checkCanDelete, onActionClick, pageUse])
 
   const handleSortChange = (orderBy: string, order: SortType) => {
     if (orderBy === 'fileName') {

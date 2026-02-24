@@ -478,7 +478,7 @@ const ItvDraw: FC<Props> = ({
                   )}
                   <Menu id={menuId} open={openDrawMenu} onClose={handleClose} anchorEl={anchorRef.current}>
                     {Object.values(itvDrawConfig).map((item) => (
-                      <MenuItem key={item.value} className='h-10' onClick={() => onMenuItemClick(item.value)}>
+                      <MenuItem key={item.value} className='h-10 2k:gap-2' onClick={() => onMenuItemClick(item.value)}>
                         <ListItemIcon className='text-(--color-text-icon)'>{item.icon}</ListItemIcon>
                         <ListItemText>{t(item.label)}</ListItemText>
                       </MenuItem>

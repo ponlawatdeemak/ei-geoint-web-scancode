@@ -55,14 +55,14 @@ const SymbolAll: React.FC<Props> = ({ onSelect }) => {
                 className={`h-12 min-h-6 px-2 pr-1!`}
               >
                 <div className={`ml-1 flex w-full items-center justify-between`}>
-                  <div className='grid w-full grid-cols-[16px_1fr] gap-1'>
+                  <div className='grid w-full grid-cols-[1rem_1fr] gap-1'>
                     <div className='flex items-center'>
                       <button
                         type='button'
                         aria-expanded={isOpen}
-                        className={`inline-flex h-[16px] w-[16px] flex-shrink-0 transform cursor-pointer items-center justify-center p-1 text-(--color-text-icon) transition-transform ${isOpen ? 'rotate-90' : 'rotate-0'}`}
+                        className={`inline-flex h-4 w-4 shrink-0 transform cursor-pointer items-center justify-center p-1 text-(--color-text-icon) transition-transform ${isOpen ? 'rotate-90' : 'rotate-0'}`}
                       >
-                        <ArrowForwardIosSharp fontSize='small' className='h-[8px] w-[8px]' />
+                        <ArrowForwardIosSharp fontSize='small' className='h-2 w-2' />
                       </button>
                     </div>
                     <Typography noWrap>{item.name}</Typography>
@@ -118,7 +118,7 @@ const SymbolAll: React.FC<Props> = ({ onSelect }) => {
                             alt={icon.name}
                             width={40}
                             height={40}
-                            style={{ width: '40px', height: '40px' }}
+                            style={{ width: '2.5rem', height: '2.5rem' }}
                           />
                         </button>
                       </Tooltip>

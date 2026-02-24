@@ -104,6 +104,9 @@ body .slick-slide {
   /* --breakpoint-xl: 96rem; /* 1536px */
   /* --breakpoint-2xl: 120rem; /* 1920px */
 
+  --breakpoint-2k: 160rem; /* 2560px */
+  --breakpoint-4k: 256rem; /* 3840px */
+
   /* Material UI theme colors */
   --color-primary: rgb(var(--mui-palette-primary-mainChannel));
   --color-primary-light: rgb(var(--mui-palette-primary-lightChannel));
@@ -161,6 +164,10 @@ body .slick-slide {
   --color-action-disabled: var(--mui-palette-action-disabled);
   --color-action-disabledBackground: var(--mui-palette-action-disabledBackground);
   --color-action-focus: var(--mui-palette-action-focus);
+
+  /* Chart colors */
+  --color-chart-grid: #f0f0f0;
+  --color-chart-text: #666;
 
   /* Material UI gray scale */
   --color-gray: #818481;
@@ -377,5 +384,23 @@ body .slick-slide {
   .mobile-landscape-scroll {
       overflow-y: auto !important;
       height: 100% !important;
+  }
+}
+
+
+@media (min-width: 2160px) {
+  html {
+    font-size: 1.5rem;
+
+  }
+  :root {
+    --mui-shape-borderRadius: 6px;
+  }
+  
+}
+
+@media (min-width: 3840px) {
+  html {
+    font-size: 2rem;
   }
 }

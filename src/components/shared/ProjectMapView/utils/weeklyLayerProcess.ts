@@ -11,6 +11,7 @@ import {
 } from '@interfaces/index'
 import type { Geometry } from 'geojson'
 import { getColorByModelId } from '@/utils/color'
+import { buildAreaFromMapLayer } from './layers'
 
 export interface ProcessedWeeklyData {
   groups: Record<string, ProjectMapViewGroup>
@@ -121,7 +122,7 @@ const processMapLayers = (
           color,
           type: MapType.vector,
           itemCount: (mapLayer.rows as number) ?? null,
-          totalArea: undefined,
+          totalArea: buildAreaFromMapLayer(mapLayer),
         })
         initialVisibility[fullMapLayerId] = true
         initialOpacity[fullMapLayerId] = 1

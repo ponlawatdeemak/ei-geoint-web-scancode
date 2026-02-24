@@ -2,17 +2,25 @@ import React from 'react'
 import { Box, Button, Slider, Tooltip, Select, MenuItem } from '@mui/material'
 import ReplayIcon from '@mui/icons-material/Replay'
 import {
-  GetModelAllDtoOut,
+  type GetModelAllDtoOut,
   MapType,
-  ProjectMapViewGroup,
-  MapArea,
+  type ProjectMapViewGroup,
+  type MapArea,
   SARChangeDetectionKey,
-  LayerConfig,
+  type LayerConfig,
+  type TileLayerConfig,
+  ServiceConfig,
+  CheckWeeklyObjectDetection,
+  CheckWeeklyChangeDetection,
 } from '@interfaces/index'
 import { useTranslation } from 'react-i18next'
 import { areaUnits } from '../../../common/dialog/SettingsDialog'
 import { useSettings } from '@/hook/useSettings'
 import { LOCALE_STRING_OPTIONS } from '@/utils/formatNumber'
+import { ArcElement, Chart as ChartJS, Tooltip as ChartTooltip } from 'chart.js'
+import { Doughnut } from 'react-chartjs-2'
+
+ChartJS.register(ArcElement, ChartTooltip)
 
 type Props = {
   selectedGroup: string | null
@@ -23,7 +31,10 @@ type Props = {
   handleThresholdChange: (id: string, value: number | number[]) => void
 }
 
-const hideConfidenceSliderForKeys = ['planet-weekly-objectdetection-building', 'planet-weekly-objectdetection-road']
+const hideConfidenceSliderForKeys = new Set([
+  'planet-weekly-objectdetection-building',
+  'planet-weekly-objectdetection-road',
+])
 
 // Colormap gradients for visual selection
 const COLORMAP_GRADIENTS: Record<string, string> = {
@@ -42,21 +53,16 @@ const COLORMAP_GRADIENTS: Record<string, string> = {
   rainbow:
     'linear-gradient(90deg, #8000ff 0%, #0000ff 17%, #00ffff 33%, #00ff00 50%, #ffff00 67%, #ff0000 83%, #ff0000 100%)',
 }
-
 const BandSelector = ({
-  layerId,
   currentBands,
   currentColormap,
   onChange,
   bandsCount,
-  imageType,
 }: {
-  layerId: string
   currentBands?: number[]
   currentColormap?: string
   onChange: (bands: number[], colormap?: string) => void
   bandsCount?: number
-  imageType?: number
 }) => {
   const { t } = useTranslation('common')
   const [mode, setMode] = React.useState<'rgb' | 'gray' | 'color'>('rgb')
@@ -140,15 +146,18 @@ const BandSelector = ({
         <div className='grid grid-cols-3 gap-2'>
           {['Red', 'Green', 'Blue'].map((color, i) => (
             <div key={color} className='flex flex-col'>
-              <label className='mb-1 text-(--color-text-secondary) text-xs'>{color}</label>
+              <label htmlFor={`band-rgb-${color}`} className='mb-1 text-(--color-text-secondary) text-xs'>
+                {color}
+              </label>
               <select
+                id={`band-rgb-${color}`}
                 className='rounded border border-(--color-gray-border) bg-white p-1 text-sm'
                 value={bands[i] || 0}
                 onChange={(e) => handleBandChange(i, Number(e.target.value))}
               >
                 {/* Set default bandComposition value for RGB to 3 */}
-                {[...Array(bandsCount || 3)].map((_, j) => (
-                  <option key={j + 1} value={j + 1}>
+                {Array.from({ length: bandsCount || 3 }, (_, j) => (
+                  <option key={`band-${j + 1}`} value={j + 1}>
                     Band {j + 1}
                   </option>
                 ))}
@@ -159,15 +168,18 @@ const BandSelector = ({
       ) : (
         <div className='flex flex-col gap-2'>
           <div className='flex flex-col'>
-            <label className='mb-1 text-(--color-text-secondary) text-xs'>Band</label>
+            <label htmlFor='band-single' className='mb-1 text-(--color-text-secondary) text-xs'>
+              Band
+            </label>
             <select
+              id='band-single'
               className='rounded border border-(--color-gray-border) bg-white p-1 text-sm'
               value={bands[0] || 1}
               onChange={(e) => handleBandChange(0, Number(e.target.value))}
             >
               {/* Set default bandComposition value for single color to 3 */}
-              {[...Array(bandsCount || 3)].map((_, j) => (
-                <option key={j + 1} value={j + 1}>
+              {Array.from({ length: bandsCount || 3 }, (_, j) => (
+                <option key={`band-${j + 1}`} value={j + 1}>
                   Band {j + 1}
                 </option>
               ))}
@@ -175,8 +187,11 @@ const BandSelector = ({
           </div>
           {mode === 'color' && (
             <div className='flex flex-col'>
-              <label className='mb-1 text-(--color-text-secondary) text-xs'>Colormap</label>
+              <label htmlFor='band-colormap' className='mb-1 text-(--color-text-secondary) text-xs'>
+                Colormap
+              </label>
               <Select
+                inputProps={{ id: 'band-colormap' }}
                 size='small'
                 value={colormap}
                 onChange={(e) => handleColormapChange(e.target.value)}
@@ -204,6 +219,96 @@ const BandSelector = ({
     </Box>
   )
 }
+const SingleDonutChart: React.FC<{
+  layers: { key: string; label: string; itemCount?: number | null; color: string }[]
+  findModelByKeyOrName?: (k: string) => GetModelAllDtoOut | undefined
+  isTh: boolean
+  title?: string
+}> = ({ layers, findModelByKeyOrName, isTh, title }) => {
+  const { t } = useTranslation('common')
+  if (layers.length === 0) return null
+
+  const labels = layers.map((layer) => {
+    const raw = isTh
+      ? (findModelByKeyOrName?.(layer.key)?.name ?? layer.label)
+      : (findModelByKeyOrName?.(layer.key)?.nameEn ?? layer.label)
+    return raw
+  })
+  const counts = layers.map((layer) => layer.itemCount ?? 0)
+  const colors = layers.map((layer) => layer.color)
+
+  const data = {
+    datasets: [
+      {
+        data: counts,
+        backgroundColor: colors,
+        borderWidth: 1,
+        borderColor: '#ffffff',
+        labels,
+      },
+    ],
+  }
+
+  return (
+    <Box className='flex flex-col items-center overflow-visible py-4'>
+      {title && (
+        <div className='mb-3 w-full rounded bg-[#F1F4FB] px-3 py-2 text-left font-semibold text-[#040904]'>{title}</div>
+      )}
+      <Box className='relative h-48 w-auto'>
+        <Doughnut
+          data={data}
+          options={{
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '60%',
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                enabled: false,
+                external: (context) => {
+                  const { chart, tooltip } = context
+                  let el = document.getElementById('map-chart-tooltip') as HTMLDivElement | null
+
+                  if (!el) {
+                    el = document.createElement('div')
+                    el.id = 'map-chart-tooltip'
+                    el.className =
+                      'pointer-events-none absolute z-[9999] max-w-[320px] rounded bg-black/80 px-2.5 py-1.5 text-xs text-white transition-opacity duration-150'
+                    document.body.appendChild(el)
+                  }
+
+                  // Hide if no tooltip
+                  if (tooltip.opacity === 0) {
+                    el.style.opacity = '0'
+                    return
+                  }
+
+                  const item = tooltip.dataPoints?.[0]
+                  if (item) {
+                    const segmentLabel =
+                      (item.dataset as unknown as { labels: string[] }).labels?.[item.dataIndex] || ''
+                    const value = (item.raw as number).toLocaleString(undefined, LOCALE_STRING_OPTIONS)
+                    const color = (item.dataset.backgroundColor as string[])?.[item.dataIndex] || '#000'
+                    el.innerHTML = `<div class="mb-0.5 flex items-start"><span class="mt-0.5 mr-1.5 inline-block h-2.5 w-2.5 min-w-[10px] shrink-0 rounded-sm border border-white" style="background:${color}"></span><span class="break-words">${segmentLabel}</span></div><div class="pl-4">${value} ${t('map.items')}</div>`
+                  }
+
+                  const position = chart.canvas.getBoundingClientRect()
+                  const left = position.left + window.scrollX + tooltip.caretX
+                  const top = position.top + window.scrollY + tooltip.caretY
+
+                  el.style.opacity = '1'
+                  el.style.left = left + 'px'
+                  el.style.top = top + 'px'
+                  el.style.transform = 'translate(-50%, -120%)'
+                },
+              },
+            },
+          }}
+        />
+      </Box>
+    </Box>
+  )
+}
 
 const LayerControls: React.FC<Props> = ({
   selectedGroup,
@@ -228,107 +333,163 @@ const LayerControls: React.FC<Props> = ({
   )
   const lengthLayer = visibleLayers.length
 
-  console.log('selectedGroup ', selectedGroup)
-  console.log('group ', group)
+  const isWeekly = group.serviceId === ServiceConfig.weekly
+  const isTh = typeof i18n?.language === 'string' && i18n.language.startsWith('th')
 
-  return (
-    <Box className='h-full overflow-y-auto pr-2'>
-      {visibleLayers.map((layer, index) => {
-        const isTh = typeof i18n?.language === 'string' && i18n.language.startsWith('th')
-        const title = isTh
-          ? (findModelByKeyOrName?.(layer.key)?.name ?? layer.label)
-          : (findModelByKeyOrName?.(layer.key)?.nameEn ?? layer.label)
-        const itemCount =
-          layer.itemCount !== undefined && layer.itemCount !== null
-            ? layer.itemCount.toLocaleString(undefined, LOCALE_STRING_OPTIONS)
-            : '0'
-        const rawTotalArea = (layer.totalArea as MapArea)?.[areaUnit as keyof MapArea]
-        const totalArea = rawTotalArea ? Number(rawTotalArea).toLocaleString(undefined, LOCALE_STRING_OPTIONS) : '0'
+  // Helper to render a single layer's controls
+  const renderLayerItem = (layer: (typeof visibleLayers)[number], index: number, total: number) => {
+    const title = isTh
+      ? (findModelByKeyOrName?.(layer.key)?.name ?? layer.label)
+      : (findModelByKeyOrName?.(layer.key)?.nameEn ?? layer.label)
+    const itemCount =
+      layer.itemCount !== undefined && layer.itemCount !== null
+        ? layer.itemCount.toLocaleString(undefined, LOCALE_STRING_OPTIONS)
+        : '0'
+    const rawTotalArea = layer.totalArea?.[areaUnit as keyof MapArea]
+    const totalArea = rawTotalArea ? Number(rawTotalArea).toLocaleString(undefined, LOCALE_STRING_OPTIONS) : '0'
 
-        // Find current config for this layer to get current bands
-        const currentConfig = group.layerConfigs?.find((c) => c.id === layer.id)
-        const isTileLayer = layer.type === MapType.tile || layer.type === MapType.itvRasterTile
+    const currentConfig = group.layerConfigs?.find((c) => c.id === layer.id)
+    const isTileLayer = layer.type === MapType.tile || layer.type === MapType.itvRasterTile
 
-        return (
-          <Box
-            key={layer.id}
-            className={`mt-0 rounded bg-white pt-2 ${index < lengthLayer - 1 ? 'border-(--color-gray-border) border-b-1' : ''}`}
-          >
-            <Box className='flex w-full items-start'>
-              <Box className='w-full'>
-                {((currentConfig as any)?.imageType === undefined || (currentConfig as any)?.imageType === 1) && (
-                  <Box className='flex items-center'>
-                    <div className='text-(--color-text-primary) text-base'>{title}</div>
-                  </Box>
-                )}
-                {!isTileLayer && (
-                  <Box className='grid w-full grid-cols-1 gap-0.5'>
-                    <div className='pt-1.5 text-(--color-text-secondary) text-sm'>
-                      {t('map.buildings')}
-                      <span className='font-medium text-primary'>
-                        {' '}
-                        {itemCount} {t('map.items')}
-                      </span>
-                    </div>
-                    <div />
-                    {layer.key !== SARChangeDetectionKey && totalArea !== null && (
-                      <div className='mt-1 block text-(--color-text-secondary) text-sm'>
-                        {t('map.totalArea')}
-                        <span className='ml-1 font-medium text-primary'>
-                          {totalArea} {t(areaUnits.find((u) => u.code === areaUnit)?.label || '')}
-                        </span>
-                      </div>
-                    )}
-                  </Box>
-                )}
+    return (
+      <Box
+        key={layer.id}
+        className={`mt-0 rounded bg-white pt-2 ${index < total - 1 ? 'border-(--color-gray-border) border-b-1' : ''}`}
+      >
+        <Box className='flex w-full items-start'>
+          <Box className='w-full'>
+            {((currentConfig as TileLayerConfig)?.imageType === undefined ||
+              (currentConfig as TileLayerConfig)?.imageType === 1) && (
+              <Box className='flex items-center'>
+                <div className='text-(--color-text-primary) text-base'>{title}</div>
               </Box>
-            </Box>
-            {isTileLayer && handleLayerConfigChange && (currentConfig as any)?.imageType === 1 && (
-              <BandSelector
-                layerId={layer.id}
-                currentBands={(currentConfig as any)?.bands}
-                currentColormap={(currentConfig as any)?.colormapName}
-                bandsCount={(currentConfig as any)?.bandsCount}
-                imageType={(currentConfig as any)?.imageType}
-                onChange={(bands, colormap) => handleLayerConfigChange(layer.id, { bands, colormapName: colormap })}
-              />
             )}
-            {!isTileLayer && !hideConfidenceSliderForKeys.includes(layer.key) && (
-              <Box className='mt-4 mb-2 rounded-lg bg-(--color-background-light) p-4 py-2'>
-                <Box className='mt-2 grid w-full grid-cols-2 gap-1'>
-                  <div className='mb-2 block text-(--color-text-primary) text-sm'>{t('map.adjustConfidence')}</div>
-                  <Box className='flex items-start justify-end'>
-                    <Tooltip title={t('map.reset')} arrow>
-                      <Button
-                        variant='outlined'
-                        className='border-transparent!'
-                        startIcon={<ReplayIcon />}
-                        onClick={() => handleThresholdChange(layer.id, [0, 100])}
-                      >
-                        {t('map.reset')}
-                      </Button>
-                    </Tooltip>
-                  </Box>
-                </Box>
-                <div className='px-2 pr-4'>
-                  <Slider
-                    value={thresholds[layer.id] ?? [0, 100]}
-                    onChange={(_, value) => handleThresholdChange(layer.id, value as number[])}
-                    min={0}
-                    max={100}
-                    valueLabelDisplay='auto'
-                    marks={[
-                      { value: 0, label: '0%' },
-                      { value: 100, label: '100%' },
-                    ]}
-                    disableSwap={false}
-                  />
+            {!isTileLayer && (
+              <Box className='grid w-full grid-cols-1 gap-0.5'>
+                <div className='pt-1.5 text-(--color-text-secondary) text-sm'>
+                  {t('map.buildings')}
+                  <span className='font-medium text-primary'>
+                    {' '}
+                    {itemCount} {t('map.items')}
+                  </span>
                 </div>
+                <div />
+                {layer.key !== SARChangeDetectionKey && totalArea !== null && (
+                  <div className='mt-1 block text-(--color-text-secondary) text-sm'>
+                    {t('map.totalArea')}
+                    <span className='ml-1 font-medium text-primary'>
+                      {totalArea} {t(areaUnits.find((u) => u.code === areaUnit)?.label || '')}
+                    </span>
+                  </div>
+                )}
               </Box>
             )}
           </Box>
-        )
-      })}
+        </Box>
+        {isTileLayer && handleLayerConfigChange && (currentConfig as TileLayerConfig)?.imageType === 1 && (
+          <BandSelector
+            currentBands={(currentConfig as TileLayerConfig)?.bands}
+            currentColormap={(currentConfig as TileLayerConfig)?.colormapName}
+            bandsCount={(currentConfig as TileLayerConfig)?.bandsCount}
+            onChange={(bands, colormap) => handleLayerConfigChange(layer.id, { bands, colormapName: colormap })}
+          />
+        )}
+        {!isTileLayer && !hideConfidenceSliderForKeys.has(layer.key) && (
+          <Box className='mt-4 mb-2 rounded-lg bg-(--color-background-light) p-4 py-2'>
+            <Box className='mt-2 grid w-full grid-cols-2 gap-1'>
+              <div className='mb-2 block text-(--color-text-primary) text-sm'>{t('map.adjustConfidence')}</div>
+              <Box className='flex items-start justify-end'>
+                <Tooltip title={t('map.reset')} arrow>
+                  <Button
+                    variant='outlined'
+                    className='border-transparent!'
+                    startIcon={<ReplayIcon />}
+                    onClick={() => handleThresholdChange(layer.id, [0, 100])}
+                  >
+                    {t('map.reset')}
+                  </Button>
+                </Tooltip>
+              </Box>
+            </Box>
+            <div className='px-2 pr-4'>
+              <Slider
+                value={thresholds[layer.id] ?? [0, 100]}
+                onChange={(_, value) => handleThresholdChange(layer.id, value)}
+                min={0}
+                max={100}
+                valueLabelDisplay='auto'
+                marks={[
+                  { value: 0, label: '0%' },
+                  { value: 100, label: '100%' },
+                ]}
+                disableSwap={false}
+              />
+            </div>
+          </Box>
+        )}
+      </Box>
+    )
+  }
+
+  // Weekly mode: group chart + layers by detection type
+  if (isWeekly) {
+    const objectDetectionLayers = visibleLayers.filter((l) => l.key.toLowerCase().includes(CheckWeeklyObjectDetection))
+    const changeDetectionLayers = visibleLayers.filter((l) => l.key.toLowerCase().includes(CheckWeeklyChangeDetection))
+    // Tile layers (e.g. raster tile) don't belong to either group, show at top
+    const tileLayers = visibleLayers.filter(
+      (l) =>
+        !l.key.toLowerCase().includes(CheckWeeklyObjectDetection) &&
+        !l.key.toLowerCase().includes(CheckWeeklyChangeDetection),
+    )
+
+    const objectDetectionVectorLayers = objectDetectionLayers.filter((l) => l.type === MapType.vector)
+    const changeDetectionVectorLayers = changeDetectionLayers.filter((l) => l.type === MapType.vector)
+
+    return (
+      <Box className='h-full pr-2'>
+        {/* Tile layers at top (e.g. Raster tile) */}
+        {tileLayers.map((layer, index) => renderLayerItem(layer, index, tileLayers.length))}
+
+        {/* Change Detection group */}
+        {changeDetectionVectorLayers.length > 0 && (
+          <Box className='border-(--color-gray-border) border-b'>
+            <SingleDonutChart
+              layers={changeDetectionVectorLayers}
+              findModelByKeyOrName={findModelByKeyOrName}
+              isTh={isTh}
+              title={t('map.weeklyChangeDetection')}
+            />
+          </Box>
+        )}
+        {changeDetectionLayers.map((layer, index) => renderLayerItem(layer, index, changeDetectionLayers.length))}
+
+        {/* Object Detection group */}
+        {objectDetectionVectorLayers.length > 0 && (
+          <Box className='border-(--color-gray-border) border-b'>
+            <SingleDonutChart
+              layers={objectDetectionVectorLayers}
+              findModelByKeyOrName={findModelByKeyOrName}
+              isTh={isTh}
+              title={t('map.weeklyObjectDetection')}
+            />
+          </Box>
+        )}
+        {objectDetectionLayers.map((layer, index) => renderLayerItem(layer, index, objectDetectionLayers.length))}
+      </Box>
+    )
+  }
+
+  const defaultVectorLayers = visibleLayers.filter((l) => l.type === MapType.vector)
+
+  // Non-weekly: original layout (chart on top, then all layers)
+  return (
+    <Box className='h-full overflow-y-auto pr-2'>
+      {group.serviceId !== ServiceConfig.sar && defaultVectorLayers.length > 0 && (
+        <Box className='flex flex-col items-center border-(--color-gray-border) border-b pb-3'>
+          <SingleDonutChart layers={defaultVectorLayers} findModelByKeyOrName={findModelByKeyOrName} isTh={isTh} />
+        </Box>
+      )}
+      {visibleLayers.map((layer, index) => renderLayerItem(layer, index, lengthLayer))}
     </Box>
   )
 }

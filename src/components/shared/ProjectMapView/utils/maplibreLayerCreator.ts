@@ -9,6 +9,7 @@ import {
   GeoJsonLayerConfig,
   ItvLayerConfig,
   SARChangeDetectionKey,
+  SARBattleDamageKey,
   ItvTileLayerConfig,
   ItvVectorLayerConfig,
   ItvAnnotationLayerConfig,
@@ -202,51 +203,6 @@ const createTileLayers = (
   }
 }
 
-/**
- * Create MapLibre sources + layers from LayerConfig (tile/vector/geojson)
- * Performs side-effects on provided map instance. Returns created ids + cleanup function.
- */
-export const createMapLibreLayersFromConfig = (
-  cfg: LayerConfig,
-  deps: MapLibreLayerDeps,
-): CreatedMapLibreLayers | null => {
-  if (!cfg || !('type' in cfg) || !deps?.map) return null
-  const { map, thresholds = {}, layerVisibility, getClickInfo } = deps
-  const visible = layerVisibility ? !!layerVisibility[cfg.id] : true
-
-  if (cfg.type === MapType.tile) {
-    return createTileLayers(cfg, map, visible)
-  }
-
-  if (cfg.type === MapType.geojson || cfg.type === MapType.itvVector || cfg.type === MapType.itvPhoto) {
-    return createGeoJsonLayers(cfg, map, visible, getClickInfo)
-  }
-
-  if (cfg.type === MapType.vector) {
-    return createVectorLayers(cfg, map, visible, thresholds, getClickInfo)
-  }
-
-  if (cfg.type === MapType.itvRasterTile || cfg.type === MapType.itvGallery) {
-    return createItvRasterTileLayers(cfg as ItvTileLayerConfig, map, visible)
-  }
-
-  if (cfg.type === MapType.itvVectorTile) {
-    return createItvVectorTileLayers(cfg, map, visible)
-  }
-
-  if (cfg.type === MapType.itvDraw) {
-    return createItvDrawLayers(cfg, map, visible)
-  }
-
-  if (cfg.type === MapType.itvAnnotation) {
-    return createItvAnnotationLayers(cfg, map, visible)
-  }
-
-  return null
-}
-
-export default createMapLibreLayersFromConfig
-
 const createSARPointLayer = (
   map: maplibregl.Map,
   cfg: VectorLayerConfig,
@@ -270,9 +226,27 @@ const createSARPointLayer = (
         filter,
         layout: { visibility: visible ? 'visible' : 'none' },
         paint: {
+          'circle-color': [
+            'match',
+            ['get', 'damage_level'], 
+            1, '#ffebee',
+            2, '#ffcdd2',      
+            3, '#ef9a9a',       
+            4, '#e57373',        
+            5, '#ef5350',
+            fillColor 
+          ],
+          'circle-stroke-color': [
+            'match',
+            ['get', 'damage_level'], 
+            1, '#ffebee',
+            2, '#ffcdd2',      
+            3, '#ef9a9a',       
+            4, '#e57373',        
+            5, '#ef5350',
+            strokeColor 
+          ],
           'circle-radius': 5,
-          'circle-color': fillColor,
-          'circle-stroke-color': strokeColor,
           'circle-stroke-width': 1,
           'circle-opacity': 0.8,
         },
@@ -298,7 +272,7 @@ const createSARPointLayer = (
   return { layerId: pointLayerId, handler }
 }
 
-const createRegularVectorLayers = (
+const createSarPolygonLayers = (
   map: maplibregl.Map,
   cfg: VectorLayerConfig,
   id: string,
@@ -321,9 +295,27 @@ const createRegularVectorLayers = (
         filter,
         layout: { visibility: visible ? 'visible' : 'none' },
         paint: {
-          'fill-color': fillColor,
-          'fill-opacity': 0.6,
-          'fill-outline-color': strokeColor,
+          'fill-color': [
+            'match',
+            ['get', 'damage_level'], 
+            1, '#f44336',      
+            2, '#e53935',       
+            3, '#d32f2f',        
+            4, '#c62828',
+            5, '#b71c1c',
+            fillColor 
+          ],
+          'fill-outline-color': [
+            'match',
+            ['get', 'damage_level'], 
+            1, '#f44336',      
+            2, '#e53935',       
+            3, '#d32f2f',        
+            4, '#c62828',
+            5, '#b71c1c',
+            strokeColor 
+          ],
+          'fill-opacity': 0.8,
         },
       },
       layerIdConfig.customReferer,
@@ -344,7 +336,16 @@ const createRegularVectorLayers = (
         filter,
         layout: { visibility: visible ? 'visible' : 'none' },
         paint: {
-          'line-color': strokeColor,
+          'line-color': [
+            'match',
+            ['get', 'damage_level'], 
+            1, '#f44336',      
+            2, '#e53935',       
+            3, '#d32f2f',        
+            4, '#c62828',
+            5, '#b71c1c',
+            strokeColor 
+          ],
           'line-width': 1.2,
         },
       },
@@ -353,6 +354,73 @@ const createRegularVectorLayers = (
   } else {
     // map.setFilter(lineLayerId, filter)
   }
+
+  let handler: (() => void) | undefined
+  if (getClickInfo) {
+    const clickHandler = (e: maplibregl.MapLayerMouseEvent) => {
+      const feature = e.features?.[0]
+      const props = feature ? { ...(feature.properties as Record<string, unknown>), type: cfg.type } : null
+      const lngLat: [number, number] | undefined = e.lngLat ? [e.lngLat.lng, e.lngLat.lat] : undefined
+      getClickInfo(lngLat, props)
+    }
+    map.on('click', fillLayerId, clickHandler)
+    map.on('click', lineLayerId, clickHandler)
+    handler = () => {
+      map.off('click', fillLayerId, clickHandler)
+      map.off('click', lineLayerId, clickHandler)
+    }
+  }
+
+  return { layerIds: [fillLayerId, lineLayerId], handler }
+}
+
+const createRegularVectorLayers = (
+  map: maplibregl.Map,
+  cfg: VectorLayerConfig,
+  id: string,
+  sourceId: string,
+  filter: maplibregl.ExpressionSpecification,
+  visible: boolean,
+  fillColor: string,
+  strokeColor: string,
+  getClickInfo?: (lngLat: [number, number] | undefined, object: Record<string, unknown> | null) => void,
+): { layerIds: string[]; handler?: () => void } => {
+  const addLayerIfMissing = (layer: maplibregl.LayerSpecification) => {
+    if (!map.getLayer(layer.id)) {
+      map.addLayer(layer, layerIdConfig.customReferer)
+    }
+  }
+
+  const fillLayerId = `${id}-fill`
+  addLayerIfMissing({
+    id: fillLayerId,
+    type: 'fill',
+    source: sourceId,
+    'source-layer': 'default',
+    minzoom: 10,
+    filter,
+    layout: { visibility: visible ? 'visible' : 'none' },
+    paint: {
+      'fill-color': fillColor,
+      'fill-opacity': 0.6,
+      'fill-outline-color': strokeColor,
+    },
+  })
+
+  const lineLayerId = `${id}-line`
+  addLayerIfMissing({
+    id: lineLayerId,
+    type: 'line',
+    source: sourceId,
+    'source-layer': 'default',
+    minzoom: 10,
+    filter,
+    layout: { visibility: visible ? 'visible' : 'none' },
+    paint: {
+      'line-color': strokeColor,
+      'line-width': 1.2,
+    },
+  })
 
   let handler: (() => void) | undefined
   if (getClickInfo) {
@@ -415,63 +483,72 @@ const createGeoJsonLayers = (
 
   const isItvVector = cfg.type === MapType.itvVector
 
-  // Add symbol layer for Point geometry (icon) - use separate source for Point only
-  const pointFeatures = parsedData.features.filter(
-    (f) => f.geometry && (f.geometry.type === 'Point' || f.geometry.type === 'MultiPoint'),
-  )
-  if (pointFeatures.length > 0) {
-    const pointSourceId = `${id}-point-source`
-    const pointLayerId = `${id}-point`
-    const iconName = 'custom-pin-icon'
-    const iconNamePhoto = 'custom-pin-icon-photo'
+  const pointSourceId = `${id}-point-source`
+  const pointLayerId = `${id}-point`
+  const fillLayerId = `${id}-fill`
+  const lineLayerId = `${id}-line`
+  const iconName = 'custom-pin-icon'
+  const iconNamePhoto = 'custom-pin-icon-photo'
 
-    // Add image to map if not exists
-    if (!map.hasImage(iconName)) {
+  const geoJsonEnsurePointIcons = (
+    targetMap: maplibregl.Map,
+    photoMap: maplibregl.Map,
+    setPhotoCrossOrigin: boolean,
+  ) => {
+    if (!targetMap.hasImage(iconName)) {
       const img = new window.Image(21, 29)
-
       const svg = new Blob([pinSvg], { type: 'image/svg+xml' })
       const url = URL.createObjectURL(svg)
       img.onload = () => {
         try {
-          safeAddImage(map, iconName, img, { pixelRatio: 2 })
+          safeAddImage(targetMap, iconName, img, { pixelRatio: 2 })
         } catch {}
         URL.revokeObjectURL(url)
       }
       img.src = url
     }
-    if (!map.hasImage(iconNamePhoto)) {
+    if (!photoMap.hasImage(iconNamePhoto)) {
       const img = new window.Image(36, 36)
-
       const svg = new Blob([getPinSvgPhoto()], { type: 'image/svg+xml' })
       const url = URL.createObjectURL(svg)
+      if (setPhotoCrossOrigin) img.crossOrigin = 'Anonymous'
       img.onload = () => {
         try {
-          safeAddImage(map, iconNamePhoto, img, { pixelRatio: 2 })
+          safeAddImage(photoMap, iconNamePhoto, img, { pixelRatio: 2 })
         } catch {}
         URL.revokeObjectURL(url)
       }
       img.src = url
     }
+  }
 
-    // Add point source if not exists
-    if (!map.getSource(pointSourceId)) {
-      map.addSource(pointSourceId, {
+  const geoJsonEnsurePointSource = (m: maplibregl.Map, pointFeatures: GeoJSON.Feature[], trackSources: boolean) => {
+    if (!m.getSource(pointSourceId)) {
+      m.addSource(pointSourceId, {
         type: 'geojson',
         data: {
           type: 'FeatureCollection',
           features: pointFeatures,
         },
       })
-      createdSources.push(pointSourceId)
+      if (trackSources) createdSources.push(pointSourceId)
     }
-    if (!map.getLayer(pointLayerId)) {
-      map.addLayer(
+  }
+
+  const geoJsonEnsurePointLayer = (
+    m: maplibregl.Map,
+    setVisibility: boolean,
+    trackLayers: boolean,
+    usePhotoIcon: boolean,
+  ) => {
+    if (!m.getLayer(pointLayerId)) {
+      m.addLayer(
         {
           id: pointLayerId,
           type: 'symbol',
           source: pointSourceId,
           layout: {
-            'icon-image': type === MapType.itvPhoto ? iconNamePhoto : iconName,
+            'icon-image': usePhotoIcon ? iconNamePhoto : iconName,
             'icon-size': 1.5,
             'icon-anchor': 'bottom',
             'icon-allow-overlap': true,
@@ -480,73 +557,98 @@ const createGeoJsonLayers = (
         },
         layerIdConfig.customReferer,
       )
-      createdLayers.push(pointLayerId)
-    } else {
-      map.setLayoutProperty(pointLayerId, 'visibility', visible ? 'visible' : 'none')
-      createdLayers.push(pointLayerId)
+      if (trackLayers) createdLayers.push(pointLayerId)
+    } else if (setVisibility) {
+      m.setLayoutProperty(pointLayerId, 'visibility', visible ? 'visible' : 'none')
+      if (trackLayers) createdLayers.push(pointLayerId)
     }
   }
-  const fillLayerId = `${id}-fill`
 
-  if (!map.getLayer(fillLayerId)) {
-    const paint = isItvVector
-      ? {
-          'fill-color': '#0E94FA',
-          'fill-opacity': 0.3,
-        }
-      : {
-          'fill-color': fillColor,
-          'fill-opacity': 0.6,
-          'fill-outline-color': strokeColor,
-        }
-    map.addLayer(
-      {
-        id: fillLayerId,
-        type: 'fill',
-        source: sourceId,
-        // ensure we only apply the fill to polygon geometries
-        filter: ['any', ['==', ['geometry-type'], 'Polygon'], ['==', ['geometry-type'], 'MultiPolygon']],
-        layout: { visibility: visible ? 'visible' : 'none' },
-        paint,
-        minzoom: isItvVector ? undefined : 10,
-      },
-      layerIdConfig.customReferer,
-    )
-    createdLayers.push(fillLayerId)
-  } else {
-    map.setLayoutProperty(fillLayerId, 'visibility', visible ? 'visible' : 'none')
-    createdLayers.push(fillLayerId)
-  }
-
-  // Line
-  const lineLayerId = `${id}-line`
-  if (!map.getLayer(lineLayerId)) {
-    map.addLayer(
-      {
-        id: lineLayerId,
-        type: 'line',
-        source: sourceId,
-        layout: { visibility: visible ? 'visible' : 'none' },
-        paint: {
-          'line-color': strokeColor,
-          'line-width': 2,
+  const geoJsonEnsureFillLayer = (
+    m: maplibregl.Map,
+    setVisibility: boolean,
+    trackLayers: boolean,
+    paint: Record<string, any>,
+    minzoom?: number,
+  ) => {
+    if (!m.getLayer(fillLayerId)) {
+      m.addLayer(
+        {
+          id: fillLayerId,
+          type: 'fill',
+          source: sourceId,
+          filter: ['any', ['==', ['geometry-type'], 'Polygon'], ['==', ['geometry-type'], 'MultiPolygon']],
+          layout: { visibility: visible ? 'visible' : 'none' },
+          paint,
+          minzoom,
         },
-        filter: [
-          'any',
-          ['==', ['geometry-type'], 'LineString'],
-          ['==', ['geometry-type'], 'MultiLineString'],
-          ['==', ['geometry-type'], 'Polygon'],
-          ['==', ['geometry-type'], 'MultiPolygon'],
-        ],
-        minzoom: isItvVector ? undefined : 10,
-      },
-      layerIdConfig.customReferer,
-    )
-    createdLayers.push(lineLayerId)
-  } else {
-    map.setLayoutProperty(lineLayerId, 'visibility', visible ? 'visible' : 'none')
-    createdLayers.push(lineLayerId)
+        layerIdConfig.customReferer,
+      )
+      if (trackLayers) createdLayers.push(fillLayerId)
+    } else if (setVisibility) {
+      m.setLayoutProperty(fillLayerId, 'visibility', visible ? 'visible' : 'none')
+      if (trackLayers) createdLayers.push(fillLayerId)
+    }
   }
+
+  const geoJsonEnsureLineLayer = (
+    m: maplibregl.Map,
+    setVisibility: boolean,
+    trackLayers: boolean,
+    minzoom?: number,
+  ) => {
+    if (!m.getLayer(lineLayerId)) {
+      m.addLayer(
+        {
+          id: lineLayerId,
+          type: 'line',
+          source: sourceId,
+          layout: { visibility: visible ? 'visible' : 'none' },
+          paint: {
+            'line-color': strokeColor,
+            'line-width': 2,
+          },
+          filter: [
+            'any',
+            ['==', ['geometry-type'], 'LineString'],
+            ['==', ['geometry-type'], 'MultiLineString'],
+            ['==', ['geometry-type'], 'Polygon'],
+            ['==', ['geometry-type'], 'MultiPolygon'],
+          ],
+          minzoom,
+        },
+        layerIdConfig.customReferer,
+      )
+      if (trackLayers) createdLayers.push(lineLayerId)
+    } else if (setVisibility) {
+      m.setLayoutProperty(lineLayerId, 'visibility', visible ? 'visible' : 'none')
+      if (trackLayers) createdLayers.push(lineLayerId)
+    }
+  }
+
+  // Add symbol layer for Point geometry (icon) - use separate source for Point only
+  const pointFeatures = parsedData.features.filter(
+    (f) => f.geometry && (f.geometry.type === 'Point' || f.geometry.type === 'MultiPoint'),
+  )
+  if (pointFeatures.length > 0) {
+    geoJsonEnsurePointIcons(map, map, false)
+    geoJsonEnsurePointSource(map, pointFeatures, true)
+    geoJsonEnsurePointLayer(map, true, true, type === MapType.itvPhoto)
+  }
+
+  const fillPaint = isItvVector
+    ? {
+        'fill-color': '#0E94FA',
+        'fill-opacity': 0.3,
+      }
+    : {
+        'fill-color': fillColor,
+        'fill-opacity': 0.6,
+        'fill-outline-color': strokeColor,
+      }
+
+  geoJsonEnsureFillLayer(map, true, true, fillPaint, isItvVector ? undefined : 10)
+  geoJsonEnsureLineLayer(map, true, true, isItvVector ? undefined : 10)
 
   const removeHandlers: Array<() => void> = []
 
@@ -582,108 +684,13 @@ const createGeoJsonLayers = (
           (f) => f.geometry && (f.geometry.type === 'Point' || f.geometry.type === 'MultiPoint'),
         )
         if (pointFeatures.length > 0) {
-          const pointSourceId = `${id}-point-source`
-          const pointLayerId = `${id}-point`
-          const iconName = 'custom-pin-icon'
-          const iconNamePhoto = 'custom-pin-icon-photo'
-
-          // Load Photo
-          if (!m.hasImage(iconName)) {
-            const img = new window.Image(21, 29)
-            const svg = new Blob([pinSvg], { type: 'image/svg+xml' })
-            const url = URL.createObjectURL(svg)
-            img.onload = () => {
-              try {
-                safeAddImage(m, iconName, img, { pixelRatio: 2 })
-              } catch {}
-              URL.revokeObjectURL(url)
-            }
-            img.src = url
-          }
-          if (!map.hasImage(iconNamePhoto)) {
-            const img = new window.Image(36, 36)
-
-            const svg = new Blob([getPinSvgPhoto()], { type: 'image/svg+xml' })
-            const url = URL.createObjectURL(svg)
-            img.crossOrigin = 'Anonymous'
-            img.onload = () => {
-              try {
-                safeAddImage(map, iconNamePhoto, img, { pixelRatio: 2 })
-              } catch {}
-              URL.revokeObjectURL(url)
-            }
-            img.src = url
-          }
-
-          if (!m.getSource(pointSourceId)) {
-            m.addSource(pointSourceId, {
-              type: 'geojson',
-              data: {
-                type: 'FeatureCollection',
-                features: pointFeatures,
-              },
-            })
-          }
-          if (!m.getLayer(pointLayerId)) {
-            m.addLayer(
-              {
-                id: pointLayerId,
-                type: 'symbol',
-                source: pointSourceId,
-                layout: {
-                  'icon-image': type === MapType.itvPhoto ? iconNamePhoto : iconName,
-                  'icon-size': 1.5,
-                  'icon-anchor': 'bottom',
-                  'icon-allow-overlap': true,
-                  visibility: visible ? 'visible' : 'none',
-                },
-              },
-              layerIdConfig.customReferer,
-            )
-          }
-        }
-        if (!m.getLayer(fillLayerId)) {
-          m.addLayer(
-            {
-              id: fillLayerId,
-              type: 'fill',
-              source: sourceId,
-              filter: ['any', ['==', ['geometry-type'], 'Polygon'], ['==', ['geometry-type'], 'MultiPolygon']],
-              layout: { visibility: visible ? 'visible' : 'none' },
-              paint: {
-                'fill-color': fillColor,
-                'fill-opacity': 0.6,
-                'fill-outline-color': strokeColor,
-              },
-              minzoom: 10,
-            },
-            layerIdConfig.customReferer,
-          )
+          geoJsonEnsurePointIcons(m, map, true)
+          geoJsonEnsurePointSource(m, pointFeatures, false)
+          geoJsonEnsurePointLayer(m, false, false, type === MapType.itvPhoto)
         }
 
-        if (!m.getLayer(lineLayerId)) {
-          m.addLayer(
-            {
-              id: lineLayerId,
-              type: 'line',
-              source: sourceId,
-              layout: { visibility: visible ? 'visible' : 'none' },
-              filter: [
-                'any',
-                ['==', ['geometry-type'], 'LineString'],
-                ['==', ['geometry-type'], 'MultiLineString'],
-                ['==', ['geometry-type'], 'Polygon'],
-                ['==', ['geometry-type'], 'MultiPolygon'],
-              ],
-              paint: {
-                'line-color': strokeColor,
-                'line-width': 2,
-              },
-              minzoom: 10,
-            },
-            layerIdConfig.customReferer,
-          )
-        }
+        geoJsonEnsureFillLayer(m, false, false, fillPaint, isItvVector ? undefined : 10)
+        geoJsonEnsureLineLayer(m, false, false, 10)
       } catch (e) {
         // eslint-disable-next-line no-console
         console.error('geojson layer style-data handler error', e)
@@ -744,7 +751,21 @@ const createVectorLayers = (
   const lineColorArr = color_code ? hexToRGBAArray(color_code) : hexToRGBAArray(getColorByModelId(assetKey ?? ''))
   const fillColor = rgbaArrayToCss(baseColorArr, 'rgba(255,0,0,0.6)')
   const strokeColor = rgbaArrayToCss(lineColorArr, 'rgba(255,0,0,1)')
-  if (assetKey === SARChangeDetectionKey) {
+  if ( assetKey === SARBattleDamageKey ) {
+    const { layerIds, handler } = createSarPolygonLayers(
+      map,
+      cfg,
+      id,
+      sourceId,
+      filter,
+      visible,
+      fillColor,
+      strokeColor,
+      getClickInfo,
+    )
+    createdLayers.push(...layerIds)
+    if (handler) removeHandlers.push(handler)
+  } else if (assetKey === SARChangeDetectionKey) {
     const { layerId, handler } = createSARPointLayer(
       map,
       cfg,
@@ -788,7 +809,74 @@ const createVectorLayers = (
             minzoom: 10,
           })
         }
-        if (assetKey === SARChangeDetectionKey) {
+        if (assetKey === SARBattleDamageKey) {
+          const fillLayerId = `${id}-fill`
+          if (!m.getLayer(fillLayerId)) {
+            m.addLayer(
+              {
+                id: fillLayerId,
+                type: 'fill',
+                source: sourceId,
+                'source-layer': 'default',
+                minzoom: 10,
+                filter,
+                layout: { visibility: 'visible' },
+                paint: {
+                  'fill-color': [
+                    'match',
+                    ['get', 'damage_level'], 
+                    1, '#f44336',      
+                    2, '#e53935',       
+                    3, '#d32f2f',        
+                    4, '#c62828',
+                    5, '#b71c1c',
+                    fillColor 
+                  ],
+                  'fill-outline-color': [
+                    'match',
+                    ['get', 'damage_level'], 
+                    1, '#f44336',      
+                    2, '#e53935',       
+                    3, '#d32f2f',        
+                    4, '#c62828',
+                    5, '#b71c1c',
+                    strokeColor 
+                  ],
+                  'fill-opacity': 0.8,
+                },
+              },
+              layerIdConfig.customReferer,
+            )
+          }
+          const lineLayerId = `${id}-line`
+          if (!m.getLayer(lineLayerId)) {
+            m.addLayer(
+              {
+                id: lineLayerId,
+                type: 'line',
+                source: sourceId,
+                'source-layer': 'default',
+                minzoom: 10,
+                filter,
+                layout: { visibility: 'visible' },
+                paint: {
+                  'line-color': [
+                    'match',
+                    ['get', 'damage_level'], 
+                    1, '#f44336',      
+                    2, '#e53935',       
+                    3, '#d32f2f',        
+                    4, '#c62828',
+                    5, '#b71c1c',
+                    strokeColor 
+                  ],
+                  'line-width': 1.2,
+                },
+              },
+              layerIdConfig.customReferer,
+            )
+          }
+        } else if (assetKey === SARChangeDetectionKey) {
           const pointLayerId = `${id}-point`
           if (!m.getLayer(pointLayerId)) {
             m.addLayer(
@@ -801,9 +889,27 @@ const createVectorLayers = (
                 filter,
                 layout: { visibility: 'visible' },
                 paint: {
+                  'circle-color': [
+                    'match',
+                    ['get', 'damage_level'], 
+                    1, '#ffebee',
+                    2, '#ffcdd2',      
+                    3, '#ef9a9a',       
+                    4, '#e57373',        
+                    5, '#ef5350',
+                    fillColor
+                  ],
+                  'circle-stroke-color': [
+                    'match',
+                    ['get', 'damage_level'], 
+                    1, '#ffebee',
+                    2, '#ffcdd2',      
+                    3, '#ef9a9a',       
+                    4, '#e57373',        
+                    5, '#ef5350',
+                    strokeColor
+                  ],
                   'circle-radius': 5,
-                  'circle-color': fillColor,
-                  'circle-stroke-color': strokeColor,
                   'circle-stroke-width': 1,
                   'circle-opacity': 0.8,
                 },
@@ -909,20 +1015,17 @@ const createItvDrawLayers = (
   const fillColor = rgbaArrayToCss(fillColorArr, `rgba(${DefaultAoiColor}aa)`)
   const strokeColor = rgbaArrayToCss(strokeColorArr, `rgba(${DefaultAoiColor}ff)`)
 
-  // Add symbol layer for Point geometry (icon) - use separate source for Point only
   const pointFeatures = parsedData.features.filter((f) => f.geometry && f.geometry.type === 'Point')
-  if (pointFeatures.length > 0) {
-    const pointSourceId = `${id}-point-source`
-    const pointLayerId = `${id}-point`
-    const pointLabelLayerId = `${id}-point-label`
-    const iconName = 'custom-pin-icon-sdf-hq'
+  const pointSourceId = `${id}-point-source`
+  const pointLayerId = `${id}-point`
+  const pointLabelLayerId = `${id}-point-label`
+  const fillLayerId = `${id}-fill`
+  const lineLayerId = `${id}-line`
+  const iconName = 'custom-pin-icon-sdf-hq'
 
-    // Add image to map if not exists
-    checkImage(map, iconName, 22, 25)
-
-    // Add point source if not exists
-    if (!map.getSource(pointSourceId)) {
-      map.addSource(pointSourceId, {
+  const ensurePointSource = (m: maplibregl.Map) => {
+    if (!m.getSource(pointSourceId)) {
+      m.addSource(pointSourceId, {
         type: 'geojson',
         data: {
           type: 'FeatureCollection',
@@ -931,9 +1034,11 @@ const createItvDrawLayers = (
       })
       createdSources.push(pointSourceId)
     }
+  }
 
-    if (!map.getLayer(pointLayerId)) {
-      map.addLayer(
+  const addOrUpdatePointLayer = (m: maplibregl.Map, setVisibility: boolean, trackLayers: boolean) => {
+    if (!m.getLayer(pointLayerId)) {
+      m.addLayer(
         {
           id: pointLayerId,
           type: 'circle',
@@ -952,15 +1057,16 @@ const createItvDrawLayers = (
         },
         layerIdConfig.customReferer,
       )
-      createdLayers.push(pointLayerId)
-    } else {
-      map.setLayoutProperty(pointLayerId, 'visibility', visible ? 'visible' : 'none')
-      createdLayers.push(pointLayerId)
+      if (trackLayers) createdLayers.push(pointLayerId)
+    } else if (setVisibility) {
+      m.setLayoutProperty(pointLayerId, 'visibility', visible ? 'visible' : 'none')
+      if (trackLayers) createdLayers.push(pointLayerId)
     }
+  }
 
-    // Add label for points (uses feature property 'label' or 'name')
-    if (!map.getLayer(pointLabelLayerId)) {
-      map.addLayer(
+  const addOrUpdatePointLabelLayer = (m: maplibregl.Map, setVisibility: boolean, trackLayers: boolean) => {
+    if (!m.getLayer(pointLabelLayerId)) {
+      m.addLayer(
         {
           id: pointLabelLayerId,
           type: 'symbol',
@@ -988,61 +1094,70 @@ const createItvDrawLayers = (
         },
         layerIdConfig.customReferer,
       )
-      createdLayers.push(pointLabelLayerId)
-    } else {
-      map.setLayoutProperty(pointLabelLayerId, 'visibility', visible ? 'visible' : 'none')
-      createdLayers.push(pointLabelLayerId)
+      if (trackLayers) createdLayers.push(pointLabelLayerId)
+    } else if (setVisibility) {
+      m.setLayoutProperty(pointLabelLayerId, 'visibility', visible ? 'visible' : 'none')
+      if (trackLayers) createdLayers.push(pointLabelLayerId)
     }
   }
 
-  // If there are polygons, create fill layer with data-driven color
-  const fillLayerId = `${id}-fill`
-  if (!map.getLayer(fillLayerId)) {
-    map.addLayer(
-      {
-        id: fillLayerId,
-        type: 'fill',
-        source: sourceId,
-        filter: ['any', ['==', ['geometry-type'], 'Polygon'], ['==', ['geometry-type'], 'MultiPolygon']],
-        layout: { visibility: visible ? 'visible' : 'none' },
-        paint: {
-          'fill-color': ['coalesce', ['get', 'drawFillColor'], fillColor],
-          'fill-opacity': ['coalesce', ['get', 'fillOpacity'], 0.6],
-          // 'fill-outline-color': ['coalesce', ['get', 'strokeColor'], ['get', 'color'], strokeColor],
-        },
-        // minzoom: 10,
-      },
-      layerIdConfig.customReferer,
-    )
-    createdLayers.push(fillLayerId)
-  } else {
-    map.setLayoutProperty(fillLayerId, 'visibility', visible ? 'visible' : 'none')
-    createdLayers.push(fillLayerId)
+  const ensurePointLayers = (m: maplibregl.Map, setVisibility: boolean, trackLayers: boolean) => {
+    if (pointFeatures.length === 0) return
+
+    checkImage(map, iconName, 22, 25)
+    ensurePointSource(m)
+    addOrUpdatePointLayer(m, setVisibility, trackLayers)
+    addOrUpdatePointLabelLayer(m, setVisibility, trackLayers)
   }
 
-  // If there are lines, create line layer with data-driven color
-  const lineLayerId = `${id}-line`
-  if (!map.getLayer(lineLayerId)) {
-    map.addLayer(
-      {
-        id: lineLayerId,
-        type: 'line',
-        source: sourceId,
-        // filter: ['any', ['==', ['geometry-type'], 'LineString'], ['==', ['geometry-type'], 'MultiLineString']],
-        layout: { visibility: visible ? 'visible' : 'none' },
-        paint: {
-          'line-color': ['coalesce', ['get', 'drawBorderColor'], strokeColor],
-          'line-width': ['coalesce', ['get', 'drawBorderSize'], 2],
+  const ensureFillLayer = (m: maplibregl.Map, setVisibility: boolean, trackLayers: boolean) => {
+    if (!m.getLayer(fillLayerId)) {
+      m.addLayer(
+        {
+          id: fillLayerId,
+          type: 'fill',
+          source: sourceId,
+          filter: ['any', ['==', ['geometry-type'], 'Polygon'], ['==', ['geometry-type'], 'MultiPolygon']],
+          layout: { visibility: visible ? 'visible' : 'none' },
+          paint: {
+            'fill-color': ['coalesce', ['get', 'drawFillColor'], fillColor],
+            'fill-opacity': ['coalesce', ['get', 'fillOpacity'], 0.6],
+          },
         },
-        // minzoom: 10,
-      },
-      layerIdConfig.customReferer,
-    )
-    createdLayers.push(lineLayerId)
-  } else {
-    map.setLayoutProperty(lineLayerId, 'visibility', visible ? 'visible' : 'none')
-    createdLayers.push(lineLayerId)
+        layerIdConfig.customReferer,
+      )
+      if (trackLayers) createdLayers.push(fillLayerId)
+    } else if (setVisibility) {
+      m.setLayoutProperty(fillLayerId, 'visibility', visible ? 'visible' : 'none')
+      if (trackLayers) createdLayers.push(fillLayerId)
+    }
   }
+
+  const ensureLineLayer = (m: maplibregl.Map, setVisibility: boolean, trackLayers: boolean) => {
+    if (!m.getLayer(lineLayerId)) {
+      m.addLayer(
+        {
+          id: lineLayerId,
+          type: 'line',
+          source: sourceId,
+          layout: { visibility: visible ? 'visible' : 'none' },
+          paint: {
+            'line-color': ['coalesce', ['get', 'drawBorderColor'], strokeColor],
+            'line-width': ['coalesce', ['get', 'drawBorderSize'], 2],
+          },
+        },
+        layerIdConfig.customReferer,
+      )
+      if (trackLayers) createdLayers.push(lineLayerId)
+    } else if (setVisibility) {
+      m.setLayoutProperty(lineLayerId, 'visibility', visible ? 'visible' : 'none')
+      if (trackLayers) createdLayers.push(lineLayerId)
+    }
+  }
+
+  ensurePointLayers(map, true, true)
+  ensureFillLayer(map, true, true)
+  ensureLineLayer(map, true, true)
 
   const removeHandlers: Array<() => void> = []
   try {
@@ -1057,115 +1172,9 @@ const createItvDrawLayers = (
             data: parsedData as any,
           })
         }
-        // Restore point source/layer if needed
-        const pointFeatures = parsedData.features.filter((f) => f.geometry && f.geometry.type === 'Point')
-        if (pointFeatures.length > 0) {
-          const pointSourceId = `${id}-point-source`
-          const pointLayerId = `${id}-point`
-          const pointLabelLayerId = `${id}-point-label`
-          const iconName = 'custom-pin-icon-sdf-hq'
-          checkImage(map, iconName, 22, 25)
-          if (!m.getSource(pointSourceId)) {
-            m.addSource(pointSourceId, {
-              type: 'geojson',
-              data: {
-                type: 'FeatureCollection',
-                features: pointFeatures,
-              },
-            })
-          }
-
-          // Point
-          if (!m.getLayer(pointLayerId)) {
-            m.addLayer(
-              {
-                id: pointLayerId,
-                type: 'circle',
-                source: pointSourceId,
-                filter: ['!=', ['get', 'drawType'], ItvDrawType.TEXT],
-                layout: {
-                  visibility: visible ? 'visible' : 'none',
-                },
-                paint: {
-                  'circle-color': ['coalesce', ['get', 'drawFillColor'], '#00F0FF'],
-                  'circle-radius': ['coalesce', ['get', 'drawSize'], 6],
-                  'circle-stroke-color': ['coalesce', ['get', 'drawBorderColor'], '#ffffff'],
-                  'circle-stroke-width': ['coalesce', ['get', 'drawBorderSize'], 1],
-                  'circle-opacity': 1,
-                },
-              },
-              layerIdConfig.customReferer,
-            )
-          }
-
-          // Point Label
-          if (!m.getLayer(pointLabelLayerId)) {
-            m.addLayer(
-              {
-                id: pointLabelLayerId,
-                type: 'symbol',
-                source: pointSourceId,
-                filter: ['==', ['get', 'drawType'], ItvDrawType.TEXT],
-                layout: {
-                  'text-field': ['coalesce', ['get', 'drawText'], ''],
-                  'text-font': ['Noto Sans Regular'],
-                  'text-size': ['coalesce', ['get', 'drawSize'], 12],
-                  'text-letter-spacing': 0,
-                  'text-offset': [0, -1.2],
-                  'text-anchor': 'top',
-                  'text-allow-overlap': false,
-                  'symbol-placement': 'point',
-                  'text-rotate': ['coalesce', ['get', 'drawDegree'], 0],
-                  'text-rotation-alignment': 'viewport',
-                  'text-pitch-alignment': 'viewport',
-                  visibility: visible ? 'visible' : 'none',
-                },
-                paint: {
-                  'text-color': ['coalesce', ['get', 'drawTextColor'], '#222'],
-                  'text-halo-color': ['coalesce', ['get', 'drawTextHaloColor'], '#fff'],
-                  'text-halo-width': ['coalesce', ['get', 'drawTextHaloSize'], 1],
-                },
-              },
-              layerIdConfig.customReferer,
-            )
-          }
-        }
-
-        if (!m.getLayer(fillLayerId)) {
-          m.addLayer(
-            {
-              id: fillLayerId,
-              type: 'fill',
-              source: sourceId,
-              filter: ['any', ['==', ['geometry-type'], 'Polygon'], ['==', ['geometry-type'], 'MultiPolygon']],
-              layout: { visibility: visible ? 'visible' : 'none' },
-              paint: {
-                'fill-color': ['coalesce', ['get', 'drawFillColor'], fillColor],
-                'fill-opacity': ['coalesce', ['get', 'fillOpacity'], 0.6],
-              },
-              // minzoom: 10,
-            },
-            layerIdConfig.customReferer,
-          )
-        }
-
-        if (!m.getLayer(lineLayerId)) {
-          m.addLayer(
-            {
-              id: lineLayerId,
-              type: 'line',
-              source: sourceId,
-              // filter: ['any', ['==', ['geometry-type'], 'LineString'], ['==', ['geometry-type'], 'MultiLineString']],
-              layout: { visibility: visible ? 'visible' : 'none' },
-              paint: {
-                'line-color': ['coalesce', ['get', 'drawBorderColor'], strokeColor],
-                'line-width': ['coalesce', ['get', 'drawBorderSize'], 2],
-              },
-              // minzoom: 10,
-            },
-            layerIdConfig.customReferer,
-          )
-        }
+        ensurePointLayers(m, false, false)
+        ensureFillLayer(m, false, false)
+        ensureLineLayer(m, false, false)
       } catch (e) {
         // eslint-disable-next-line no-console
         console.error('geojson layer style-data handler error', e)
@@ -1328,17 +1337,6 @@ const checkImage = (m: maplibregl.Map, iconName: string, imgWidth = 21, imgHeigh
     img.src = url
   }
 }
-
-//  if (!map.hasImage(iconName)) {
-//     const img = new window.Image(22, 25)
-//     const url = '/map/pin.svg'
-//     img.onload = () => {
-//       try {
-//         safeAddImage(map, iconName, img, { pixelRatio: 2, sdf: true })
-//       } catch {}
-//     }
-//     img.src = url
-//   }
 
 const createItvVectorTileLayers = (
   cfg: ItvVectorLayerConfig,
@@ -1581,6 +1579,71 @@ const createItvAnnotationLayers = (
   const pointSourceId = `${id}-point-source`
   const pointLayerId = `${id}-point`
 
+  const getSymbolImageName = (sidc: string) => `mil-symbol-${sidc.replaceAll(/[^a-zA-Z0-9]/g, '_')}`
+
+  const buildSymbolProperties = (annotationLabel?: AnnotationLabelItem, symbolSize?: number) => {
+    const cleanProperties = Object.fromEntries(
+      Object.entries(annotationLabel || {}).map(([key, value]) => [key, value ?? undefined]),
+    )
+    return { ...cleanProperties, size: symbolSize }
+  }
+
+  const addSvgImageToMap = (m: maplibregl.Map, imageName: string, svgString: string, width: number, height: number) => {
+    const svg = new Blob([svgString], { type: 'image/svg+xml' })
+    const url = URL.createObjectURL(svg)
+    const img = new window.Image(width, height)
+
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.width
+        canvas.height = img.height
+        const ctx = canvas.getContext('2d')
+        if (ctx) {
+          ctx.drawImage(img, 0, 0)
+
+          const croppedCanvas = cropCanvasImage(canvas, false)
+          const croppedCtx = croppedCanvas.getContext('2d')
+          if (croppedCtx) {
+            const croppedImageData = croppedCtx.getImageData(0, 0, croppedCanvas.width, croppedCanvas.height)
+            safeAddImage(m, imageName, croppedImageData as any)
+          }
+        }
+        URL.revokeObjectURL(url)
+      } catch (e) {
+        console.error(`Failed to add symbol image ${imageName}:`, e)
+        URL.revokeObjectURL(url)
+      }
+    }
+
+    img.onerror = () => {
+      console.error(`Failed to load symbol image ${imageName}`)
+      URL.revokeObjectURL(url)
+    }
+
+    img.src = url
+  }
+
+  const ensureSymbolImage = (
+    m: maplibregl.Map,
+    sidc: string,
+    annotationLabel?: AnnotationLabelItem,
+    symbolSize?: number,
+    width?: number,
+    height?: number,
+  ) => {
+    const properties = buildSymbolProperties(annotationLabel, symbolSize)
+    const sym = new ms.Symbol(sidc, properties)
+    const svgString = sym.asSVG()
+    const size = sym.getSize()
+    const imageName = getSymbolImageName(sidc)
+    const finalWidth = width ?? size.width
+    const finalHeight = height ?? size.height
+
+    addSvgImageToMap(m, imageName, svgString, finalWidth, finalHeight)
+    return { imageName, width: finalWidth, height: finalHeight }
+  }
+
   // Create symbol images from features and store symbol metadata
   const symbolMap = new Map<
     string,
@@ -1592,51 +1655,7 @@ const createItvAnnotationLayers = (
     if (sidc && !symbolMap.has(sidc)) {
       try {
         const symbolSize = f.annotationSymbol?.symbolSize || 40
-        const cleanProperties = Object.fromEntries(
-          Object.entries(f.annotationLabel || {}).map(([key, value]) => [key, value ?? undefined]),
-        )
-        const properties = { ...cleanProperties, size: symbolSize }
-        const sym = new ms.Symbol(sidc, properties)
-        const svgString = sym.asSVG()
-        const { width, height } = sym.getSize()
-
-        // Create image name based on SIDC
-        const imageName = `mil-symbol-${sidc.replaceAll(/[^a-zA-Z0-9]/g, '_')}`
-
-        // Convert SVG string to data URL and add to map
-        const svg = new Blob([svgString], { type: 'image/svg+xml' })
-        const url = URL.createObjectURL(svg)
-
-        const img = new window.Image(width, height)
-        img.onload = () => {
-          try {
-            // Create canvas from image
-            const canvas = document.createElement('canvas')
-            canvas.width = img.width
-            canvas.height = img.height
-            const ctx = canvas.getContext('2d')
-            if (ctx) {
-              ctx.drawImage(img, 0, 0)
-
-              // Crop left/right
-              const croppedCanvas = cropCanvasImage(canvas, false)
-              const croppedCtx = croppedCanvas.getContext('2d')
-              if (croppedCtx) {
-                const croppedImageData = croppedCtx.getImageData(0, 0, croppedCanvas.width, croppedCanvas.height)
-                safeAddImage(map, imageName, croppedImageData as any)
-              }
-            }
-            URL.revokeObjectURL(url)
-          } catch (e) {
-            console.error(`Failed to add symbol image ${imageName}:`, e)
-            URL.revokeObjectURL(url)
-          }
-        }
-        img.onerror = () => {
-          console.error(`Failed to load symbol image ${imageName}`)
-          URL.revokeObjectURL(url)
-        }
-        img.src = url
+        const { imageName, width, height } = ensureSymbolImage(map, sidc, f.annotationLabel || {}, symbolSize)
 
         symbolMap.set(sidc, { imageName, width, height, symbolSize, annotationLabel: f.annotationLabel || {} })
       } catch (e) {
@@ -1669,7 +1688,7 @@ const createItvAnnotationLayers = (
   features.forEach((f) => {
     const sidc = f.sidc || ''
     if (sidc) {
-      const imageName = `mil-symbol-${sidc.replaceAll(/[^a-zA-Z0-9]/g, '_')}`
+      const imageName = getSymbolImageName(sidc)
       if (map.hasImage(imageName)) {
         map.removeImage(imageName)
       }
@@ -1722,46 +1741,7 @@ const createItvAnnotationLayers = (
         symbolMap.forEach(({ imageName, width, height, symbolSize, annotationLabel }, sidc) => {
           if (!m.hasImage(imageName)) {
             try {
-              const cleanProperties = Object.fromEntries(
-                Object.entries(annotationLabel || {}).map(([key, value]) => [key, value ?? undefined]),
-              )
-              const properties = { ...cleanProperties, size: symbolSize }
-              const sym = new ms.Symbol(sidc, properties)
-              // ---------------
-              // const sym = new ms.Symbol(sidc, { size: symbolSize })
-              const svgString = sym.asSVG()
-              const svg = new Blob([svgString], { type: 'image/svg+xml' })
-              const url = URL.createObjectURL(svg)
-              const img = new window.Image(width, height)
-              img.onload = () => {
-                try {
-                  // Create canvas from image
-                  const canvas = document.createElement('canvas')
-                  canvas.width = img.width
-                  canvas.height = img.height
-                  const ctx = canvas.getContext('2d')
-                  if (ctx) {
-                    ctx.drawImage(img, 0, 0)
-
-                    // Crop left/right
-                    const croppedCanvas = cropCanvasImage(canvas, false)
-                    const croppedCtx = croppedCanvas.getContext('2d')
-                    if (croppedCtx) {
-                      const croppedImageData = croppedCtx.getImageData(0, 0, croppedCanvas.width, croppedCanvas.height)
-                      safeAddImage(m, imageName, croppedImageData as any)
-                    }
-                  }
-                  URL.revokeObjectURL(url)
-                } catch (e) {
-                  console.error(`Failed to add symbol image ${imageName}:`, e)
-                  URL.revokeObjectURL(url)
-                }
-              }
-              img.onerror = () => {
-                console.error(`Failed to load symbol image ${imageName}`)
-                URL.revokeObjectURL(url)
-              }
-              img.src = url
+              ensureSymbolImage(m, sidc, annotationLabel, symbolSize, width, height)
             } catch (e) {
               console.error(`Failed to recreate symbol for SIDC ${sidc}:`, e)
             }
@@ -1807,3 +1787,48 @@ const createItvAnnotationLayers = (
     cleanup: buildCleanup(map, createdLayers, createdSources, removeHandlers),
   }
 }
+
+/**
+ * Create MapLibre sources + layers from LayerConfig (tile/vector/geojson)
+ * Performs side-effects on provided map instance. Returns created ids + cleanup function.
+ */
+export const createMapLibreLayersFromConfig = (
+  cfg: LayerConfig,
+  deps: MapLibreLayerDeps,
+): CreatedMapLibreLayers | null => {
+  if (!cfg || !('type' in cfg) || !deps?.map) return null
+  const { map, thresholds = {}, layerVisibility, getClickInfo } = deps
+  const visible = layerVisibility ? !!layerVisibility[cfg.id] : true
+
+  if (cfg.type === MapType.tile) {
+    return createTileLayers(cfg, map, visible)
+  }
+
+  if (cfg.type === MapType.geojson || cfg.type === MapType.itvVector || cfg.type === MapType.itvPhoto) {
+    return createGeoJsonLayers(cfg, map, visible, getClickInfo)
+  }
+
+  if (cfg.type === MapType.vector) {
+    return createVectorLayers(cfg, map, visible, thresholds, getClickInfo)
+  }
+
+  if (cfg.type === MapType.itvRasterTile || cfg.type === MapType.itvGallery) {
+    return createItvRasterTileLayers(cfg as ItvTileLayerConfig, map, visible)
+  }
+
+  if (cfg.type === MapType.itvVectorTile) {
+    return createItvVectorTileLayers(cfg, map, visible)
+  }
+
+  if (cfg.type === MapType.itvDraw) {
+    return createItvDrawLayers(cfg, map, visible)
+  }
+
+  if (cfg.type === MapType.itvAnnotation) {
+    return createItvAnnotationLayers(cfg, map, visible)
+  }
+
+  return null
+}
+
+export default createMapLibreLayersFromConfig

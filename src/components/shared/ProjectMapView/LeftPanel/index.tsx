@@ -75,6 +75,7 @@ export type LeftPanelProps = {
   mapId: string
   mapLibre: Record<string, maplibregl.Map | null>
   onUpdateItvLayers: Dispatch<SetStateAction<ItvLayer[]>>
+  onEditingItvChange?: (isEditing: boolean) => void
 }
 
 const LeftPanel: React.FC<LeftPanelProps> = ({
@@ -109,11 +110,22 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
   mapId,
   mapLibre,
   onUpdateItvLayers,
+  onEditingItvChange,
 }) => {
   const { showAlert, showLoading, hideLoading } = useGlobalUI()
   const { isOpenWeeklyGroupPanel, setIsOpenWeeklyGroupPanel, selectedModels } = useWeeklyMapStore()
   const [currentItv, setCurrentItv] = useState<ItvLayerType | null>(null)
   const [itvMode, setItvMode] = useState<ItvMode | null>(null)
+
+  // Calculate isEditingItv from itvMode and currentItv
+  const isEditingItv = useMemo(() => {
+    return itvMode !== null && currentItv !== null
+  }, [itvMode, currentItv])
+
+  // Notify parent when editing status changes
+  useEffect(() => {
+    onEditingItvChange?.(isEditingItv)
+  }, [isEditingItv, onEditingItvChange])
   const [layerInfo, setLayerInfo] = useState<ItvLayer | undefined>(undefined)
   const [showGalleryInfo, setShowGalleryInfo] = useState(false)
 
@@ -398,6 +410,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
           activeView={activeView}
           setActiveView={setActiveView}
           pageLevel={pageLevel}
+          isEditingItv={isEditingItv}
         />
       )}
 

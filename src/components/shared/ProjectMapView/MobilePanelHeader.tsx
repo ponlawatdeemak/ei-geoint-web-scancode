@@ -5,6 +5,7 @@ import LayersIcon from '@mui/icons-material/Layers'
 import DateRangeIcon from '@mui/icons-material/DateRange'
 import { useTranslation } from 'react-i18next'
 import { GetModelSubscriptionWeeklyDtoOut, ProjectMapViewPageLevel } from '@interfaces/index'
+import { useGlobalUI } from '@/providers/global-ui/GlobalUIContext'
 
 export enum ActiveViewLocal {
   layer = 0,
@@ -18,6 +19,7 @@ type Props = {
   setActiveView: (v: number) => void
   pageLevel: ProjectMapViewPageLevel
   weeklySubscriptionModel?: GetModelSubscriptionWeeklyDtoOut[]
+  isEditingItv?: boolean
 }
 
 const MobilePanelHeader: React.FC<Props> = ({
@@ -26,8 +28,10 @@ const MobilePanelHeader: React.FC<Props> = ({
   setActiveView,
   pageLevel,
   weeklySubscriptionModel,
+  isEditingItv,
 }) => {
   const { t } = useTranslation('common')
+  const { showAlert } = useGlobalUI()
 
   return (
     <Box className='flex flex-col'>
@@ -42,6 +46,14 @@ const MobilePanelHeader: React.FC<Props> = ({
           value={activeView}
           variant='fullWidth'
           onChange={(_, v) => {
+            if (v === ActiveViewLocal.weekly && isEditingItv) {
+              showAlert?.({
+                status: 'warning',
+                content: t('alert.closeItvLayerFirst'),
+              })
+              return
+            }
+
             setActiveView(v)
           }}
         >

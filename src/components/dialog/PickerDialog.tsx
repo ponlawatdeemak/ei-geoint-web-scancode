@@ -85,7 +85,7 @@ export default function PickerDialog<T extends { id: string | number }>({
   }, [open, initialSelectedIds])
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth='lg'>
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth='xl'>
       <DialogTitle>{title || t('dialog.pickerTitle')}</DialogTitle>
       <DialogContent className='p-0!'>
         <SearchWrapper

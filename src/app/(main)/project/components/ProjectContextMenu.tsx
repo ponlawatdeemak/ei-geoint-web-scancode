@@ -58,6 +58,7 @@ export const ProjectContextMenu = ({
             onView(project)
             onClose()
           }}
+          className='2k:gap-2'
         >
           <ListItemIcon>
             <VisibilityIcon fontSize='small' />
@@ -71,6 +72,7 @@ export const ProjectContextMenu = ({
             onEdit(project)
             onClose()
           }}
+          className='2k:gap-2'
         >
           <ListItemIcon>
             <EditIcon fontSize='small' />
@@ -83,6 +85,7 @@ export const ProjectContextMenu = ({
           onOpenMap(project)
           onClose()
         }}
+        className='2k:gap-2'
       >
         <ListItemIcon>
           <PublicIcon fontSize='small' />
@@ -91,7 +94,7 @@ export const ProjectContextMenu = ({
       </MenuItem>
       {showDelete && onDelete && (
         <MenuItem
-          className='text-error!'
+          className='2k:gap-2 text-error!'
           onClick={() => {
             onDelete(project)
             onClose()

@@ -55,7 +55,7 @@ const LocatorList: FC<LocatorListProps> = ({ activePhotoList, setActivePhotoList
   const selectedPhotoList = useMemo(() => activePhotoList.filter((photo) => photo.selected), [activePhotoList])
 
   return (
-    <div className='flex flex-col gap-2'>
+    <div className='flex flex-1 flex-col gap-2 overflow-hidden'>
       <div className='flex items-center justify-between'>
         <Typography className='text-left' variant='subtitle2' component='label'>
           {t('table.totalResult', { count: activePhotoList.length })}
@@ -74,10 +74,9 @@ const LocatorList: FC<LocatorListProps> = ({ activePhotoList, setActivePhotoList
         )}
       </div>
       <div
-        className={classNames('grid grid-cols-3 content-start gap-4 overflow-auto py-2 lg:py-4', {
-          'h-[calc(100vh-220px)] lg:h-[calc(100vh-260px)]': isNoAddressOrAllTab,
-          'h-[calc(100vh-160px)] lg:h-[calc(100vh-180px)]': !isNoAddressOrAllTab,
-        })}
+        className={classNames(
+          'locator-card-container grid min-h-0 flex-1 grid-cols-3 content-start gap-4 overflow-auto py-2 lg:py-4',
+        )}
       >
         {activePhotoList?.map((photo) => (
           <LocatorItem

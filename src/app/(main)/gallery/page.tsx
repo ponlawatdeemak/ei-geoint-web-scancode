@@ -37,7 +37,7 @@ const GalleryPage = () => {
 
   const orgId = useMemo(() => {
     const orgId = searchParams.get('orgId')
-    return typeof orgId === 'string' ? orgId : ''
+    return typeof orgId === 'string' ? orgId : null
   }, [searchParams])
 
   const [openDialog, setOpenDialog] = useState<ServiceConfig | null>(null)
@@ -45,7 +45,7 @@ const GalleryPage = () => {
 
   const { data: orgData }: UseQueryResult<GetOrganizationDtoOut | undefined, Error> = useQuery({
     queryKey: ['get-org', orgId],
-    queryFn: () => service.organizations.get(orgId),
+    queryFn: () => service.organizations.get(orgId || ''),
     enabled: !!orgId,
   })
 
@@ -90,8 +90,8 @@ const GalleryPage = () => {
     <Box className='relative flex h-full w-full flex-col'>
       <div
         className={classNames('flex justify-between bg-white px-4 py-2', {
-          'lg:h-[56px]': !orgId,
-          'lg:h-[80px]': !!orgId,
+          'lg:h-14': !orgId,
+          'lg:h-20': !!orgId,
         })}
       >
         <div className='flex flex-row gap-2'>
@@ -103,8 +103,8 @@ const GalleryPage = () => {
             </div>
           )}
           <div className='flex flex-col gap-2'>
-            <div className='flex items-center gap-4 lg:h-[40px]'>
-              <div className='text-base lg:text-2xl lg:h-[40px]'>{t('menu.gallery')}</div>
+            <div className='flex items-center gap-4 lg:h-10'>
+              <div className='text-base lg:h-10 lg:text-2xl'>{t('menu.gallery')}</div>
               {canUpload && (
                 <div>
                   <Button
@@ -116,7 +116,7 @@ const GalleryPage = () => {
                     variant='contained'
                     color='primary'
                     startIcon={isLg ? <Add /> : undefined}
-                    className='!min-w-0 !px-2 lg:!px-4 lg:h-[40px]'
+                    className='min-w-0! px-2! lg:h-10 lg:px-4!'
                     disabled={!!imageProcessData && imageProcessData.status?.id !== ImageStatus.uploadPending}
                   >
                     {isLg ? t('gallery.title.upload') : <Add />}
@@ -151,6 +151,7 @@ const GalleryPage = () => {
           serviceId={openDialog}
           open={openDialog !== null}
           onClose={handleCloseDialog}
+          searchParamsOrgId={orgId || null}
           // onComplete={onUploadComplete}
         />
       }

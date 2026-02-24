@@ -135,7 +135,12 @@ export default function TaskMapPage() {
   }, [projectId, showAlert])
 
   useEffect(() => {
-    if (data && String(data?.statusId) !== String(TaskStatus.completed) && data?.serviceId === ServiceConfig.optical) {
+    if (
+      data &&
+      String(data?.statusId) !== String(TaskStatus.completed) &&
+      String(data?.statusId) !== String(TaskStatus.failed) &&
+      data?.serviceId === ServiceConfig.optical
+    ) {
       showAlert({
         status: 'warning',
         content: t(

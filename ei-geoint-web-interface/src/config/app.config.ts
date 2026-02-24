@@ -6,7 +6,7 @@ import { SearchImagesResultItem } from '../dto/images'
 export enum AuthPath {
   Login = '/auth/login',
   ForgotPassword = '/auth/forgot-password',
-  ResetPassword = '/auth/reset-password',
+  ResetPassword = '/auth/reset-pwd',
 }
 
 export enum PrivatePath {
@@ -231,6 +231,10 @@ export type TileLayerConfig = {
   data?: string | string[]
   tiles?: string | string[]
   geometry: Geometry | null
+  bands?: number[]
+  bandsCount?: number
+  imageType?: number
+  colormapName?: string
 }
 
 export type VectorLayerConfig = {

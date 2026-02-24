@@ -364,7 +364,7 @@ const ImagesSelector: FC<Props> = ({
   }, [searchValue, serviceId, modelList, projectId, orgId, imageSort.orderBy, imageSort.order, resetPagination])
 
   return (
-    <div className='flex min-h-[600px] flex-col gap-2 p-0 lg:h-full lg:flex-row lg:p-6'>
+    <div className='.temp-root flex min-h-[600px] flex-col gap-2 p-0 lg:h-full lg:flex-row lg:p-6'>
       <div className='h-full bg-white p-0 lg:w-[50%] lg:px-6 lg:pt-6 lg:pb-0'>
         <SearchPanel onChange={setSearchValue} loading={isFetching}>
           <ResultSwitch value={viewType} onChange={setViewType} />

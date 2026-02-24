@@ -1,7 +1,6 @@
 import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator'
 import { Type } from 'class-transformer'
 import { GetModelAllDtoOut, PostSearchLayersTasksDtoOut, SortType, TaskFeature, TaskLayer } from '../..'
-import { StacFeatureItem } from '../thaicom/stac.dto'
 
 export class GetModelSubscriptionWeeklyDtoOut extends GetModelAllDtoOut {
   children?: GetModelSubscriptionWeeklyDtoOut[]

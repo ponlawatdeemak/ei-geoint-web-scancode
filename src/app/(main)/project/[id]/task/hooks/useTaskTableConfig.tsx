@@ -20,10 +20,14 @@ const fetchRootModels = async () => {
 const getFilteredModels = (models: SelectOption[], serviceId?: number) => {
   if (!serviceId) return models
   if (serviceId === ServiceConfig.optical) {
-    return models.filter((m) => [RootModelConfig.objectDetection, RootModelConfig.changeDetection].includes(Number(m.id)))
+    return models.filter((m) =>
+      [RootModelConfig.objectDetection, RootModelConfig.changeDetection].includes(Number(m.id)),
+    )
   }
   if (serviceId === ServiceConfig.sar) {
-    return models.filter((m) => [RootModelConfig.sarBattleDamage, RootModelConfig.sarChangeDetection].includes(Number(m.id)))
+    return models.filter((m) =>
+      [RootModelConfig.sarBattleDamage, RootModelConfig.sarChangeDetection].includes(Number(m.id)),
+    )
   }
   return models
 }
@@ -65,8 +69,7 @@ export const useTaskTableConfig = ({
   )
 
   const renderFeature = useCallback(
-    (row: Task) =>
-      row.taskModels?.map((tm) => renderLocalizedName(tm.model)).join(', '),
+    (row: Task) => row.taskModels?.map((tm) => renderLocalizedName(tm.model)).join(', '),
     [renderLocalizedName],
   )
 
@@ -88,7 +91,12 @@ export const useTaskTableConfig = ({
   const renderActions = useCallback(
     (
       row: Task,
-      { rowKey, removeKeysFromSelection, onEdit, onDelete }: {
+      {
+        rowKey,
+        removeKeysFromSelection,
+        onEdit,
+        onDelete,
+      }: {
         rowKey: (row: Task) => string | number
         removeKeysFromSelection: (keys: (string | number)[]) => void
         onEdit?: (row: Task) => void
@@ -200,7 +208,11 @@ export const useTaskTableConfig = ({
   )
 
   const handleServiceChange = useCallback(
-    async (value: unknown, filters: Record<string, string>, helpers: { setSelectOptions: (value: unknown) => void; setSelectLoading: (value: unknown) => void }) => {
+    async (
+      value: unknown,
+      filters: Record<string, string>,
+      helpers: { setSelectOptions: (value: unknown) => void; setSelectLoading: (value: unknown) => void },
+    ) => {
       let newModels: SelectOption[] = []
       const allModels = await fetchRootModels()
 
@@ -211,7 +223,9 @@ export const useTaskTableConfig = ({
         newModels = allModels
       }
 
-      const updateOptions = helpers.setSelectOptions as (fn: (prev: Record<string, SelectOption[]>) => Record<string, SelectOption[]>) => void
+      const updateOptions = helpers.setSelectOptions as (
+        fn: (prev: Record<string, SelectOption[]>) => Record<string, SelectOption[]>,
+      ) => void
       updateOptions((prev) => ({
         ...prev,
         rootModelId: newModels,

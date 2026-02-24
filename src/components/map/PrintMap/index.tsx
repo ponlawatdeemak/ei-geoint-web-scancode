@@ -1,24 +1,23 @@
-import { Box } from '@mui/material'
+import { Box, useMediaQuery, useTheme } from '@mui/material'
 import classNames from 'classnames'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import PrintMapDialog from './PrintMapDialog'
 import { exportPdf } from '@/utils/export-pdf'
-import { useTranslation } from 'react-i18next'
 import { useGlobalUI } from '@/providers/global-ui/GlobalUIContext'
 
 import { LngLatBoundsLike } from 'maplibre-gl'
 import useMapStore from '@/components/common/map/store/map'
 
-import { ResponseLanguage } from '@interfaces/config'
-
-import { captureMapControlImage, captureMapWithControl } from '@/utils/capture'
+import { captureMapWithControl } from '@/utils/capture'
 import { thaiExtent } from '@/components/common/map/config/map'
-import { GetProjectDtoOut } from '@interfaces/index'
+import { fromDecimalDegree } from '@/utils/coordinate'
+import { useSettings } from '@/hook/useSettings'
 
 export interface GridType {
   key: string
   percent: number
   value: string
+  exportValue?: string
 }
 
 export interface EndBoundsType {
@@ -75,6 +74,10 @@ const PrintMapExportMain: React.FC<PrintMapExportMainProps> = ({
 }) => {
   const { mapLibre } = useMapStore()
   const { showLoading, hideLoading } = useGlobalUI()
+  const { copyLocationType } = useSettings()
+
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
   const [openPrintMapDialog, setOpenPrintMapDialog] = useState<boolean>(isOpen ?? false)
 
@@ -183,7 +186,7 @@ const PrintMapExportMain: React.FC<PrintMapExportMainProps> = ({
   useEffect(() => {
     if (!mapExport || !openPrintMapDialog || hasFitBoundsRef.current) return
     if (mapGeometry) {
-      mapExport.fitBounds(mapGeometry as LngLatBoundsLike, { padding: 0 })
+      mapExport.fitBounds(mapGeometry, { padding: 0 })
       hasFitBoundsRef.current = true
     }
   }, [mapExport, mapGeometry, openPrintMapDialog])
@@ -199,7 +202,7 @@ const PrintMapExportMain: React.FC<PrintMapExportMainProps> = ({
   useEffect(() => {
     if (miniMapExport) {
       if (defaultMiniMapExtent) {
-        miniMapExport.fitBounds(defaultMiniMapExtent as LngLatBoundsLike, { padding: 0 })
+        miniMapExport.fitBounds(defaultMiniMapExtent, { padding: 0 })
       } else {
         miniMapExport.fitBounds(thaiExtent, { padding: 0 })
       }
@@ -210,26 +213,64 @@ const PrintMapExportMain: React.FC<PrintMapExportMainProps> = ({
     () =>
       Array.from({ length: GRID_COLS - 1 }).map((_, index) => {
         const gap = mapEndBounds.xmax - mapEndBounds.xmin
+        const lng = mapEndBounds.xmin + ((index + 1) / GRID_COLS) * gap
+        const type = (copyLocationType as any) || 'DD'
+
+        let label = ''
+        let exportLabel = ''
+        const coordString = fromDecimalDegree(lng, mapEndBounds.ymin, type)
+        if (type === 'DD') {
+          label = lng.toFixed(4)
+          exportLabel = coordString.split(',')[1]?.trim() || ''
+        } else if (type === 'MGRS') {
+          label = coordString
+          exportLabel = coordString
+        } else {
+          // UTM returns "easting, northing" -> take easting with no decimals
+          label = coordString.split(',')[0]?.trim().split('.')[0] || ''
+          exportLabel = coordString.split(',')[0]?.trim() || ''
+        }
+
         return {
           key: `col${index}`,
           percent: ((index + 1) / GRID_COLS) * 100,
-          value: (mapEndBounds.xmin + ((index + 1) / GRID_COLS) * gap).toFixed(5),
+          value: isMobile ? label || lng.toFixed(4) : exportLabel || lng.toFixed(5),
+          exportValue: exportLabel || lng.toFixed(5),
         }
       }),
-    [mapEndBounds.xmax, mapEndBounds.xmin],
+    [mapEndBounds.xmax, mapEndBounds.xmin, mapEndBounds.ymin, copyLocationType, isMobile],
   )
 
   const gridRowsArray: GridType[] = useMemo(
     () =>
       Array.from({ length: GRID_ROWS - 1 }).map((_, index) => {
         const gap = mapEndBounds.ymax - mapEndBounds.ymin
+        const lat = mapEndBounds.ymin + ((index + 1) / GRID_ROWS) * gap
+        const type = (copyLocationType as any) || 'DD'
+
+        let label = ''
+        let exportLabel = ''
+        const coordString = fromDecimalDegree(mapEndBounds.xmin, lat, type)
+        if (type === 'DD') {
+          label = lat.toFixed(4)
+          exportLabel = coordString.split(',')[0]?.trim() || ''
+        } else if (type === 'MGRS') {
+          label = coordString
+          exportLabel = coordString
+        } else {
+          // UTM returns "easting, northing" -> take northing with no decimals
+          label = coordString.split(',')[1]?.trim().split('.')[0] || ''
+          exportLabel = coordString.split(',')[1]?.trim() || ''
+        }
+
         return {
           key: `row${index}`,
           percent: ((index + 1) / GRID_ROWS) * 100,
-          value: (mapEndBounds.ymin + ((index + 1) / GRID_ROWS) * gap).toFixed(5),
+          value: isMobile ? label || lat.toFixed(4) : exportLabel || lat.toFixed(5),
+          exportValue: exportLabel || lat.toFixed(5),
         }
       }),
-    [mapEndBounds.ymax, mapEndBounds.ymin],
+    [mapEndBounds.ymax, mapEndBounds.ymin, mapEndBounds.xmin, copyLocationType, isMobile],
   )
 
   const handleMapPdfExport = useCallback(async () => {
@@ -255,14 +296,6 @@ const PrintMapExportMain: React.FC<PrintMapExportMainProps> = ({
         // Use MapLibre's canvas directly instead of html2canvas
         const mapImage = mapExport.getCanvas().toDataURL('image/png')
         const miniMapImage = miniMapExport.getCanvas().toDataURL('image/png')
-
-        // const mapControlImage = await captureMapControlImage(mapControlElement)
-        // const miniMapControlImage = await captureMapControlImage(miniMapControlElement)
-
-        // if (!mapControlImage) {
-        //   console.error('Failed to capture map control image!')
-        //   return
-        // }
 
         const mapCapturedImage = await captureMapWithControl(mapImage, '', MAP_WIDTH, MAP_HEIGHT)
         const miniMapCapturedImage = await captureMapWithControl(miniMapImage, '', MINI_MAP_WIDTH, MINI_MAP_HEIGHT)

@@ -98,7 +98,8 @@
     "dataNotFound": "Data not found",
     "mapPositionRequired": "Please set the position on the map",
     "requireFieldError": "Please fill in all required fields",
-    "requireTextError": "Please enter text"
+    "requireTextError": "Please enter text",
+    "closeItvLayerFirst": "Please save the layer before opening the weekly"
   },
   "link": {
     "contactUs": "Contact Us"
@@ -603,6 +604,7 @@
   "tools": {
     "compass": "Compass",
     "copyCoordinates": "Copy coordinates",
+    "settings": "Settings",
     "basemap": "Basemap",
     "basemapType": "Type",
     "basemapTypes": {
@@ -648,10 +650,7 @@
       },
       "zoneExamples": {
         "title": "Specifying Zone for UTM System:",
-        "list": [
-          "47N:666306.09,1522257.06",
-          "48N:235001.57,1511589.49"
-        ]
+        "list": ["47N:666306.09,1522257.06", "48N:235001.57,1511589.49"]
       }
     },
     "currentLocationErrorTitle": "Cannot determine current location",
@@ -665,8 +664,17 @@
     "home": "Zoom to extent",
     "printMap": {
       "reportDate": "Report Date",
-      "orgName": "Organization"
-    }
+      "orgName": "Organization",
+      "coordinateType": "Coordinate Type"
+    },
+    "sarDamageLevel": [
+      "Slight Damage",
+      "Moderate Damage",
+      "Substantial Damage",
+      "Grievous Damage",
+      "Destroyed"
+    ],
+    "weeklyChart": "Weekly Chart"
   },
   "map": {
     "layer": "Layers",
@@ -684,7 +692,8 @@
       "model": "Analysis Type",
       "confidence": "Confidence",
       "area": "Area",
-      "aoiName": "AOI Name"
+      "aoiName": "AOI Name",
+      "damageLevel": "Damage Level"
     },
     "info": {
       "createdAt": "Created",

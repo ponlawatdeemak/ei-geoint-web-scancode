@@ -5,20 +5,10 @@ import AnnotationForm from './form'
 import { AnnotationItem, App6eMainIcon, App6eSymbolSet, ItvFeatureProperties, ItvLayer } from '@interfaces/entities'
 import { Dispatch, FC, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ms from 'milsymbol'
-import {
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  useMediaQuery,
-  useTheme,
-} from '@mui/material'
+import { Button, useMediaQuery, useTheme } from '@mui/material'
 import AddCircleIcon from '@mui/icons-material/AddCircle'
 import CloseIcon from '@mui/icons-material/Close'
 import SaveIcon from '@mui/icons-material/Save'
-import InputLabel from '@/components/common/input/InputLabel'
 import { t } from 'i18next'
 import ItemsList from './items'
 import { ItvMode } from '@/components/shared/ProjectMapView/utils/importToVisualize'
@@ -348,6 +338,47 @@ const ItvAnnotation: FC<Props> = ({
     }
   }, [itvMode, editingLayerName])
 
+  // Handler for editing an item by id
+  const handleEditItem = useCallback(
+    (id: string) => {
+      const targetItem = items.find((item) => item.id === id)
+      if (!targetItem) return
+
+      setItems((prevItems) => prevItems.filter((item) => item.id !== id))
+
+      setEditItem(targetItem)
+      const symbolSetCode = targetItem.annotationSymbol?.symbolSet || ''
+      const symbolSet = (symbolSetCode && app6eData[symbolSetCode]) || undefined
+      const fallbackSymbolSet: App6eSymbolSet =
+        symbolSet ||
+        ({
+          name: symbolSetCode || 'Unknown',
+          symbolset: symbolSetCode,
+          mainIcon: [],
+          modifier1: [],
+          modifier2: [],
+        } as App6eSymbolSet)
+
+      const icon: App6eMainIcon =
+        targetItem.annotationSymbol?.icon ||
+        ({
+          code: '',
+          entity: '',
+          entityType: '',
+          entitySubtype: '',
+          name: '',
+        } as App6eMainIcon)
+
+      setSelectedSymbol({
+        sidc: targetItem.sidc,
+        icon,
+        symbolSet: fallbackSymbolSet,
+      })
+      setMode(AnnotationMode.draw)
+    },
+    [items],
+  )
+
   // Handler for deleting an item by id
   const handleDeleteItem = (id: string) => {
     setItems((prevItems) => prevItems.filter((item) => item.id !== id))
@@ -386,6 +417,28 @@ const ItvAnnotation: FC<Props> = ({
       },
     })
   }, [layerInfo, showAlert, setLayerInfo, items, projectId, setEditingLayerName, layerInfo?.name, onClose])
+
+  const handleCancelAnnotation = useCallback((editItem?: AnnotationItem | null) => {
+    if (editItem) {
+      const editItemTemp: AnnotationItem = { ...editItem }
+
+      setItems((prev) => {
+        // Check if item already exists in list
+        const exists = prev.some((item) => item.id === editItemTemp.id)
+        if (exists) {
+          // If exists, update it
+          return prev.map((item) => (item.id === editItemTemp.id ? editItemTemp : item))
+        } else {
+          // If doesn't exist (was removed during edit), add it back
+          return [...prev, editItemTemp]
+        }
+      })
+    }
+
+    setSelectedSymbol(null)
+    setEditItem(null)
+    setMode(AnnotationMode.list)
+  }, [])
 
   const handleSubmitAnnotation = useCallback(
     (data: AnnotationItem) => {
@@ -437,18 +490,16 @@ const ItvAnnotation: FC<Props> = ({
         }
         const res = await importToVisualize.createLayer(param)
         onSaveComplete?.(res.data)
-      } else {
-        if (layerInfo?.id) {
-          const param: UpdateItvLayerDtoIn = {
-            projectId,
-            id: layerInfo?.id,
-            name: values.name,
-          }
-          await importToVisualize.updateLayer(param)
-          setEditingLayerName(false)
-          const newLayer = { ...layerInfo, name: values.name }
-          setLayerInfo(newLayer)
+      } else if (layerInfo?.id) {
+        const param: UpdateItvLayerDtoIn = {
+          projectId,
+          id: layerInfo?.id,
+          name: values.name,
         }
+        await importToVisualize.updateLayer(param)
+        setEditingLayerName(false)
+        const newLayer = { ...layerInfo, name: values.name }
+        setLayerInfo(newLayer)
       }
 
       showAlert({ status: 'success', title: t('alert.saveSuccess') })
@@ -496,49 +547,14 @@ const ItvAnnotation: FC<Props> = ({
               onItemClick={(item) => {
                 if (map && item.geometry?.coordinates) {
                   map.flyTo({
-                    center: item.geometry.coordinates as [number, number],
+                    center: item.geometry.coordinates,
                     zoom: 16,
                     essential: true,
                   })
                 }
               }}
               onDelete={handleDeleteItem}
-              onEdit={(id) => {
-                const targetItem = items.find((item) => item.id === id)
-                if (!targetItem) return
-
-                setItems((prevItems) => prevItems.filter((item) => item.id !== id))
-
-                setEditItem(targetItem)
-                const symbolSetCode = targetItem.annotationSymbol?.symbolSet || ''
-                const symbolSet = (symbolSetCode && app6eData[symbolSetCode]) || undefined
-                const fallbackSymbolSet: App6eSymbolSet =
-                  symbolSet ||
-                  ({
-                    name: symbolSetCode || 'Unknown',
-                    symbolset: symbolSetCode,
-                    mainIcon: [],
-                    modifier1: [],
-                    modifier2: [],
-                  } as App6eSymbolSet)
-
-                const icon: App6eMainIcon =
-                  targetItem.annotationSymbol?.icon ||
-                  ({
-                    code: '',
-                    entity: '',
-                    entityType: '',
-                    entitySubtype: '',
-                    name: '',
-                  } as App6eMainIcon)
-
-                setSelectedSymbol({
-                  sidc: targetItem.sidc,
-                  icon,
-                  symbolSet: fallbackSymbolSet,
-                })
-                setMode(AnnotationMode.draw)
-              }}
+              onEdit={handleEditItem}
             />
           </div>
 
@@ -577,27 +593,7 @@ const ItvAnnotation: FC<Props> = ({
               setEditItem(null)
               setSelectedSymbol(null)
             }}
-            onCancel={(editItem) => {
-              if (editItem) {
-                const editItemTemp: AnnotationItem = { ...editItem }
-
-                setItems((prev) => {
-                  // Check if item already exists in list
-                  const exists = prev.some((item) => item.id === editItemTemp.id)
-                  if (exists) {
-                    // If exists, update it
-                    return prev.map((item) => (item.id === editItemTemp.id ? editItemTemp : item))
-                  } else {
-                    // If doesn't exist (was removed during edit), add it back
-                    return [...prev, editItemTemp]
-                  }
-                })
-              }
-
-              setSelectedSymbol(null)
-              setEditItem(null)
-              setMode(AnnotationMode.list)
-            }}
+            onCancel={handleCancelAnnotation}
             onSubmit={handleSubmitAnnotation}
           />
         </div>

@@ -5,7 +5,9 @@ import { useTranslation } from 'react-i18next'
 import { useGlobalUI } from '@/providers/global-ui/GlobalUIContext'
 import { useSettings } from '@/hook/useSettings'
 import { useMapStore } from '@/components/common/map/store/map'
-import { useMediaQuery, Button,
+import {
+  useMediaQuery,
+  Button,
   Tabs,
   Tab,
   TextField,

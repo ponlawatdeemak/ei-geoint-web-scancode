@@ -62,45 +62,33 @@ export const ProjectCardItem = ({ row, language, handleMenuOpen }: ProjectCardIt
           <div className='line-clamp-2 break-all text-left font-medium'>{data.name}</div>
         </Tooltip>
         <Tooltip title={data.detail} arrow>
-          <div className='line-clamp-1 break-all text-left text-(--color-text-secondary) text-sm'>
-            {data.detail}
-          </div>
+          <div className='line-clamp-1 break-all text-left text-(--color-text-secondary) text-sm'>{data.detail}</div>
         </Tooltip>
         <div className='grid w-full grid-cols-2 items-center gap-2 text-sm md:grid-cols-3 md:pt-4'>
           <div className='flex gap-1'>
-            <span className='shrink-0 text-(--color-text-secondary)'>
-              {t('form.searchProject.card.task')}:
-            </span>
+            <span className='shrink-0 text-(--color-text-secondary)'>{t('form.searchProject.card.task')}:</span>
             <span className='font-medium text-(--color-primary)'>
               {t('form.searchProject.card.taskItem', { count: data.taskItem })}
             </span>
           </div>
           <div className='flex items-center gap-1 md:col-span-2'>
-            <span className='shrink-0 text-(--color-text-secondary)'>
-              {t('form.searchProject.card.status')}:
-            </span>
+            <span className='shrink-0 text-(--color-text-secondary)'>{t('form.searchProject.card.status')}:</span>
             {data.status}
           </div>
           <div className='flex gap-1'>
-            <span className='shrink-0 text-(--color-text-secondary)'>
-              {t('form.searchProject.card.createdAt')}:
-            </span>
+            <span className='shrink-0 text-(--color-text-secondary)'>{t('form.searchProject.card.createdAt')}:</span>
             <Tooltip title={data.createdAt} arrow>
               <span className='truncate'>{data.createdAt}</span>
             </Tooltip>
           </div>
           <div className='flex gap-1'>
-            <span className='shrink-0 text-(--color-text-secondary)'>
-              {t('form.searchProject.card.updatedAt')}:
-            </span>
+            <span className='shrink-0 text-(--color-text-secondary)'>{t('form.searchProject.card.updatedAt')}:</span>
             <Tooltip title={data.updatedAt} arrow>
               <span className='truncate'>{data.updatedAt}</span>
             </Tooltip>
           </div>
           <div className='flex gap-1'>
-            <span className='shrink-0 text-(--color-text-secondary)'>
-              {t('form.searchProject.card.createdBy')}:
-            </span>
+            <span className='shrink-0 text-(--color-text-secondary)'>{t('form.searchProject.card.createdBy')}:</span>
             <Tooltip title={data.createdBy} arrow>
               <span className='truncate'>{data.createdBy}</span>
             </Tooltip>

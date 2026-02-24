@@ -17,7 +17,7 @@ type Props = {
 
 const CardItem: FC<Props> = ({ item }: Props) => {
   const { t } = useTranslation('common')
-  const { isLg } = useResponsive()
+  const { isLg, is2K } = useResponsive()
   const profile = useProfileStore((state) => state.profile)
   const { selectSearchItem, imagesMode, setSelectSearchItem, setAction, imageProcessData } = useImages()
   const [contextMenu, setContextMenu] = useState<{
@@ -110,6 +110,8 @@ const CardItem: FC<Props> = ({ item }: Props) => {
     return profile.roleId === Roles.viewer
   }, [profile])
 
+  const iconWidth = useMemo(() => (is2K ? 105 : 70), [is2K])
+
   return (
     <div
       className={`flex flex-col items-center justify-center gap-2 px-2 py-2 hover:bg-[#E0E9FF] lg:px-4 ${selectSearchItem?.id === item.id ? 'bg-[#E0E9FF]' : ''}`}
@@ -118,33 +120,37 @@ const CardItem: FC<Props> = ({ item }: Props) => {
         type='button'
         onContextMenu={isEditor ? handleRightClick : undefined}
         onClick={() => onSelectImage(item)}
-        className='relative flex aspect-[7/5] w-full max-w-[300px] cursor-pointer items-center justify-center overflow-hidden'
+        className='relative flex aspect-7/5 w-full max-w-76 cursor-pointer items-center justify-center overflow-hidden'
       >
         {item.id === imageProcessData?.itemId ? (
           <>
-            {isInProgress && <ProcessInProgressIcon width={70} height={70} />}
-            {Number(imageProcessData?.statusId) === ImageStatus.aborted && <ProcessAbortIcon width={70} height={70} />}
-            {Number(imageProcessData?.statusId) === ImageStatus.failed && <ProcessFailIcon width={70} height={70} />}
+            {isInProgress && <ProcessInProgressIcon width={iconWidth} height={iconWidth} />}
+            {Number(imageProcessData?.statusId) === ImageStatus.aborted && (
+              <ProcessAbortIcon width={iconWidth} height={iconWidth} />
+            )}
+            {Number(imageProcessData?.statusId) === ImageStatus.failed && (
+              <ProcessFailIcon width={iconWidth} height={iconWidth} />
+            )}
           </>
         ) : (
           <>
-            {item.statusId === ImageStatus.aborted && <ProcessAbortIcon width={70} height={70} />}
-            {item.statusId === ImageStatus.failed && <ProcessFailIcon width={70} height={70} />}
+            {item.statusId === ImageStatus.aborted && <ProcessAbortIcon width={iconWidth} height={iconWidth} />}
+            {item.statusId === ImageStatus.failed && <ProcessFailIcon width={iconWidth} height={iconWidth} />}
             {item.statusId === ImageStatus.completed && item.thumbnailUrl && (
               <Image src={item.thumbnailUrl} fill={true} alt={'Image Thumbnail'} />
             )}
             {item.statusId === ImageStatus.completed && !item.thumbnailUrl && (
-              <ProcessCompleteIcon width={70} height={70} />
+              <ProcessCompleteIcon width={iconWidth} height={iconWidth} />
             )}
           </>
         )}
       </button>
       <div className='flex w-full flex-wrap items-center justify-between pb-1'>
         <Tooltip title={item.fileName || ''} arrow>
-          <div className='flex min-w-0 items-center truncate text-[12px]'>
-            <span className='max-w-[200px] truncate'>{item.fileName}</span>
-            {item.isProcessed && <AutoAwesome className='!w-[16px] mx-2 shrink-0' color='primary' />}
-            {!isLg && isEditor && <MoreVert className='!w-[16px] shrink-0 cursor-pointer' onClick={handleRightClick} />}
+          <div className='flex min-w-0 items-center truncate text-xs'>
+            <span className='max-w-52 truncate'>{item.fileName}</span>
+            {item.isProcessed && <AutoAwesome className='mx-2 w-4! shrink-0' color='primary' />}
+            {!isLg && isEditor && <MoreVert className='w-4! shrink-0 cursor-pointer' onClick={handleRightClick} />}
           </div>
         </Tooltip>
         <div className='flex'></div>

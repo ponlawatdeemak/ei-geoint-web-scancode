@@ -30,59 +30,59 @@ export const menuConfig: Record<string, MenuItemConfig> = {
     allowedRoles: [Roles.superAdmin, Roles.admin, Roles.customerAdmin, Roles.user, Roles.viewer],
     id: 'menu.project',
     path: '/project',
-    icon: <FolderIcon fontSize='small' />,
+    icon: <FolderIcon />,
   },
   gallery: {
     allowedRoles: [Roles.superAdmin, Roles.admin, Roles.customerAdmin, Roles.user, Roles.viewer],
     id: 'menu.gallery',
     path: '/gallery',
-    icon: <ImageIcon fontSize='small' />,
+    icon: <ImageIcon />,
   },
   profile: {
     allowedRoles: [Roles.superAdmin, Roles.admin, Roles.customerAdmin, Roles.user, Roles.viewer],
     id: 'menu.profile',
     path: '/profile',
-    icon: <AccountCircleIcon fontSize='small' />,
+    icon: <AccountCircleIcon />,
   },
   management: {
     allowedRoles: [Roles.superAdmin, Roles.admin, Roles.customerAdmin, Roles.user, Roles.viewer],
     id: 'menu.management',
-    icon: <BallotIcon fontSize='small' />,
+    icon: <BallotIcon />,
   },
   manageSubscription: {
     allowedRoles: [Roles.superAdmin],
     id: 'menu.manageSubscription',
     path: '/subscription',
-    icon: <SubscriptionIcon fontSize='small' />,
+    icon: <SubscriptionIcon />,
   },
   manageOrganization: {
     allowedRoles: [Roles.superAdmin],
     id: 'menu.manageOrganization',
     path: '/organization',
-    icon: <OrganizationIcon fontSize='small' />,
+    icon: <OrganizationIcon />,
   },
   manageUser: {
     allowedRoles: [Roles.superAdmin, Roles.admin, Roles.customerAdmin, Roles.user, Roles.viewer],
     id: 'menu.manageUser',
     path: '/user',
-    icon: <GroupIcon fontSize='small' />,
+    icon: <GroupIcon />,
   },
   manageApi: {
     allowedRoles: [Roles.superAdmin, Roles.admin, Roles.customerAdmin, Roles.user],
     id: 'menu.manageApi',
     path: '/api',
-    icon: <ApiIcon fontSize='small' />,
+    icon: <ApiIcon />,
   },
   manageData: {
     allowedRoles: [Roles.superAdmin, Roles.admin, Roles.customerAdmin, Roles.user, Roles.viewer],
     id: 'menu.manageData',
     path: '/data-management',
-    icon: <DataIcon fontSize='small' />,
+    icon: <DataIcon />,
   },
   settings: {
     allowedRoles: [Roles.superAdmin, Roles.admin, Roles.customerAdmin, Roles.user, Roles.viewer],
     id: 'menu.settings',
-    icon: <SettingsIcon fontSize='small' />,
+    icon: <SettingsIcon />,
   },
 }
 
@@ -175,7 +175,7 @@ const MenuRenderer: React.FC<MenuRendererProps> = ({
               disableTouchRipple={isParent}
               {...menuItemProps}
             >
-              <ListItemIcon className='text-inherit!'>{item.icon}</ListItemIcon>
+              <ListItemIcon className='2k:mr-4 text-inherit!'>{item.icon}</ListItemIcon>
               <ListItemText>{t(item.id)}</ListItemText>
             </MenuItem>
             {isParent && (

@@ -73,6 +73,7 @@ const ProfileForm: React.FC = () => {
         lastName: data.lastName,
         phone: data.phone,
       })
+      await fetchAndStoreProfile()
       showAlert({
         status: 'success',
         title: t('form.profileForm.successTitle'),
