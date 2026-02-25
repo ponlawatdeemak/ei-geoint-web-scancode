@@ -638,13 +638,14 @@ const ProjectMapView = forwardRef<ProjectMapViewRef, ProjectMapViewProps>(
                 }
               }}
               floatingPanel={
-                <Box className='fixed bottom-8 left-1/2 z-[110] w-[90%] -translate-x-1/2 pr-[8%] sm:pr-[6%] md:relative md:bottom-auto md:left-auto md:flex md:max-h-full md:w-md md:-translate-x-0 md:flex-col md:pr-0 md:pb-15'>
+                <Box className='fixed bottom-8 left-1/2 z-[110] w-[90%] -translate-x-1/2 md:relative md:bottom-auto md:left-auto md:flex md:max-h-full md:w-md md:-translate-x-0 md:flex-col md:pr-0 md:pb-15'>
                   {activeView === ActiveView.weekly && weeklyOverlay}
                   <FloatingPanel
                     title={selectedGroup ? selectedGroup.groupName : ''}
                     isOpen={isPanelOpen}
                     isMinimized={isPanelMinimized}
                     icon={icon}
+                    isMobile={isMobile}
                     onClose={() => {
                       setIsPanelOpen(false)
                       // setSelectedGroup(null)
@@ -680,18 +681,20 @@ const ProjectMapView = forwardRef<ProjectMapViewRef, ProjectMapViewProps>(
             )}
 
             {/* Floating action buttons shown when a group is opened */}
-            {activeView !== ActiveView.weekly && selectedGroup?.rootModelId === RootModelConfig.changeDetection && selectedGroup && (
-              <GroupCompareButtons
-                selectedGroup={selectedGroup}
-                currentMapExtent={currentMapExtent}
-                isMobile={isMobile}
-                isPanelOpen={isPanelOpen}
-                t={t}
-                mapCompareDialogConfig={mapCompareDialogConfig}
-                setMapCompareDialogConfig={setMapCompareDialogConfig}
-                layerVisibility={layerVisibility}
-              />
-            )}
+            {activeView !== ActiveView.weekly &&
+              selectedGroup?.rootModelId === RootModelConfig.changeDetection &&
+              selectedGroup && (
+                <GroupCompareButtons
+                  selectedGroup={selectedGroup}
+                  currentMapExtent={currentMapExtent}
+                  isMobile={isMobile}
+                  isPanelOpen={isPanelOpen}
+                  t={t}
+                  mapCompareDialogConfig={mapCompareDialogConfig}
+                  setMapCompareDialogConfig={setMapCompareDialogConfig}
+                  layerVisibility={layerVisibility}
+                />
+              )}
           </Box>
         </Box>
       </Box>

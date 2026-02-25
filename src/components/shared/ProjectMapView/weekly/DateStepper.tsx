@@ -109,8 +109,7 @@ const DateStepper: React.FC = () => {
       {isMobile ? (
         <Box className='mb-1 flex min-w-fit transform items-center justify-center gap-2'>
           {selectedData && (
-            <Box className='absolute bottom-18
-             left-1/2 ml-2 -translate-x-1/2 whitespace-nowrap font-semibold text-[0.75rem] text-primary'>
+            <Box className='absolute bottom-18 left-1/2 ml-2 -translate-x-1/2 whitespace-nowrap font-semibold text-[0.75rem] text-primary'>
               {formatDate(selectedData.date || '', language)}
             </Box>
           )}
@@ -158,7 +157,7 @@ const DateStepper: React.FC = () => {
       ) : (
         // desktop stepper
         // - click next/back จะเป็นการเลื่อน "Page"
-        <div className='flex items-center gap-2 pr-8 pl-8 pb-2'>
+        <div className='flex items-center gap-2 2k:pr-12 pr-8 pb-2 2k:pl-12 pl-8'>
           <IconButton onClick={handleBack} disabled={activeIndex === 0} className='shrink-0'>
             <ChevronLeftIcon className='rounded-2xl bg-white/20 text-white hover:bg-white/50' />
           </IconButton>

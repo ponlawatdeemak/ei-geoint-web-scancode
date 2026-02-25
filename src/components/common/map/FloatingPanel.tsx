@@ -11,6 +11,7 @@ export interface FloatingPanelProps {
   children: ReactNode
   isOpen: boolean
   isMinimized: boolean
+  isMobile?: boolean
   onClose: () => void
   onToggleMinimize: () => void
 }
@@ -21,6 +22,7 @@ export function FloatingPanel({
   children,
   isOpen,
   isMinimized,
+  isMobile,
   onClose,
   onToggleMinimize,
 }: Readonly<FloatingPanelProps>) {
@@ -28,7 +30,9 @@ export function FloatingPanel({
   if (!isOpen) return null
 
   return (
-    <Box className='flex max-h-[80vh] w-full flex-col rounded-lg border border-(--color-gray-border) bg-white shadow-lg md:max-h-[80vh] md:min-w-md'>
+    <Box
+      className={`flex w-full flex-col rounded-lg border border-(--color-gray-border) bg-white shadow-lg md:min-w-md ${isMobile ? 'max-h-[25vh]' : 'max-h-[80vh]'}`}
+    >
       {/* Header */}
       <Box className='flex items-center justify-between border-(--color-gray-border) border-b-[0] px-4 py-3 pb-1'>
         <Box className='flex min-w-0 flex-1 items-center gap-2'>

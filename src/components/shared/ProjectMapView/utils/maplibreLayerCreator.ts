@@ -136,13 +136,15 @@ const createTileLayers = (
   }
 
   const layerId = cfg.id
+
+  const visibility = visible ? 'visible' : 'none'
   if (!map.getLayer(layerId)) {
     map.addLayer(
       {
         id: layerId,
         type: 'raster',
         source: sourceId,
-        layout: { visibility: visible ? 'visible' : 'none' },
+        layout: { visibility },
         paint: { 'raster-opacity': 1 },
         minzoom: 10,
       },
@@ -150,7 +152,7 @@ const createTileLayers = (
     )
     createdLayers.push(layerId)
   } else {
-    map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none')
+    map.setLayoutProperty(layerId, 'visibility', visibility)
     // even if the layer already existed, record it so callers can update visibility
     createdLayers.push(layerId)
   }
@@ -441,6 +443,261 @@ const createRegularVectorLayers = (
   return { layerIds: [fillLayerId, lineLayerId], handler }
 }
 
+// Helper: Load icon image into map
+const loadIconImage = (
+  targetMap: maplibregl.Map,
+  iconName: string,
+  svgContent: string,
+  width: number,
+  height: number,
+  setCrossOrigin = false,
+) => {
+  if (targetMap.hasImage(iconName)) return
+
+  const img = new window.Image(width, height)
+  const svg = new Blob([svgContent], { type: 'image/svg+xml' })
+  const url = URL.createObjectURL(svg)
+  if (setCrossOrigin) img.crossOrigin = 'Anonymous'
+  img.onload = () => {
+    try {
+      safeAddImage(targetMap, iconName, img, { pixelRatio: 2 })
+    } catch {}
+    URL.revokeObjectURL(url)
+  }
+  img.src = url
+}
+
+// Helper: Parse GeoJSON data
+const parseGeoJsonData = (data: any, layerId: string): GeoJSON.FeatureCollection | null => {
+  if (!data) return null
+
+  if (typeof data === 'string') {
+    try {
+      return JSON.parse(data)
+    } catch (e) {
+      console.error(`Failed to parse GeoJSON data for layer ${layerId}:`, e)
+      return null
+    }
+  }
+  return data as GeoJSON.FeatureCollection
+}
+
+// Helper: Get point features from collection
+const getPointFeatures = (featureCollection: GeoJSON.FeatureCollection): GeoJSON.Feature[] => {
+  return featureCollection.features.filter(
+    (f) => f.geometry && (f.geometry.type === 'Point' || f.geometry.type === 'MultiPoint'),
+  )
+}
+
+// Helper: Setup point layers (source + layer)
+const setupGeoJsonPointLayers = (
+  map: maplibregl.Map,
+  id: string,
+  pointFeatures: GeoJSON.Feature[],
+  visible: boolean,
+  usePhotoIcon: boolean,
+  is2K: boolean | undefined,
+  createdSources: string[],
+  createdLayers: string[],
+) => {
+  const pointSourceId = `${id}-point-source`
+  const pointLayerId = `${id}-point`
+  const iconName = usePhotoIcon ? 'custom-pin-icon-photo' : 'custom-pin-icon'
+
+  // Add icons
+  loadIconImage(map, 'custom-pin-icon', pinSvg, 21, 29)
+  loadIconImage(map, 'custom-pin-icon-photo', getPinSvgPhoto(), 36, 36)
+
+  // Add source
+  if (!map.getSource(pointSourceId)) {
+    map.addSource(pointSourceId, {
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: pointFeatures },
+    })
+    createdSources.push(pointSourceId)
+  }
+
+  // Add layer
+  if (!map.getLayer(pointLayerId)) {
+    map.addLayer(
+      {
+        id: pointLayerId,
+        type: 'symbol',
+        source: pointSourceId,
+        layout: {
+          'icon-image': iconName,
+          'icon-size': is2K ? 3 : 1.5,
+          'icon-anchor': 'bottom',
+          'icon-allow-overlap': true,
+          visibility: visible ? 'visible' : 'none',
+        },
+      },
+      layerIdConfig.customReferer,
+    )
+    createdLayers.push(pointLayerId)
+  }
+}
+
+// Helper: Create fill layer spec
+const createFillLayerSpec = (
+  id: string,
+  sourceId: string,
+  paint: Record<string, any>,
+  visible: boolean,
+  minzoom?: number,
+): maplibregl.LayerSpecification => ({
+  id: `${id}-fill`,
+  type: 'fill',
+  source: sourceId,
+  filter: ['any', ['==', ['geometry-type'], 'Polygon'], ['==', ['geometry-type'], 'MultiPolygon']],
+  layout: { visibility: visible ? 'visible' : 'none' },
+  paint,
+  minzoom,
+})
+
+// Helper: Create line layer spec
+const createLineLayerSpec = (
+  id: string,
+  sourceId: string,
+  strokeColor: string,
+  visible: boolean,
+  minzoom?: number,
+): maplibregl.LayerSpecification => ({
+  id: `${id}-line`,
+  type: 'line',
+  source: sourceId,
+  layout: { visibility: visible ? 'visible' : 'none' },
+  paint: { 'line-color': strokeColor, 'line-width': 2 },
+  filter: [
+    'any',
+    ['==', ['geometry-type'], 'LineString'],
+    ['==', ['geometry-type'], 'MultiLineString'],
+    ['==', ['geometry-type'], 'Polygon'],
+    ['==', ['geometry-type'], 'MultiPolygon'],
+  ],
+  minzoom,
+})
+
+// Helper: Restore point layers after style reload
+const restoreGeoJsonPointLayers = (
+  map: maplibregl.Map,
+  id: string,
+  pointFeatures: GeoJSON.Feature[],
+  usePhotoIcon: boolean,
+  is2K: boolean | undefined,
+) => {
+  const pointSourceId = `${id}-point-source`
+  const pointLayerId = `${id}-point`
+  const iconName = usePhotoIcon ? 'custom-pin-icon-photo' : 'custom-pin-icon'
+
+  loadIconImage(map, 'custom-pin-icon', pinSvg, 21, 29, true)
+  loadIconImage(map, 'custom-pin-icon-photo', getPinSvgPhoto(), 36, 36, true)
+
+  if (!map.getSource(pointSourceId)) {
+    map.addSource(pointSourceId, {
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: pointFeatures },
+    })
+  }
+
+  if (!map.getLayer(pointLayerId)) {
+    map.addLayer(
+      {
+        id: pointLayerId,
+        type: 'symbol',
+        source: pointSourceId,
+        layout: {
+          'icon-image': iconName,
+          'icon-size': is2K ? 3 : 1.5,
+          'icon-anchor': 'bottom',
+          'icon-allow-overlap': true,
+          visibility: 'visible',
+        },
+      },
+      layerIdConfig.customReferer,
+    )
+  }
+}
+
+// Helper: Register click handlers
+const registerClickHandlers = (
+  map: maplibregl.Map,
+  cfg: GeoJsonLayerConfig | ItvLayerConfig,
+  id: string,
+  pointFeatures: GeoJSON.Feature[],
+  fillLayerId: string,
+  lineLayerId: string,
+  getClickInfo?: (lngLat: [number, number] | undefined, object: Record<string, unknown> | null) => void,
+): Array<() => void> => {
+  const removeHandlers: Array<() => void> = []
+
+  if (!getClickInfo) return removeHandlers
+
+  const clickHandler = (e: maplibregl.MapLayerMouseEvent) => {
+    const feature = e.features?.[0]
+    const props = feature ? { ...(feature.properties as Record<string, unknown>), type: cfg.type } : null
+    const lngLat: [number, number] | undefined = e.lngLat ? [e.lngLat.lng, e.lngLat.lat] : undefined
+    getClickInfo(lngLat, props)
+  }
+
+  const clickLayerIds = [pointFeatures.length > 0 ? `${id}-point` : '', fillLayerId, lineLayerId].filter(Boolean)
+  for (const lid of clickLayerIds) {
+    map.on('click', lid, clickHandler)
+    removeHandlers.push(() => map.off('click', lid, clickHandler))
+  }
+
+  return removeHandlers
+}
+
+// Helper: Register style-data handler
+const registerStyleDataHandler = (
+  map: maplibregl.Map,
+  id: string,
+  sourceId: string,
+  parsedData: GeoJSON.FeatureCollection,
+  pointFeatures: GeoJSON.Feature[],
+  type: MapType,
+  fillLayerId: string,
+  lineLayerId: string,
+  fillPaint: Record<string, any>,
+  strokeColor: string,
+  isItvVector: boolean,
+  is2K: boolean | undefined,
+  removeHandlers: Array<() => void>,
+) => {
+  try {
+    const handlerId = `layer-reg-${id}`
+    const register = useMapStore.getState().registerStyleDataHandler
+    const unregister = useMapStore.getState().unregisterStyleDataHandler
+    const handler = (m: maplibregl.Map) => {
+      try {
+        if (!m.getSource(sourceId)) {
+          m.addSource(sourceId, { type: 'geojson', data: parsedData as any })
+        }
+
+        if (pointFeatures.length > 0) {
+          restoreGeoJsonPointLayers(m, id, pointFeatures, type === MapType.itvPhoto, is2K)
+        }
+
+        const fillMinzoom = isItvVector ? undefined : 10
+        const lineMinzoom = isItvVector ? undefined : 10
+
+        if (!m.getLayer(fillLayerId)) {
+          m.addLayer(createFillLayerSpec(id, sourceId, fillPaint, true, fillMinzoom), layerIdConfig.customReferer)
+        }
+
+        if (!m.getLayer(lineLayerId)) {
+          m.addLayer(createLineLayerSpec(id, sourceId, strokeColor, true, lineMinzoom), layerIdConfig.customReferer)
+        }
+      } catch (e) {
+        console.error('geojson layer style-data handler error', e)
+      }
+    }
+    register(map, handlerId, handler)
+    removeHandlers.push(() => unregister(map, handlerId))
+  } catch {}
+}
+
 const createGeoJsonLayers = (
   cfg: GeoJsonLayerConfig | ItvLayerConfig,
   map: maplibregl.Map,
@@ -449,257 +706,82 @@ const createGeoJsonLayers = (
   is2K?: boolean,
 ): CreatedMapLibreLayers | null => {
   const { id, data, color_code, type } = cfg
-  if (!data) return null
+  const parsedData = parseGeoJsonData(data, id)
+  if (!parsedData) return null
 
   const createdSources: string[] = []
   const createdLayers: string[] = []
   const sourceId = `${id}-source`
 
-  let parsedData: GeoJSON.FeatureCollection
-  if (typeof data === 'string') {
-    try {
-      parsedData = JSON.parse(data)
-    } catch (e) {
-      console.error(`Failed to parse GeoJSON data for layer ${id}:`, e)
-      return null
-    }
-  } else {
-    parsedData = data as GeoJSON.FeatureCollection
-  }
-
-  if (!parsedData) return null
-
+  // Add main source
   if (!map.getSource(sourceId)) {
-    map.addSource(sourceId, {
-      type: 'geojson',
-      data: parsedData as any,
-    })
+    map.addSource(sourceId, { type: 'geojson', data: parsedData as any })
     createdSources.push(sourceId)
   }
 
+  // Prepare colors
   const fillColorArr = color_code ? hexToRGBAArray(color_code, false) : hexToRGBAArray(DefaultAoiColor, false)
   const strokeColorArr = color_code ? hexToRGBAArray(color_code) : hexToRGBAArray(DefaultAoiColor)
   const fillColor = rgbaArrayToCss(fillColorArr, `rgba(${DefaultAoiColor}aa)`)
   const strokeColor = rgbaArrayToCss(strokeColorArr, `rgba(${DefaultAoiColor}ff)`)
 
-  const isItvVector = cfg.type === MapType.itvVector
-
-  const pointSourceId = `${id}-point-source`
-  const pointLayerId = `${id}-point`
+  const isItvVector = type === MapType.itvVector
   const fillLayerId = `${id}-fill`
   const lineLayerId = `${id}-line`
-  const iconName = 'custom-pin-icon'
-  const iconNamePhoto = 'custom-pin-icon-photo'
 
-  const geoJsonEnsurePointIcons = (
-    targetMap: maplibregl.Map,
-    photoMap: maplibregl.Map,
-    setPhotoCrossOrigin: boolean,
-  ) => {
-    if (!targetMap.hasImage(iconName)) {
-      const img = new window.Image(21, 29)
-      const svg = new Blob([pinSvg], { type: 'image/svg+xml' })
-      const url = URL.createObjectURL(svg)
-      img.onload = () => {
-        try {
-          safeAddImage(targetMap, iconName, img, { pixelRatio: 2 })
-        } catch {}
-        URL.revokeObjectURL(url)
-      }
-      img.src = url
-    }
-    if (!photoMap.hasImage(iconNamePhoto)) {
-      const img = new window.Image(36, 36)
-      const svg = new Blob([getPinSvgPhoto()], { type: 'image/svg+xml' })
-      const url = URL.createObjectURL(svg)
-      if (setPhotoCrossOrigin) img.crossOrigin = 'Anonymous'
-      img.onload = () => {
-        try {
-          safeAddImage(photoMap, iconNamePhoto, img, { pixelRatio: 2 })
-        } catch {}
-        URL.revokeObjectURL(url)
-      }
-      img.src = url
-    }
-  }
-
-  const geoJsonEnsurePointSource = (m: maplibregl.Map, pointFeatures: GeoJSON.Feature[], trackSources: boolean) => {
-    if (!m.getSource(pointSourceId)) {
-      m.addSource(pointSourceId, {
-        type: 'geojson',
-        data: {
-          type: 'FeatureCollection',
-          features: pointFeatures,
-        },
-      })
-      if (trackSources) createdSources.push(pointSourceId)
-    }
-  }
-
-  const geoJsonEnsurePointLayer = (
-    m: maplibregl.Map,
-    setVisibility: boolean,
-    trackLayers: boolean,
-    usePhotoIcon: boolean,
-  ) => {
-    if (!m.getLayer(pointLayerId)) {
-      m.addLayer(
-        {
-          id: pointLayerId,
-          type: 'symbol',
-          source: pointSourceId,
-          layout: {
-            'icon-image': usePhotoIcon ? iconNamePhoto : iconName,
-            'icon-size': is2K ? 3 : 1.5,
-            'icon-anchor': 'bottom',
-            'icon-allow-overlap': true,
-            visibility: visible ? 'visible' : 'none',
-          },
-        },
-        layerIdConfig.customReferer,
-      )
-      if (trackLayers) createdLayers.push(pointLayerId)
-    } else if (setVisibility) {
-      m.setLayoutProperty(pointLayerId, 'visibility', visible ? 'visible' : 'none')
-      if (trackLayers) createdLayers.push(pointLayerId)
-    }
-  }
-
-  const geoJsonEnsureFillLayer = (
-    m: maplibregl.Map,
-    setVisibility: boolean,
-    trackLayers: boolean,
-    paint: Record<string, any>,
-    minzoom?: number,
-  ) => {
-    if (!m.getLayer(fillLayerId)) {
-      m.addLayer(
-        {
-          id: fillLayerId,
-          type: 'fill',
-          source: sourceId,
-          filter: ['any', ['==', ['geometry-type'], 'Polygon'], ['==', ['geometry-type'], 'MultiPolygon']],
-          layout: { visibility: visible ? 'visible' : 'none' },
-          paint,
-          minzoom,
-        },
-        layerIdConfig.customReferer,
-      )
-      if (trackLayers) createdLayers.push(fillLayerId)
-    } else if (setVisibility) {
-      m.setLayoutProperty(fillLayerId, 'visibility', visible ? 'visible' : 'none')
-      if (trackLayers) createdLayers.push(fillLayerId)
-    }
-  }
-
-  const geoJsonEnsureLineLayer = (
-    m: maplibregl.Map,
-    setVisibility: boolean,
-    trackLayers: boolean,
-    minzoom?: number,
-  ) => {
-    if (!m.getLayer(lineLayerId)) {
-      m.addLayer(
-        {
-          id: lineLayerId,
-          type: 'line',
-          source: sourceId,
-          layout: { visibility: visible ? 'visible' : 'none' },
-          paint: {
-            'line-color': strokeColor,
-            'line-width': 2,
-          },
-          filter: [
-            'any',
-            ['==', ['geometry-type'], 'LineString'],
-            ['==', ['geometry-type'], 'MultiLineString'],
-            ['==', ['geometry-type'], 'Polygon'],
-            ['==', ['geometry-type'], 'MultiPolygon'],
-          ],
-          minzoom,
-        },
-        layerIdConfig.customReferer,
-      )
-      if (trackLayers) createdLayers.push(lineLayerId)
-    } else if (setVisibility) {
-      m.setLayoutProperty(lineLayerId, 'visibility', visible ? 'visible' : 'none')
-      if (trackLayers) createdLayers.push(lineLayerId)
-    }
-  }
-
-  // Add symbol layer for Point geometry (icon) - use separate source for Point only
-  const pointFeatures = parsedData.features.filter(
-    (f) => f.geometry && (f.geometry.type === 'Point' || f.geometry.type === 'MultiPoint'),
-  )
+  // Setup point layers
+  const pointFeatures = getPointFeatures(parsedData)
   if (pointFeatures.length > 0) {
-    geoJsonEnsurePointIcons(map, map, false)
-    geoJsonEnsurePointSource(map, pointFeatures, true)
-    geoJsonEnsurePointLayer(map, true, true, type === MapType.itvPhoto)
+    setupGeoJsonPointLayers(
+      map,
+      id,
+      pointFeatures,
+      visible,
+      type === MapType.itvPhoto,
+      is2K,
+      createdSources,
+      createdLayers,
+    )
   }
 
+  // Fill layer
   const fillPaint = isItvVector
-    ? {
-        'fill-color': '#0E94FA',
-        'fill-opacity': 0.3,
-      }
-    : {
-        'fill-color': fillColor,
-        'fill-opacity': 0.6,
-        'fill-outline-color': strokeColor,
-      }
+    ? { 'fill-color': '#0E94FA', 'fill-opacity': 0.3 }
+    : { 'fill-color': fillColor, 'fill-opacity': 0.6, 'fill-outline-color': strokeColor }
 
-  geoJsonEnsureFillLayer(map, true, true, fillPaint, isItvVector ? undefined : 10)
-  geoJsonEnsureLineLayer(map, true, true, isItvVector ? undefined : 10)
+  const fillMinzoom = isItvVector ? undefined : 10
+  const lineMinzoom = isItvVector ? undefined : 10
 
-  const removeHandlers: Array<() => void> = []
-
-  if (getClickInfo) {
-    const clickHandler = (e: maplibregl.MapLayerMouseEvent) => {
-      const feature = e.features?.[0]
-      const props = feature ? { ...(feature.properties as Record<string, unknown>), type: cfg.type } : null
-      const lngLat: [number, number] | undefined = e.lngLat ? [e.lngLat.lng, e.lngLat.lat] : undefined
-      getClickInfo(lngLat, props)
-    }
-
-    const clickLayerIds = [pointFeatures.length > 0 ? `${id}-point` : '', fillLayerId, lineLayerId].filter(Boolean)
-    for (const lid of clickLayerIds) {
-      map.on('click', lid, clickHandler)
-      removeHandlers.push(() => map.off('click', lid, clickHandler))
-    }
+  if (!map.getLayer(fillLayerId)) {
+    map.addLayer(createFillLayerSpec(id, sourceId, fillPaint, visible, fillMinzoom), layerIdConfig.customReferer)
+    createdLayers.push(fillLayerId)
   }
 
-  try {
-    const handlerId = `layer-reg-${id}`
-    const register = useMapStore.getState().registerStyleDataHandler
-    const unregister = useMapStore.getState().unregisterStyleDataHandler
-    const handler = (m: maplibregl.Map) => {
-      try {
-        if (!m.getSource(sourceId)) {
-          m.addSource(sourceId, {
-            type: 'geojson',
-            data: parsedData as any,
-          })
-        }
-        // Restore point source/layer if needed
-        const pointFeatures = parsedData.features.filter(
-          (f) => f.geometry && (f.geometry.type === 'Point' || f.geometry.type === 'MultiPoint'),
-        )
-        if (pointFeatures.length > 0) {
-          geoJsonEnsurePointIcons(m, map, true)
-          geoJsonEnsurePointSource(m, pointFeatures, false)
-          geoJsonEnsurePointLayer(m, false, false, type === MapType.itvPhoto)
-        }
+  // Line layer
+  if (!map.getLayer(lineLayerId)) {
+    map.addLayer(createLineLayerSpec(id, sourceId, strokeColor, visible, lineMinzoom), layerIdConfig.customReferer)
+    createdLayers.push(lineLayerId)
+  }
 
-        geoJsonEnsureFillLayer(m, false, false, fillPaint, isItvVector ? undefined : 10)
-        geoJsonEnsureLineLayer(m, false, false, 10)
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.error('geojson layer style-data handler error', e)
-      }
-    }
-    register(map, handlerId, handler)
-    removeHandlers.push(() => unregister(map, handlerId))
-  } catch {}
+  // Click handlers
+  const removeHandlers = registerClickHandlers(map, cfg, id, pointFeatures, fillLayerId, lineLayerId, getClickInfo)
+
+  // Style-data handler
+  registerStyleDataHandler(
+    map,
+    id,
+    sourceId,
+    parsedData,
+    pointFeatures,
+    type,
+    fillLayerId,
+    lineLayerId,
+    fillPaint,
+    strokeColor,
+    isItvVector,
+    is2K,
+    removeHandlers,
+  )
 
   return {
     sourceIds: createdSources,
@@ -1242,13 +1324,14 @@ const createItvRasterTileLayers = (
   }
 
   const layerId = cfg.id
+  const visibility = visible ? 'visible' : 'none'
   if (!map.getLayer(layerId)) {
     map.addLayer(
       {
         id: layerId,
         type: 'raster',
         source: sourceId,
-        layout: { visibility: visible ? 'visible' : 'none' },
+        layout: { visibility },
         paint: { 'raster-opacity': 1 },
         minzoom: 8,
       },
@@ -1256,7 +1339,7 @@ const createItvRasterTileLayers = (
     )
     createdLayers.push(layerId)
   } else {
-    map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none')
+    map.setLayoutProperty(layerId, 'visibility', visibility)
     // even if the layer already existed, record it so callers can update visibility
     createdLayers.push(layerId)
   }
@@ -1353,32 +1436,32 @@ const createItvVectorTileLayers = (
   const removeHandlers: Array<() => void> = []
   const sourceId = `${id}-source`
   const tiles = Array.isArray(data) ? data : [data]
-
-  if (!map.getSource(sourceId)) {
-    map.addSource(sourceId, {
-      type: 'vector',
-      tiles,
-      minzoom: 8,
-    })
-    createdSources.push(sourceId)
-  }
+  const iconName = 'custom-pin-icon-sdf'
 
   const fillColorArr = color_code ? hexToRGBAArray(color_code, true) : hexToRGBAArray(DefaultAoiColor, true)
   const strokeColorArr = color_code ? hexToRGBAArray(color_code) : hexToRGBAArray(DefaultAoiColor)
   const fillColor = rgbaArrayToCss(fillColorArr, `rgba(${DefaultAoiColor}aa)`)
   const strokeColor = rgbaArrayToCss(strokeColorArr, `rgba(${DefaultAoiColor}ff)`)
 
-  // --- Layer Creation Helper ---
-  const addLayers = (sourceLayer: string) => {
-    // --- Point Layer ---
+  // Helper: Ensure vector source exists
+  const ensureSource = (m: maplibregl.Map, trackSources: boolean) => {
+    if (!m.getSource(sourceId)) {
+      m.addSource(sourceId, {
+        type: 'vector',
+        tiles,
+        minzoom: 8,
+      })
+      if (trackSources) createdSources.push(sourceId)
+    }
+  }
+
+  // Helper: Add or update point layer
+  const ensurePointLayer = (m: maplibregl.Map, sourceLayer: string, setVisibility: boolean, trackLayers: boolean) => {
     const pointLayerId = `${id}-point`
-    const iconName = 'custom-pin-icon-sdf'
+    checkImage(m, iconName)
 
-    // Ensure SDF icon image exists
-    checkImage(map, iconName)
-
-    if (!map.getLayer(pointLayerId)) {
-      map.addLayer(
+    if (!m.getLayer(pointLayerId)) {
+      m.addLayer(
         {
           id: pointLayerId,
           type: 'symbol',
@@ -1396,16 +1479,18 @@ const createItvVectorTileLayers = (
         },
         layerIdConfig.customReferer,
       )
-      createdLayers.push(pointLayerId)
-    } else {
-      map.setLayoutProperty(pointLayerId, 'visibility', visible ? 'visible' : 'none')
-      createdLayers.push(pointLayerId)
+      if (trackLayers) createdLayers.push(pointLayerId)
+    } else if (setVisibility) {
+      m.setLayoutProperty(pointLayerId, 'visibility', visible ? 'visible' : 'none')
+      if (trackLayers) createdLayers.push(pointLayerId)
     }
+  }
 
-    // --- Polygon (Fill) Layer ---
+  // Helper: Add or update fill layer
+  const ensureFillLayer = (m: maplibregl.Map, sourceLayer: string, setVisibility: boolean, trackLayers: boolean) => {
     const fillLayerId = `${id}-fill`
-    if (!map.getLayer(fillLayerId)) {
-      map.addLayer(
+    if (!m.getLayer(fillLayerId)) {
+      m.addLayer(
         {
           id: fillLayerId,
           type: 'fill',
@@ -1422,16 +1507,18 @@ const createItvVectorTileLayers = (
         },
         layerIdConfig.customReferer,
       )
-      createdLayers.push(fillLayerId)
-    } else {
-      map.setLayoutProperty(fillLayerId, 'visibility', visible ? 'visible' : 'none')
-      createdLayers.push(fillLayerId)
+      if (trackLayers) createdLayers.push(fillLayerId)
+    } else if (setVisibility) {
+      m.setLayoutProperty(fillLayerId, 'visibility', visible ? 'visible' : 'none')
+      if (trackLayers) createdLayers.push(fillLayerId)
     }
+  }
 
-    // --- Line Layer ---
+  // Helper: Add or update line layer
+  const ensureLineLayer = (m: maplibregl.Map, sourceLayer: string, setVisibility: boolean, trackLayers: boolean) => {
     const lineLayerId = `${id}-line`
-    if (!map.getLayer(lineLayerId)) {
-      map.addLayer(
+    if (!m.getLayer(lineLayerId)) {
+      m.addLayer(
         {
           id: lineLayerId,
           type: 'line',
@@ -1446,23 +1533,31 @@ const createItvVectorTileLayers = (
         },
         layerIdConfig.customReferer,
       )
-      createdLayers.push(lineLayerId)
-    } else {
-      map.setLayoutProperty(lineLayerId, 'visibility', visible ? 'visible' : 'none')
-      createdLayers.push(lineLayerId)
+      if (trackLayers) createdLayers.push(lineLayerId)
+    } else if (setVisibility) {
+      m.setLayoutProperty(lineLayerId, 'visibility', visible ? 'visible' : 'none')
+      if (trackLayers) createdLayers.push(lineLayerId)
     }
   }
 
-  // Inspect first tile to get source-layer
+  // Helper: Add all layers for a given source layer
+  const ensureAllLayers = (m: maplibregl.Map, sourceLayer: string, setVisibility: boolean, trackLayers: boolean) => {
+    ensurePointLayer(m, sourceLayer, setVisibility, trackLayers)
+    ensureFillLayer(m, sourceLayer, setVisibility, trackLayers)
+    ensureLineLayer(m, sourceLayer, setVisibility, trackLayers)
+  }
+
+  // Initial setup: Add source and layers
+  ensureSource(map, true)
+
   if (tiles.length > 0) {
     inspectTile(tiles[0]).then((detectedLayer) => {
-      // If the map or source was removed while fetching, abort
       if (!map.getSource(sourceId)) return
       const sourceLayer = detectedLayer || 'default'
-      addLayers(sourceLayer)
+      ensureAllLayers(map, sourceLayer, true, true)
     })
   } else {
-    addLayers('default')
+    ensureAllLayers(map, 'default', true, true)
   }
 
   // Register style-data handler for basemap switches
@@ -1472,87 +1567,16 @@ const createItvVectorTileLayers = (
     const unregister = useMapStore.getState().unregisterStyleDataHandler
     const handler = (m: maplibregl.Map) => {
       try {
-        if (!m.getSource(sourceId)) {
-          m.addSource(sourceId, {
-            type: 'vector',
-            tiles,
-            minzoom: 8,
-          })
-        }
+        ensureSource(m, false)
 
-        // For style reload, we might re-inspect or just use 'default' if we didn't store it.
-        // Ideally we should cache the source-layer but for now let's re-trigger inspection or consistent default. Use same logic.
         if (tiles.length > 0) {
           inspectTile(tiles[0]).then((detectedLayer) => {
             if (!m.getSource(sourceId)) return
-            const sl = detectedLayer || 'default'
-
-            // Ensure SDF icon exists
-            const iconName = 'custom-pin-icon-sdf'
-            checkImage(m, iconName)
-
-            const pointLayerId = `${id}-point`
-            if (!m.getLayer(pointLayerId)) {
-              m.addLayer(
-                {
-                  id: pointLayerId,
-                  type: 'symbol',
-                  source: sourceId,
-                  'source-layer': sl,
-                  filter: ['any', ['==', ['geometry-type'], 'Point'], ['==', ['geometry-type'], 'MultiPoint']],
-                  layout: {
-                    'icon-image': iconName,
-                    'icon-size': is2K ? 3 : 1.5,
-                    'icon-anchor': 'bottom',
-                    'icon-allow-overlap': true,
-                    visibility: visible ? 'visible' : 'none',
-                  },
-                  minzoom: 8,
-                },
-                layerIdConfig.customReferer,
-              )
-            }
-
-            const fillLayerId = `${id}-fill`
-            if (!m.getLayer(fillLayerId)) {
-              m.addLayer(
-                {
-                  id: fillLayerId,
-                  type: 'fill',
-                  source: sourceId,
-                  'source-layer': sl,
-                  filter: ['any', ['==', ['geometry-type'], 'Polygon'], ['==', ['geometry-type'], 'MultiPolygon']],
-                  layout: { visibility: 'visible' },
-                  paint: {
-                    'fill-color': fillColor,
-                    'fill-opacity': 0.6,
-                    'fill-outline-color': strokeColor,
-                  },
-                  minzoom: 8,
-                },
-                layerIdConfig.customReferer,
-              )
-            }
-
-            const lineLayerId = `${id}-line`
-            if (!m.getLayer(lineLayerId)) {
-              m.addLayer(
-                {
-                  id: lineLayerId,
-                  type: 'line',
-                  source: sourceId,
-                  'source-layer': sl,
-                  layout: { visibility: 'visible' },
-                  paint: {
-                    'line-color': strokeColor,
-                    'line-width': 2,
-                  },
-                  minzoom: 8,
-                },
-                layerIdConfig.customReferer,
-              )
-            }
+            const sourceLayer = detectedLayer || 'default'
+            ensureAllLayers(m, sourceLayer, false, false)
           })
+        } else {
+          ensureAllLayers(m, 'default', false, false)
         }
       } catch (e) {
         console.error('vector tile layer style-data handler error', e)
@@ -1568,6 +1592,7 @@ const createItvVectorTileLayers = (
     cleanup: buildCleanup(map, createdLayers, createdSources, removeHandlers),
   }
 }
+
 const createItvAnnotationLayers = (
   cfg: ItvAnnotationLayerConfig,
   map: maplibregl.Map,

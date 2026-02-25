@@ -17,7 +17,8 @@ import useMapStore from '@/components/common/map/store/map'
 import createMapLibreLayersFromConfig, { CreatedMapLibreLayers } from '../utils/maplibreLayerCreator'
 import maplibregl from 'maplibre-gl'
 import LayerControls from '../layer/LayerControls'
-import { Box } from '@mui/material'
+import { Box, useMediaQuery } from '@mui/material'
+import theme from '@/styles/theme'
 import { FloatingPanel } from '@/components/common/map/FloatingPanel'
 import { useQuery } from '@tanstack/react-query'
 import service from '@/api'
@@ -67,6 +68,7 @@ const Weekly: React.FC<WeeklyProps> = ({
     setIsZoom,
   } = useWeeklyMapStore()
   const { mapLibre } = useMapStore()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const { showLoading, hideLoading, showAlert } = useGlobalUI()
   const { t, i18n } = useTranslation('common')
   const didInitialSearch = useRef(false)
@@ -350,7 +352,7 @@ const Weekly: React.FC<WeeklyProps> = ({
     }
 
     return (
-      <Box className='absolute bottom-0 left-2 z-[105] w-[88%] sm:w-[95%] md:top-0 md:bottom-auto md:left-auto md:w-112.5 md:translate-x-0'>
+      <Box className='absolute bottom-0 left-1/2 z-[105] w-[90%] -translate-x-1/2 sm:w-[95%] md:top-0 md:bottom-auto md:left-auto md:w-112.5 md:-translate-x-0'>
         <FloatingPanel
           icon={
             <span
@@ -368,6 +370,7 @@ const Weekly: React.FC<WeeklyProps> = ({
           }
           isOpen={isPanelOpen}
           isMinimized={isPanelMinimized}
+          isMobile={isMobile}
           onClose={() => {
             setIsPanelOpen(false)
             // setSelectedGroup(null)
@@ -394,6 +397,7 @@ const Weekly: React.FC<WeeklyProps> = ({
     thresholds,
     handleThresholdChange,
     setIsPanelOpen,
+    isMobile,
   ])
 
   useEffect(() => {
