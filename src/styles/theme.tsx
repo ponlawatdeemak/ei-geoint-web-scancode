@@ -21,7 +21,7 @@ let theme = createTheme({
       md: 768,
       lg: 1024,
       xl: 1280,
-      '2k': 2160,
+      '2k': 2880,
       '4k': 3840,
     },
   },
@@ -298,20 +298,100 @@ theme = createTheme(theme, {
         },
       },
     },
-    MuiDateCalendar: {
+    // Calendar
+    MuiPickersCalendarHeader: {
       styleOverrides: {
         root: {
           [theme.breakpoints.up('2k')]: {
-            width: '15rem',
+            marginTop: '0.75rem',
+            marginBottom: '0.25rem',
+            paddingLeft: '1.5rem',
+            paddingRight: '0.75rem',
+            maxHeight: '2.5rem',
+            minHeight: '2.5rem',
           },
         },
       },
     },
+    MuiDateCalendar: {
+      styleOverrides: {
+        root: {
+          [theme.breakpoints.up('2k')]: {
+            width: '21rem',
+            height: '21rem',
+            maxHeight: '21rem',
+          },
+        },
+      },
+    },
+    MuiDayCalendar: {
+      styleOverrides: {
+        weekDayLabel: {
+          [theme.breakpoints.up('2k')]: {
+            width: '2.25rem',
+            height: '2.5rem',
+          },
+        },
+        slideTransition: {
+          [theme.breakpoints.up('2k')]: {
+            minHeight: '15rem',
+          },
+        },
+      },
+    },
+    MuiPickersDay: {
+      styleOverrides: {
+        root: {
+          [theme.breakpoints.up('2k')]: {
+            width: '2.25rem',
+            height: '2.25rem',
+          },
+        },
+      },
+    },
+    MuiYearCalendar: {
+      styleOverrides: {
+        root: {
+          [theme.breakpoints.up('2k')]: {
+            rowGap: '0.75rem',
+            width: '21rem',
+            maxHeight: '17.5rem',
+          },
+        },
+        button: {
+          [theme.breakpoints.up('2k')]: {
+            width: '4.5rem',
+            height: '2.25rem',
+          },
+        },
+      },
+    },
+
+    // Autocomplete
     MuiAutocomplete: {
       styleOverrides: {
         root: {
           '.MuiInputAdornment-root': {
             maxHeight: '1em !important',
+          },
+        },
+      },
+    },
+    // Step
+    MuiStepIcon: {
+      styleOverrides: {
+        text: {
+          [theme.breakpoints.up('2k')]: {
+            fontSize: '0.5rem',
+          },
+        },
+      },
+    },
+    MuiStepConnector: {
+      styleOverrides: {
+        root: {
+          [theme.breakpoints.up('2k')]: {
+            top: '0.75rem',
           },
         },
       },

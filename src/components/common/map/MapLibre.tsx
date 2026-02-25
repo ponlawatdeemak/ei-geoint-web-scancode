@@ -13,9 +13,16 @@ interface MapLibreProps {
   mapStyle: string | StyleSpecification
   isInteractive: boolean
   isHideAttributionControl?: boolean
+  zoomStyle?: number
 }
 
-const MapLibre: FC<MapLibreProps> = ({ mapId, mapStyle, isInteractive = true, isHideAttributionControl = false }) => {
+const MapLibre: FC<MapLibreProps> = ({
+  mapId,
+  mapStyle,
+  isInteractive = true,
+  isHideAttributionControl = false,
+  zoomStyle,
+}) => {
   const { setMapLibre } = useMapStore()
   const { data: session } = useSession()
   const { is2K } = useResponsive()
@@ -145,6 +152,7 @@ const MapLibre: FC<MapLibreProps> = ({ mapId, mapStyle, isInteractive = true, is
 
   return (
     <ReactMap
+      //   style={zoomStyle ? { zoom: zoomStyle } : undefined}
       pixelRatio={is2K ? 2 : 1}
       initialViewState={viewState}
       mapStyle={resolvedStyle}

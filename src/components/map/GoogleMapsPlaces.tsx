@@ -7,6 +7,7 @@ import { Autocomplete, TextField, Tooltip } from '@mui/material'
 import { layerIdConfig } from '@/components/common/map/config/map'
 import { GeoJSONSource } from 'maplibre-gl'
 import useMapStore from '@/components/common/map/store/map'
+import useResponsive from '@/hook/responsive'
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
@@ -20,6 +21,7 @@ interface GoogleMapsPlacesSearchProps {
 const GoogleMapsPlacesSearch: React.FC<GoogleMapsPlacesSearchProps> = ({ map }) => {
   const { t } = useTranslation('common')
   const { language } = useSettings()
+  const { is2K } = useResponsive()
 
   const [inputValue, setInputValue] = useState('')
   const [loading, setLoading] = useState(false)
@@ -67,7 +69,7 @@ const GoogleMapsPlacesSearch: React.FC<GoogleMapsPlacesSearchProps> = ({ map }) 
           source: RESULT_SOURCE,
           layout: {
             'icon-image': ICON_NAME,
-            'icon-size': 1,
+            'icon-size': is2K ? 2 : 1,
             'icon-anchor': 'bottom',
             'icon-allow-overlap': true,
           },
@@ -79,7 +81,7 @@ const GoogleMapsPlacesSearch: React.FC<GoogleMapsPlacesSearchProps> = ({ map }) 
       if (map.getLayer(RESULT_LAYER)) map.removeLayer(RESULT_LAYER)
       if (map.getSource(RESULT_SOURCE)) map.removeSource(RESULT_SOURCE)
     }
-  }, [map])
+  }, [map, is2K])
 
   // register style-data handler so places source/layer and icon are recreated after style reload
   React.useEffect(() => {
@@ -125,7 +127,7 @@ const GoogleMapsPlacesSearch: React.FC<GoogleMapsPlacesSearchProps> = ({ map }) 
               source: RESULT_SOURCE,
               layout: {
                 'icon-image': ICON_NAME,
-                'icon-size': 1,
+                'icon-size': is2K ? 2 : 1,
                 'icon-anchor': 'bottom',
                 'icon-allow-overlap': true,
               },
@@ -140,7 +142,7 @@ const GoogleMapsPlacesSearch: React.FC<GoogleMapsPlacesSearchProps> = ({ map }) 
     }
     register(map, handlerId, handler)
     return () => unregister(map, handlerId)
-  }, [map])
+  }, [map, is2K])
 
   const fetchPlaces = useCallback(
     async (value: string, callback: any) => {

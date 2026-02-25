@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FC, type MouseEvent } from 'react'
+import { useCallback, useEffect, useMemo, useState, type FC, type MouseEvent } from 'react'
 import MyLocationIcon from '@mui/icons-material/MyLocation'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import CloseIcon from '@mui/icons-material/Close'
@@ -56,37 +56,41 @@ const CursorCoordinate: FC<CursorCoordinateProps> = ({ map }) => {
     }
   }, [map, handleMapClick, handleMapMouseMove])
 
-  let widthClass = 'min-w-[140px]'
+  let widthClass = 'min-w-[8.75rem]'
   if (displaySystem === 'UTM47' || displaySystem === 'UTM48') {
-    widthClass = 'min-w-[200px]'
+    widthClass = 'min-w-[12.5rem]'
   } else if (displaySystem === 'MGRS') {
-    widthClass = 'min-w-[124px]'
+    widthClass = 'min-w-[7.75rem]'
   }
+
+  const iconSize = useMemo(() => {
+    return '1rem'
+  }, [])
 
   return (
     <div className='flex h-7 items-center gap-1 text-white text-xs'>
       {selectedCoordinate && (
         <>
-          <MyLocationIcon sx={{ width: 16, height: 16 }} />
+          <MyLocationIcon sx={{ width: iconSize, height: iconSize }} />
           <span className={`inline-block ${widthClass} tabular-nums`}>
             {fromDecimalDegree(selectedCoordinate[0], selectedCoordinate[1], displaySystem)}
           </span>
           <Tooltip title={t('tools.copyCoordinates')} arrow placement='top'>
             <IconButton className='text-white!' onClick={() => handleCopy(displaySystem)} size='small'>
-              <ContentCopyIcon sx={{ width: 16, height: 16 }} />
+              <ContentCopyIcon sx={{ width: iconSize, height: iconSize }} />
             </IconButton>
           </Tooltip>
 
           <Tooltip title={t('button.close')} arrow placement='top'>
             <IconButton className='text-white!' onClick={handleClear} size='small'>
-              <CloseIcon sx={{ width: 16, height: 16 }} />
+              <CloseIcon sx={{ width: iconSize, height: iconSize }} />
             </IconButton>
           </Tooltip>
         </>
       )}
       {currentCoordinate && (
         <div className='hidden items-center gap-1 lg:flex'>
-          <NearMeIcon sx={{ width: 16, height: 16 }} />
+          <NearMeIcon sx={{ width: iconSize, height: iconSize }} />
           <span className={`inline-block ${widthClass} tabular-nums`}>
             {fromDecimalDegree(currentCoordinate[0], currentCoordinate[1], displaySystem)}
           </span>
@@ -98,7 +102,7 @@ const CursorCoordinate: FC<CursorCoordinateProps> = ({ map }) => {
           onClick={(e: MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget)}
           size='small'
         >
-          <SettingsIcon sx={{ width: 16, height: 16 }} />
+          <SettingsIcon sx={{ width: iconSize, height: iconSize }} />
         </IconButton>
       </Tooltip>
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>

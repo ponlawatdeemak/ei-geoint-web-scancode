@@ -14,6 +14,7 @@ import TuneIcon from '@mui/icons-material/Tune'
 import GoogleMapsPlacesSearch from '@/components/map/GoogleMapsPlaces'
 import { GetProjectDtoOut } from '@interfaces/index'
 import { LngLatBoundsLike } from 'maplibre-gl'
+import useResponsive from '@/hook/responsive'
 
 const CURRENT_LOCATION_ZOOM = 14
 
@@ -37,6 +38,7 @@ export interface MapViewProps extends PropsWithChildren {
   onPanelOpen?: () => void
   isShowLayerDetailsBtn?: boolean
   onShowLayerDetails?: () => void
+  zoomStyle?: number
 }
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''
@@ -56,8 +58,10 @@ export function MapView({
   onPanelOpen,
   isShowLayerDetailsBtn = false,
   onShowLayerDetails,
+  zoomStyle,
 }: Readonly<MapViewProps>) {
   const { mapLibre, basemap, setBasemap } = useMapStore()
+  const { is2K } = useResponsive()
 
   const { t } = useTranslation('common')
 
@@ -148,7 +152,7 @@ export function MapView({
                 source: sourceId,
                 layout: {
                   'icon-image': 'current-pin',
-                  'icon-size': 1,
+                  'icon-size': is2K ? 2 : 1,
                   'icon-allow-overlap': true,
                   'icon-anchor': 'bottom',
                 },
@@ -161,7 +165,7 @@ export function MapView({
 
       map.flyTo({ center: [longitude, latitude], zoom: CURRENT_LOCATION_ZOOM, duration: 3000 })
     },
-    [mapLibre, mapId],
+    [mapLibre, mapId, is2K],
   )
 
   return (
@@ -230,12 +234,13 @@ export function MapView({
         mapStyle={mapStyle}
         isInteractive={isInteractive}
         isHideAttributionControl={isHideAttributionControl}
+        zoomStyle={zoomStyle}
       />
 
       {floatingPanel && (
-        <div className='pointer-events-none absolute inset-0 z-[110]'>
-          <div className='absolute top-4 right-4 bottom-4 flex flex-col justify-start pointer-events-none'>
-            <div className='pointer-events-auto max-h-full flex flex-col w-auto'>{floatingPanel}</div>
+        <div className='pointer-events-none absolute inset-0 z-30'>
+          <div className='pointer-events-none absolute top-4 right-4 bottom-4 flex flex-col justify-start'>
+            <div className='pointer-events-auto flex max-h-full w-auto flex-col'>{floatingPanel}</div>
           </div>
         </div>
       )}

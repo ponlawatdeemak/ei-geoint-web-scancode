@@ -12,7 +12,7 @@ const useResponsive = () => {
   const theme = useTheme()
   const isMd = useMediaQuery(theme.breakpoints.up(768))
   const isLg = useMediaQuery(theme.breakpoints.up(1024)) // desktop
-  const is2K = useMediaQuery(theme.breakpoints.up(2560))
+  const is2K = useMediaQuery(theme.breakpoints.up(2880))
 
   return { isMd, isLg, is2K }
 }

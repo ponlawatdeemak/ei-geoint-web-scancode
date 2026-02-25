@@ -505,13 +505,13 @@ const ProjectMapView = forwardRef<ProjectMapViewRef, ProjectMapViewProps>(
           {selectedGroup.serviceId && (
             <ServiceIcon
               serviceId={selectedGroup.serviceId}
-              baseClass='inline-flex h-[14px] min-h-[14px] w-[14px] min-w-[14px] items-center justify-center rounded-[3px] align-middle text-(--color-text-icon)'
+              baseClass='inline-flex h-3.5 min-h-3.5 w-3.5 min-w-3.5 items-center justify-center rounded-[3px] align-middle text-(--color-text-icon)'
             ></ServiceIcon>
           )}
           {selectedGroup.rootModelId && (
             <RootModelIcon
               rootModelId={selectedGroup.rootModelId}
-              baseClass='inline-flex h-[14px] min-h-[14px] w-[14px] min-w-[14px] items-center justify-center rounded-[3px] align-middle text-(--color-text-icon)'
+              baseClass='inline-flex h-3.5 min-h-3.5 w-3.5 min-w-3.5 items-center justify-center rounded-[3px] align-middle text-(--color-text-icon)'
             ></RootModelIcon>
           )}
         </>

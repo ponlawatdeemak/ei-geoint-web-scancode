@@ -88,7 +88,7 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
   const { showAlert } = useGlobalUI()
   const { areaUnit, lengthUnit } = useSettings()
   const { mapLibre } = useMapStore()
-  const { isMd } = useResponsive()
+  const { isMd, is2K } = useResponsive()
 
   const map = useMemo(() => mapLibre[MAP_ID], [mapLibre])
 
@@ -700,65 +700,68 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
     }
   }, [])
 
-  const addPreviewPointLayer = useCallback((mapInstance: any, coord: [number, number]) => {
-    // Use a symbol layer with a pin icon created from the embedded `pinSvg` string.
-    const ICON_NAME = 'sar-pin-icon'
-    try {
-      // Load image once and cache it
-      if (!pinImageLoadedRef.current && !pinImageRef.current) {
-        const svgText = pinSvg
-        const img = new Image()
-        img.crossOrigin = 'anonymous'
-        img.onload = () => {
-          pinImageRef.current = img
-          pinImageLoadedRef.current = true
+  const addPreviewPointLayer = useCallback(
+    (mapInstance: any, coord: [number, number]) => {
+      // Use a symbol layer with a pin icon created from the embedded `pinSvg` string.
+      const ICON_NAME = 'sar-pin-icon'
+      try {
+        // Load image once and cache it
+        if (!pinImageLoadedRef.current && !pinImageRef.current) {
+          const svgText = pinSvg
+          const img = new Image()
+          img.crossOrigin = 'anonymous'
+          img.onload = () => {
+            pinImageRef.current = img
+            pinImageLoadedRef.current = true
+            try {
+              if (typeof mapInstance.hasImage !== 'function' || !mapInstance.hasImage(ICON_NAME)) {
+                mapInstance.addImage(ICON_NAME, img)
+              }
+            } catch {}
+          }
+          img.onerror = () => {}
+          img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText)
+        } else if (pinImageLoadedRef.current && pinImageRef.current) {
           try {
             if (typeof mapInstance.hasImage !== 'function' || !mapInstance.hasImage(ICON_NAME)) {
-              mapInstance.addImage(ICON_NAME, img)
+              mapInstance.addImage(ICON_NAME, pinImageRef.current)
             }
           } catch {}
         }
-        img.onerror = () => {}
-        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText)
-      } else if (pinImageLoadedRef.current && pinImageRef.current) {
-        try {
-          if (typeof mapInstance.hasImage !== 'function' || !mapInstance.hasImage(ICON_NAME)) {
-            mapInstance.addImage(ICON_NAME, pinImageRef.current)
-          }
-        } catch {}
-      }
-    } catch {}
+      } catch {}
 
-    if (mapInstance.getSource(CURRENT_POINT_ID)) {
-      mapInstance.getSource(CURRENT_POINT_ID).setData({
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: coord },
-      })
-    } else {
-      mapInstance.addSource(CURRENT_POINT_ID, {
-        type: 'geojson',
-        data: {
+      if (mapInstance.getSource(CURRENT_POINT_ID)) {
+        mapInstance.getSource(CURRENT_POINT_ID).setData({
           type: 'Feature',
           geometry: { type: 'Point', coordinates: coord },
-        },
-      })
-      // symbol icon layer (will render once image is available)
-      mapInstance.addLayer(
-        {
-          id: CURRENT_POINT_ID,
-          type: 'symbol',
-          source: CURRENT_POINT_ID,
-          layout: {
-            'icon-image': ICON_NAME,
-            'icon-size': 0.8,
-            'icon-anchor': 'bottom',
-            'icon-allow-overlap': true,
+        })
+      } else {
+        mapInstance.addSource(CURRENT_POINT_ID, {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: coord },
           },
-        },
-        layerIdConfig.customReferer,
-      )
-    }
-  }, [])
+        })
+        // symbol icon layer (will render once image is available)
+        mapInstance.addLayer(
+          {
+            id: CURRENT_POINT_ID,
+            type: 'symbol',
+            source: CURRENT_POINT_ID,
+            layout: {
+              'icon-image': ICON_NAME,
+              'icon-size': is2K ? 1.6 : 0.8,
+              'icon-anchor': 'bottom',
+              'icon-allow-overlap': true,
+            },
+          },
+          layerIdConfig.customReferer,
+        )
+      }
+    },
+    [is2K],
+  )
 
   const addPreviewLineLayer = useCallback((mapInstance: any, coords: [number, number][]) => {
     if (mapInstance.getSource(CURRENT_LINE_ID)) {
@@ -937,7 +940,7 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
                     source: pointId,
                     layout: {
                       'icon-image': ICON_NAME,
-                      'icon-size': 0.8,
+                      'icon-size': is2K ? 1.6 : 0.8,
                       'icon-anchor': 'bottom',
                       'icon-allow-overlap': true,
                     },
@@ -1031,6 +1034,7 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
     addPreviewPointLayer,
     addPreviewLineLayer,
     addPreviewVerticesLayer,
+    is2K,
   ])
 
   const zoomToImage = useCallback(
@@ -1293,7 +1297,7 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
                     source: pointId,
                     layout: {
                       'icon-image': ICON_NAME,
-                      'icon-size': 0.8,
+                      'icon-size': is2K ? 1.6 : 0.8,
                       'icon-anchor': 'bottom',
                       'icon-allow-overlap': true,
                     },
@@ -1319,7 +1323,7 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
                   source: pointId,
                   layout: {
                     'icon-image': ICON_NAME,
-                    'icon-size': 0.8,
+                    'icon-size': is2K ? 1.6 : 0.8,
                     'icon-anchor': 'bottom',
                     'icon-allow-overlap': true,
                   },
@@ -1396,7 +1400,7 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
         )
       }
     })
-  }, [map, features])
+  }, [map, features, is2K])
 
   // --- Delete ---
   const confirmRemove = (item: FeatureItem) => {
@@ -1818,7 +1822,7 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
         <div className='relative flex-1'>
           <MapView mapId={MAP_ID} />
           <div
-            className={`!rounded-lg !bg-white !shadow-sm flex !h-10 !w-10 items-center justify-center border border-(--color-gray-border) absolute top-16 left-4 !z-50 ${showSidePanel ? 'hidden' : ''}`}
+            className={`!rounded-lg !bg-white !shadow-sm !h-10 !w-10 !z-50 absolute top-16 left-4 flex items-center justify-center border border-(--color-gray-border) ${showSidePanel ? 'hidden' : ''}`}
           >
             <IconButton className='!h-8 !w-8 !rounded-none !p-1.5 grow' onClick={() => setShowFormDialog(true)}>
               <PlaylistAddIcon width={24} height={24} />

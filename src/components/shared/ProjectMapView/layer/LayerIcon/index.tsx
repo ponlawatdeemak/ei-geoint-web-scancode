@@ -28,13 +28,13 @@ const LayerIcon: FC<{ group: ProjectMapViewGroup; selectedGroup: string | null }
         <>
           <ServiceIcon
             serviceId={group.serviceId as ServiceConfig}
-            baseClass={`inline-flex h-[14px] min-h-[14px] w-[14px] min-w-[14px] items-center justify-center rounded-[3px] px-2 align-middle ${
+            baseClass={`inline-flex h-3.5 min-h-3.5 w-3.5 min-w-3.5 items-center justify-center rounded-[3px] px-2 align-middle ${
               selectedGroup === group.groupId ? 'text-white' : 'text-(--color-text-icon)'
             }`}
           />
           <RootModelIcon
             rootModelId={group.rootModelId as RootModelConfig}
-            baseClass={`inline-flex h-[14px] min-h-[14px] w-[14px] min-w-[14px] items-center justify-center rounded-[3px] px-2 align-middle ${
+            baseClass={`inline-flex h-3.5 min-h-3.5 w-3.5 min-w-3.5 items-center justify-center rounded-[3px] px-2 align-middle ${
               selectedGroup === group.groupId ? 'text-white' : 'text-(--color-text-icon)'
             }`}
           />

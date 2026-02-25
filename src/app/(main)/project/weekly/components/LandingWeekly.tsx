@@ -143,8 +143,8 @@ const LandingWeekly: React.FC = () => {
               position: isMobile ? 'absolute' : 'relative',
               zIndex: isMobile ? (showPanelLeft ? 40 : -1) : 20,
               width: isMobile ? (showPanelLeft ? '100%' : '0') : showPanelLeft ? '30%' : '0',
-              maxWidth: isMobile ? 'auto' : showPanelLeft ? '480px' : '0',
-              minWidth: isMobile ? '0' : showPanelLeft ? '384px' : '0',
+              maxWidth: isMobile ? 'auto' : showPanelLeft ? '30rem' : '0',
+              minWidth: isMobile ? '0' : showPanelLeft ? '24rem' : '0',
               opacity: showPanelLeft ? 1 : 0,
               pointerEvents: showPanelLeft ? 'auto' : 'none',
             }}

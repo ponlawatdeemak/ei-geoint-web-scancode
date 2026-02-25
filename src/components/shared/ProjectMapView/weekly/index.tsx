@@ -35,6 +35,7 @@ import { zoomToGeometries } from '@/utils/geometry'
 import { processWeeklyLayers } from '../utils/weeklyLayerProcess'
 import { createHeatmap } from '../utils/heatmapCreator'
 import DateRangeIcon from '@mui/icons-material/DateRange'
+import useResponsive from '@/hook/responsive'
 
 type WeeklyProps = {
   onSelected?: (data: TaskLayer[]) => void
@@ -69,6 +70,7 @@ const Weekly: React.FC<WeeklyProps> = ({
   const { showLoading, hideLoading, showAlert } = useGlobalUI()
   const { t, i18n } = useTranslation('common')
   const didInitialSearch = useRef(false)
+  const { is2K } = useResponsive()
 
   const [layerList, setLayerList] = useState<ProjectMapViewGroup[]>([])
   const [layerVisibility, setLayerVisibility] = useState<Record<string, boolean>>({})
@@ -461,13 +463,17 @@ const Weekly: React.FC<WeeklyProps> = ({
 
       const createdConfigs: LayerConfig[] = []
       for (const cfg of configs) {
-        const created = createMapLibreLayersFromConfig(cfg, {
-          map,
-          thresholds,
-          layerVisibility,
-          getFeatureConfidence,
-          getClickInfo: handleFeatureClick,
-        })
+        const created = createMapLibreLayersFromConfig(
+          cfg,
+          {
+            map,
+            thresholds,
+            layerVisibility,
+            getFeatureConfidence,
+            getClickInfo: handleFeatureClick,
+          },
+          is2K,
+        )
         if (created) {
           createdLayersRef.current.set(cfg.id, created)
           createdConfigs.push(cfg)
@@ -475,7 +481,7 @@ const Weekly: React.FC<WeeklyProps> = ({
       }
       return createdConfigs
     },
-    [thresholds, layerVisibility, getFeatureConfidence, handleFeatureClick, map],
+    [thresholds, layerVisibility, getFeatureConfidence, handleFeatureClick, map, is2K],
   )
 
   // Handler when user selects new layers from search

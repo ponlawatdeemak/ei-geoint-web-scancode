@@ -22,6 +22,7 @@ import { app6eData } from './data/app6e'
 
 import ItvDialog from '../../../ItvDialog'
 import { cropCanvasImage } from '@/utils/crop-image'
+import useResponsive from '@/hook/responsive'
 
 export interface SelectedSymbol {
   sidc: string
@@ -81,6 +82,7 @@ const ItvAnnotation: FC<Props> = ({
   const sourceId = 'annotation-list-source'
   const layerId = 'annotation-list-layer'
   const map = useMemo(() => mapLibre[mapId], [mapLibre, mapId])
+  const { is2K } = useResponsive()
 
   useEffect(() => {
     if (layerInfo?.features) {
@@ -128,7 +130,7 @@ const ItvAnnotation: FC<Props> = ({
           source: sourceId,
           layout: {
             'icon-image': ['get', 'symbolImageName'],
-            'icon-size': 1,
+            'icon-size': is2K ? 2 : 1,
             'icon-anchor': 'center',
             'icon-allow-overlap': true,
           },
@@ -136,7 +138,7 @@ const ItvAnnotation: FC<Props> = ({
         layerIdConfig.basicTools,
       )
     }
-  }, [map])
+  }, [map, is2K])
 
   useEffect(() => {
     if (!map) return

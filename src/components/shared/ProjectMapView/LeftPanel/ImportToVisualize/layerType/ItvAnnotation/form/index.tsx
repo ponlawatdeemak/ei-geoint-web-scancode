@@ -17,6 +17,7 @@ import { cropCanvasImage } from '@/utils/crop-image'
 import { SelectedSymbol } from '..'
 import SymbolForm, { defaultSymbolFormValues } from './SymbolForm'
 import LabelForm, { defaultLabelFormValues } from './LabelForm'
+import useResponsive from '@/hook/responsive'
 
 type Props = {
   initialData?: SelectedSymbol
@@ -30,6 +31,7 @@ type Props = {
 const AnnotationForm: React.FC<Props> = ({ initialData, editItem, mapId, onEditSymbol, onCancel, onSubmit }) => {
   const { mapLibre } = useMapStore()
   const theme = useTheme()
+  const { is2K } = useResponsive()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const [activeTab, setActiveTab] = useState(0)
   const baseSidc = useMemo(() => initialData?.sidc || ''.padEnd(20, '0'), [initialData?.sidc])
@@ -248,7 +250,7 @@ const AnnotationForm: React.FC<Props> = ({ initialData, editItem, mapId, onEditS
             source: sourceId,
             layout: {
               'icon-image': sourceId,
-              'icon-size': 1,
+              'icon-size': is2K ? 2 : 1,
               'icon-allow-overlap': true,
             },
           })
@@ -278,7 +280,7 @@ const AnnotationForm: React.FC<Props> = ({ initialData, editItem, mapId, onEditS
         isRecreatingRef.current = false
       }
     },
-    [labelValues],
+    [labelValues, is2K],
   )
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: fix loop
@@ -386,7 +388,7 @@ const AnnotationForm: React.FC<Props> = ({ initialData, editItem, mapId, onEditS
               alt='Symbol Preview'
               width={40}
               height={40}
-              style={{ width: 'auto', height: 'auto' }}
+              style={{ width: '4rem' }}
             />
           </div>
         )}

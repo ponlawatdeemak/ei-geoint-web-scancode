@@ -19,6 +19,7 @@ import { nanoid } from 'nanoid'
 import theme from '@/styles/theme'
 import { vectorArrayToFeatureCollection } from '@/components/shared/ProjectMapView/utils/itvConvertor'
 import { Point } from 'geojson'
+import useResponsive from '@/hook/responsive'
 
 const mapId = 'itv-photo-locator'
 
@@ -42,6 +43,7 @@ const PhotoLocator: FC<PhotoLocatorProps> = ({ photoList, setPhotoList, onClose,
   const { showAlert } = useGlobalUI()
   const prevCursor = useRef<string>('')
   const isMobile = useMediaQuery(theme.breakpoints.down('lg'))
+  const { is2K } = useResponsive()
 
   const [currentTab, setCurrentTab] = useState<ItvPhotoLocatorTab>(ItvPhotoLocatorTab.ALL)
   const [isDefineCoordinates, setIsDefineCoordinates] = useState(false)
@@ -104,7 +106,7 @@ const PhotoLocator: FC<PhotoLocatorProps> = ({ photoList, setPhotoList, onClose,
             source: infoSourceId,
             layout: {
               'icon-image': imageId,
-              'icon-size': 0.4,
+              'icon-size': is2K ? 0.8 : 0.4,
               'icon-anchor': 'bottom',
             },
           })
@@ -115,7 +117,7 @@ const PhotoLocator: FC<PhotoLocatorProps> = ({ photoList, setPhotoList, onClose,
       URL.revokeObjectURL(url)
     }
     img.src = url
-  }, [mapLocator])
+  }, [mapLocator, is2K])
 
   const initDrawLayer = useCallback(() => {
     if (!mapLocator) return
@@ -145,7 +147,7 @@ const PhotoLocator: FC<PhotoLocatorProps> = ({ photoList, setPhotoList, onClose,
             source: drawSourceId,
             layout: {
               'icon-image': imageId,
-              'icon-size': 0.4,
+              'icon-size': is2K ? 0.8 : 0.4,
               'icon-anchor': 'bottom',
             },
           })
@@ -156,7 +158,7 @@ const PhotoLocator: FC<PhotoLocatorProps> = ({ photoList, setPhotoList, onClose,
       URL.revokeObjectURL(url)
     }
     img.src = url
-  }, [mapLocator])
+  }, [mapLocator, is2K])
 
   const initMapLayer = useCallback(() => {
     initInfoLayer()

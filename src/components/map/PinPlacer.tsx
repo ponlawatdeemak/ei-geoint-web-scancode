@@ -15,6 +15,7 @@ import { layerIdConfig } from '@/components/common/map/config/map'
 import { GeoJSONSource } from 'maplibre-gl'
 import useMapStore from '@/components/common/map/store/map'
 import SearchCoordinateHelpDialog from './SearchCoordinateHelpDialog'
+import useResponsive from '@/hook/responsive'
 
 const RESULT_SOURCE = 'pin-placer-result-source'
 const RESULT_LAYER = 'pin-placer-result-layer'
@@ -107,6 +108,7 @@ const PinPlacer: React.FC<PinPlacerProps> = ({ map, disabled, onMapClick, onClos
   const iconImageRef = React.useRef<HTMLImageElement | null>(null)
   const iconLoadedRef = React.useRef(false)
   const placedPinRef = React.useRef<[number, number] | null>(null)
+  const { is2K } = useResponsive()
 
   const parseCoords = useCallback((): [number, number] | null => {
     return toDecimalDegree(input, 'MGRS') ?? toDecimalDegree(input, 'DD') ?? toDecimalDegree(input, 'UTM')
@@ -215,7 +217,7 @@ const PinPlacer: React.FC<PinPlacerProps> = ({ map, disabled, onMapClick, onClos
           source: RESULT_SOURCE,
           layout: {
             'icon-image': ICON_NAME,
-            'icon-size': 1,
+            'icon-size': is2K ? 2 : 1,
             'icon-anchor': 'bottom',
             'icon-allow-overlap': true,
           },
@@ -227,7 +229,7 @@ const PinPlacer: React.FC<PinPlacerProps> = ({ map, disabled, onMapClick, onClos
       if (map.getLayer(RESULT_LAYER)) map.removeLayer(RESULT_LAYER)
       if (map.getSource(RESULT_SOURCE)) map.removeSource(RESULT_SOURCE)
     }
-  }, [map])
+  }, [map, is2K])
 
   // register a style-data handler so pin source/layer is recreated after style reload
   useEffect(() => {
@@ -272,7 +274,7 @@ const PinPlacer: React.FC<PinPlacerProps> = ({ map, disabled, onMapClick, onClos
               source: RESULT_SOURCE,
               layout: {
                 'icon-image': ICON_NAME,
-                'icon-size': 1,
+                'icon-size': is2K ? 2 : 1,
                 'icon-anchor': 'bottom',
                 'icon-allow-overlap': true,
               },
@@ -287,7 +289,7 @@ const PinPlacer: React.FC<PinPlacerProps> = ({ map, disabled, onMapClick, onClos
     }
     register(map, handlerId, handler)
     return () => unregister(map, handlerId)
-  }, [map])
+  }, [map, is2K])
 
   return (
     <>

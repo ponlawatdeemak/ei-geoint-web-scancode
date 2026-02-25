@@ -12,6 +12,7 @@ import { captureMapWithControl } from '@/utils/capture'
 import { thaiExtent } from '@/components/common/map/config/map'
 import { fromDecimalDegree } from '@/utils/coordinate'
 import { useSettings } from '@/hook/useSettings'
+import useResponsive from '@/hook/responsive'
 
 export interface GridType {
   key: string
@@ -75,6 +76,7 @@ const PrintMapExportMain: React.FC<PrintMapExportMainProps> = ({
   const { mapLibre } = useMapStore()
   const { showLoading, hideLoading } = useGlobalUI()
   const { copyLocationType } = useSettings()
+  const { is2K } = useResponsive()
 
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
@@ -294,11 +296,14 @@ const PrintMapExportMain: React.FC<PrintMapExportMainProps> = ({
 
       if (mapExport && miniMapExport && mapControlElement && miniMapControlElement) {
         // Use MapLibre's canvas directly instead of html2canvas
-        const mapImage = mapExport.getCanvas().toDataURL('image/png')
-        const miniMapImage = miniMapExport.getCanvas().toDataURL('image/png')
-
-        const mapCapturedImage = await captureMapWithControl(mapImage, '', MAP_WIDTH, MAP_HEIGHT)
-        const miniMapCapturedImage = await captureMapWithControl(miniMapImage, '', MINI_MAP_WIDTH, MINI_MAP_HEIGHT)
+        const mapImage = mapExport.getCanvas().toDataURL('image/png', 1.0)
+        const miniMapImage = miniMapExport.getCanvas().toDataURL('image/png', 1.0)
+        const mapWidth = is2K ? MAP_WIDTH * 2 : MAP_WIDTH
+        const mapHeight = is2K ? MAP_HEIGHT * 2 : MAP_HEIGHT
+        const miniMapWidth = is2K ? MINI_MAP_WIDTH * 2 : MINI_MAP_WIDTH
+        const miniMapHeight = is2K ? MINI_MAP_HEIGHT * 2 : MINI_MAP_HEIGHT
+        const mapCapturedImage = await captureMapWithControl(mapImage, '', mapWidth, mapHeight)
+        const miniMapCapturedImage = await captureMapWithControl(miniMapImage, '', miniMapWidth, miniMapHeight)
 
         const capturedMapElement = document.querySelector('.captured-map-image') as HTMLImageElement
         const capturedMiniMapElement = document.querySelector('.captured-mini-map-image') as HTMLImageElement

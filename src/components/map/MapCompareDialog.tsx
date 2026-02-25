@@ -37,6 +37,7 @@ import type { GetModelAllDtoOut } from '@interfaces/index'
 import { layerIdConfig } from '../common/map/config/map'
 import theme from '@/styles/theme'
 import i18nInstance from '@/i18n/i18next'
+import useResponsive from '@/hook/responsive'
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
@@ -76,6 +77,7 @@ const MapCompareDialog: React.FC<MapCompareDialogProps> = ({
   ...dialogProps
 }) => {
   const { t, i18n } = useTranslation('common')
+  const { is2K } = useResponsive()
 
   type Mode = 'ChangeDetection' | 'Compare'
   const [currentMode, setCurrentMode] = useState<Mode>((mode as Mode) ?? (defaultMode as Mode) ?? 'ChangeDetection')
@@ -253,37 +255,45 @@ const MapCompareDialog: React.FC<MapCompareDialogProps> = ({
   const handleOnLeftMapLoad = useCallback(
     (map: maplibregl.Map) => {
       if (leftTileConfig) {
-        createMapLibreLayersFromConfig(leftTileConfig, { map, layerVisibility })
+        createMapLibreLayersFromConfig(leftTileConfig, { map, layerVisibility }, is2K)
       }
       for (const cfg of vectorConfigs) {
-        createMapLibreLayersFromConfig(cfg, {
-          map,
-          layerVisibility,
-          getClickInfo: (lngLat, object) => handleFeatureClick(lngLat, object, map),
-        })
+        createMapLibreLayersFromConfig(
+          cfg,
+          {
+            map,
+            layerVisibility,
+            getClickInfo: (lngLat, object) => handleFeatureClick(lngLat, object, map),
+          },
+          is2K,
+        )
       }
 
       applyInitialZoom(map)
     },
-    [leftTileConfig, vectorConfigs, applyInitialZoom, layerVisibility, handleFeatureClick],
+    [leftTileConfig, vectorConfigs, applyInitialZoom, layerVisibility, handleFeatureClick, is2K],
   )
 
   const handleOnRightMapLoad = useCallback(
     (map: maplibregl.Map) => {
       if (rightTileConfig) {
-        createMapLibreLayersFromConfig(rightTileConfig, { map, layerVisibility })
+        createMapLibreLayersFromConfig(rightTileConfig, { map, layerVisibility }, is2K)
       }
       for (const cfg of vectorConfigs) {
-        createMapLibreLayersFromConfig(cfg, {
-          map,
-          layerVisibility,
-          getClickInfo: (lngLat, object) => handleFeatureClick(lngLat, object, map),
-        })
+        createMapLibreLayersFromConfig(
+          cfg,
+          {
+            map,
+            layerVisibility,
+            getClickInfo: (lngLat, object) => handleFeatureClick(lngLat, object, map),
+          },
+          is2K,
+        )
       }
 
       applyInitialZoom(map)
     },
-    [rightTileConfig, vectorConfigs, applyInitialZoom, layerVisibility, handleFeatureClick],
+    [rightTileConfig, vectorConfigs, applyInitialZoom, layerVisibility, handleFeatureClick, is2K],
   )
 
   const googleMapStyle = useMemo<maplibregl.StyleSpecification>(

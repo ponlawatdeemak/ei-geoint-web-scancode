@@ -163,7 +163,7 @@ const CardItem: FC<Props> = ({ item }: Props) => {
           anchorPosition={contextMenu !== null ? { top: contextMenu.mouseY, left: contextMenu.mouseX } : undefined}
         >
           {isShowAction && (
-            <MenuItem onClick={() => onMenuClick(ImageAction.Show)} className='h-[40px] min-w-[270px]'>
+            <MenuItem onClick={() => onMenuClick(ImageAction.Show)} className='h-10 min-w-68 gap-2'>
               <ListItemIcon>
                 <AutoAwesome className='' />
               </ListItemIcon>
@@ -171,7 +171,7 @@ const CardItem: FC<Props> = ({ item }: Props) => {
             </MenuItem>
           )}
           {isShowAction && !isViewer && (
-            <MenuItem onClick={() => onMenuClick(ImageAction.CreateTask)} className='h-[40px] min-w-[270px]'>
+            <MenuItem onClick={() => onMenuClick(ImageAction.CreateTask)} className='h-10 min-w-68 gap-2'>
               <ListItemIcon>
                 <FormatListBulletedAdd className='' />
               </ListItemIcon>
@@ -179,7 +179,7 @@ const CardItem: FC<Props> = ({ item }: Props) => {
             </MenuItem>
           )}
           {isShowAction && !isViewer && (
-            <MenuItem onClick={() => onMenuClick(ImageAction.Share)} className='h-[40px] min-w-[270px]'>
+            <MenuItem onClick={() => onMenuClick(ImageAction.Share)} className='h-10 min-w-68 gap-2'>
               <ListItemIcon>
                 <GroupAdd className='' />
               </ListItemIcon>
@@ -187,7 +187,7 @@ const CardItem: FC<Props> = ({ item }: Props) => {
             </MenuItem>
           )}
           {isShowAction && canEdit && (
-            <MenuItem onClick={() => onMenuClick(ImageAction.Edit)} className='h-[40px] min-w-[270px]'>
+            <MenuItem onClick={() => onMenuClick(ImageAction.Edit)} className='h-10 min-w-68 gap-2'>
               <ListItemIcon>
                 <Edit className='' />
               </ListItemIcon>
@@ -195,7 +195,7 @@ const CardItem: FC<Props> = ({ item }: Props) => {
             </MenuItem>
           )}
           {isShowAction && !isViewer && (
-            <MenuItem onClick={() => onMenuClick(ImageAction.Download)} className='h-[40px] min-w-[270px]'>
+            <MenuItem onClick={() => onMenuClick(ImageAction.Download)} className='h-10 min-w-68 gap-2'>
               <ListItemIcon>
                 <FileDownload className='' />
               </ListItemIcon>
@@ -204,7 +204,7 @@ const CardItem: FC<Props> = ({ item }: Props) => {
           )}
 
           {canDelete && (
-            <MenuItem onClick={() => onMenuClick(ImageAction.Delete)} className='!text-error h-[40px] min-w-[270px]'>
+            <MenuItem onClick={() => onMenuClick(ImageAction.Delete)} className='h-10 min-w-68 gap-2 text-error!'>
               <ListItemIcon>
                 <Delete color='error' />
               </ListItemIcon>

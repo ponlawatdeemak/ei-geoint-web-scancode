@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next'
 import { useGlobalUI } from '@/providers/global-ui/GlobalUIContext'
 import service from '@/api'
 import { TaskStatus } from '@interfaces/config'
+import useResponsive from '@/hook/responsive'
 
 interface SaveAnalysisResultDialogProps {
   taskId: string
@@ -46,6 +47,7 @@ export default function SaveAnalysisResultDialog({
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [saving, setSaving] = useState(false)
+  const { is2K } = useResponsive()
 
   useEffect(() => {
     if (open) {
@@ -148,7 +150,7 @@ export default function SaveAnalysisResultDialog({
   }
 
   return (
-    <Dialog open={open} fullWidth disableEscapeKeyDown>
+    <Dialog open={open} fullWidth disableEscapeKeyDown maxWidth={is2K ? 'lg' : 'sm'}>
       <DialogTitle>{t('dialog.saveAnalysisResult.title')}</DialogTitle>
       <DialogContent>
         <InputLabel>{t('dialog.saveAnalysisResult.analysisResult')}</InputLabel>

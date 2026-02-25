@@ -27,6 +27,7 @@ import { processWeeklyLayers } from '../shared/ProjectMapView/utils/weeklyLayerP
 import { useWeeklyMapStore, type ModelItem } from '../shared/ProjectMapView/weekly/store/useWeeklyMapStore'
 import { useSettings } from '@/hook/useSettings'
 import { layerIdConfig } from '../common/map/config/map'
+import useResponsive from '@/hook/responsive'
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
@@ -143,6 +144,7 @@ const processMapLayers = (
   handleFeatureClick: (
     map: maplibregl.Map,
   ) => (lngLat: [number, number] | undefined, object: Record<string, unknown> | null) => void,
+  is2K?: boolean,
 ) => {
   const keyModelSelect = selectedModels.flatMap((m) => m.keys)
   const { allLayerConfigs, geometries } = processWeeklyLayers(
@@ -161,11 +163,11 @@ const processMapLayers = (
   const centroidHeatConfigs = allLayerConfigs.filter((c) => c.type === MapType.heatmap)
 
   for (const cfg of tileConfigs) {
-    createMapLibreLayersFromConfig(cfg, { map, getClickInfo: handleFeatureClick(map) })
+    createMapLibreLayersFromConfig(cfg, { map, getClickInfo: handleFeatureClick(map) }, is2K)
   }
 
   for (const cfg of vectorConfigs) {
-    createMapLibreLayersFromConfig(cfg, { map, getClickInfo: handleFeatureClick(map) })
+    createMapLibreLayersFromConfig(cfg, { map, getClickInfo: handleFeatureClick(map) }, is2K)
   }
 
   for (const cfg of centroidHeatConfigs) {
@@ -225,6 +227,7 @@ const WeeklyMapCompareDialog: React.FC<WeeklyMapCompareDialogProps> = ({
 
   const { language } = useSettings()
   const { selectedModels, selectedData } = useWeeklyMapStore()
+  const { is2K } = useResponsive()
 
   // Sync when controlled `mode` prop changes
   useEffect(() => {
@@ -367,7 +370,7 @@ const WeeklyMapCompareDialog: React.FC<WeeklyMapCompareDialogProps> = ({
         extentHandlerAttached.current.add(map)
       }
 
-      const geometries = processMapLayers(selectedDate2, selectedModels, map, handleFeatureClick)
+      const geometries = processMapLayers(selectedDate2, selectedModels, map, handleFeatureClick, is2K)
 
       const timeout = isMobile ? 1000 : 0
       setTimeout(() => {
@@ -375,7 +378,7 @@ const WeeklyMapCompareDialog: React.FC<WeeklyMapCompareDialogProps> = ({
         zoomMapToExtent(map, storedExtentRef.current, initialExtent, geometries)
       }, timeout)
     },
-    [isMobile, selectedDate2, selectedModels, handleFeatureClick, initialExtent, storeExtentFromMap],
+    [isMobile, selectedDate2, selectedModels, handleFeatureClick, initialExtent, storeExtentFromMap, is2K],
   )
 
   const handleOnRightMapLoad = useCallback(
@@ -390,7 +393,7 @@ const WeeklyMapCompareDialog: React.FC<WeeklyMapCompareDialogProps> = ({
         extentHandlerAttached.current.add(map)
       }
 
-      const geometries = processMapLayers(selectedDate1, selectedModels, map, handleFeatureClick)
+      const geometries = processMapLayers(selectedDate1, selectedModels, map, handleFeatureClick, is2K)
 
       const timeout = isMobile ? 1000 : 0
       setTimeout(() => {
@@ -398,7 +401,7 @@ const WeeklyMapCompareDialog: React.FC<WeeklyMapCompareDialogProps> = ({
         zoomMapToExtent(map, storedExtentRef.current, initialExtent, geometries)
       }, timeout)
     },
-    [isMobile, selectedDate1, selectedModels, handleFeatureClick, initialExtent, storeExtentFromMap],
+    [isMobile, selectedDate1, selectedModels, handleFeatureClick, initialExtent, storeExtentFromMap, is2K],
   )
 
   const googleMapStyle = useMemo<maplibregl.StyleSpecification>(

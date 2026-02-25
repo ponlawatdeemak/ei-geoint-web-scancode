@@ -446,6 +446,7 @@ const createGeoJsonLayers = (
   map: maplibregl.Map,
   visible: boolean,
   getClickInfo?: (lngLat: [number, number] | undefined, object: Record<string, unknown> | null) => void,
+  is2K?: boolean,
 ): CreatedMapLibreLayers | null => {
   const { id, data, color_code, type } = cfg
   if (!data) return null
@@ -549,7 +550,7 @@ const createGeoJsonLayers = (
           source: pointSourceId,
           layout: {
             'icon-image': usePhotoIcon ? iconNamePhoto : iconName,
-            'icon-size': 1.5,
+            'icon-size': is2K ? 3 : 1.5,
             'icon-anchor': 'bottom',
             'icon-allow-overlap': true,
             visibility: visible ? 'visible' : 'none',
@@ -1342,6 +1343,7 @@ const createItvVectorTileLayers = (
   cfg: ItvVectorLayerConfig,
   map: maplibregl.Map,
   visible: boolean,
+  is2K?: boolean,
 ): CreatedMapLibreLayers | null => {
   const { id, data, color_code } = cfg
   if (!data) return null
@@ -1385,7 +1387,7 @@ const createItvVectorTileLayers = (
           filter: ['any', ['==', ['geometry-type'], 'Point'], ['==', ['geometry-type'], 'MultiPoint']],
           layout: {
             'icon-image': iconName,
-            'icon-size': 1.5,
+            'icon-size': is2K ? 3 : 1.5,
             'icon-anchor': 'bottom',
             'icon-allow-overlap': true,
             visibility: visible ? 'visible' : 'none',
@@ -1500,7 +1502,7 @@ const createItvVectorTileLayers = (
                   filter: ['any', ['==', ['geometry-type'], 'Point'], ['==', ['geometry-type'], 'MultiPoint']],
                   layout: {
                     'icon-image': iconName,
-                    'icon-size': 1.5,
+                    'icon-size': is2K ? 3 : 1.5,
                     'icon-anchor': 'bottom',
                     'icon-allow-overlap': true,
                     visibility: visible ? 'visible' : 'none',
@@ -1570,6 +1572,7 @@ const createItvAnnotationLayers = (
   cfg: ItvAnnotationLayerConfig,
   map: maplibregl.Map,
   visible: boolean,
+  is2K?: boolean,
 ): CreatedMapLibreLayers | null => {
   const { id, features } = cfg
   if (!features || features.length === 0) return null
@@ -1716,7 +1719,7 @@ const createItvAnnotationLayers = (
         source: pointSourceId,
         layout: {
           'icon-image': ['get', 'symbolImageName'],
-          'icon-size': 1,
+          'icon-size': is2K ? 2 : 1,
           'icon-anchor': 'center',
           'icon-allow-overlap': true,
           visibility: visible ? 'visible' : 'none',
@@ -1764,7 +1767,7 @@ const createItvAnnotationLayers = (
               source: pointSourceId,
               layout: {
                 'icon-image': ['get', 'symbolImageName'],
-                'icon-size': 1,
+                'icon-size': is2K ? 2 : 1,
                 'icon-anchor': 'center',
                 'icon-allow-overlap': true,
                 visibility: 'visible',
@@ -1795,6 +1798,7 @@ const createItvAnnotationLayers = (
 export const createMapLibreLayersFromConfig = (
   cfg: LayerConfig,
   deps: MapLibreLayerDeps,
+  is2K?: boolean,
 ): CreatedMapLibreLayers | null => {
   if (!cfg || !('type' in cfg) || !deps?.map) return null
   const { map, thresholds = {}, layerVisibility, getClickInfo } = deps
@@ -1805,7 +1809,7 @@ export const createMapLibreLayersFromConfig = (
   }
 
   if (cfg.type === MapType.geojson || cfg.type === MapType.itvVector || cfg.type === MapType.itvPhoto) {
-    return createGeoJsonLayers(cfg, map, visible, getClickInfo)
+    return createGeoJsonLayers(cfg, map, visible, getClickInfo, is2K)
   }
 
   if (cfg.type === MapType.vector) {

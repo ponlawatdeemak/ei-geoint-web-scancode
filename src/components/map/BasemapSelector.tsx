@@ -5,6 +5,7 @@ import Paper from '@mui/material/Paper'
 import IconButton from '@mui/material/IconButton'
 import CloseIcon from '@mui/icons-material/Close'
 import { BaseMap, BasemapType } from '@/components/common/map/config/map'
+import useResponsive from '@/hook/responsive'
 
 const BASEMAPS: BaseMap[] = [
   {
@@ -39,6 +40,7 @@ const BasemapSelector: React.FC<BasemapSelectorProps> = ({
   onClose,
 }) => {
   const { t } = useTranslation('common')
+  const { is2K } = useResponsive()
   // const [currentBasemap, setCurrentBasemap] = useState<BasemapType | null>(currentBasemap ?? null)
 
   // --- Map event handlers ---
@@ -80,7 +82,7 @@ const BasemapSelector: React.FC<BasemapSelectorProps> = ({
               <div
                 className={`h-14 w-14 overflow-hidden rounded-sm ${isCurrentBasemap ? 'border-2 border-primary' : ''}`}
               >
-                <Image src={image} width={64} height={64} alt={label} />
+                <Image src={image} width={is2K ? 128 : 64} height={is2K ? 128 : 64} alt={label} />
               </div>
               <div className='ml-4 flex-1 truncate text-left text-sm'>{t(label)}</div>
             </button>

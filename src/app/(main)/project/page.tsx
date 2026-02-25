@@ -49,6 +49,7 @@ import { useProjectActions } from './hooks/useProjectActions'
 import { useProjectMapPopup } from './hooks/useProjectMapPopup'
 import { useProjectSearch } from './hooks/useProjectSearch'
 import { useProjectTableConfig } from './hooks/useProjectTableConfig'
+import useResponsive from '@/hook/responsive'
 
 export const MAP_ID = 'landing-map-view'
 
@@ -170,6 +171,7 @@ const ProjectPage = () => {
   const router = useRouter()
   const { t } = useTranslation('common')
   const { language } = useSettings()
+  const { is2K } = useResponsive()
   /* 
   const { showLoading, hideLoading, showAlert } = useGlobalUI() 
   */
@@ -416,7 +418,7 @@ const ProjectPage = () => {
               source: PROJECT_SOURCE_ID,
               layout: {
                 'icon-image': 'project-pin',
-                'icon-size': 1,
+                'icon-size': is2K ? 2 : 1,
                 'icon-allow-overlap': true,
                 'icon-anchor': 'bottom',
               },
@@ -456,7 +458,7 @@ const ProjectPage = () => {
               source: PROJECT_SOURCE_ID,
               layout: {
                 'icon-image': 'project-pin',
-                'icon-size': 1,
+                'icon-size': is2K ? 2 : 1,
                 'icon-allow-overlap': true,
                 'icon-anchor': 'bottom',
               },
@@ -481,7 +483,7 @@ const ProjectPage = () => {
         console.warn('Error during cleanup of project map layers', error)
       }
     }
-  }, [mapLibre, mapRows, PROJECT_LAYER_ID, PROJECT_SOURCE_ID])
+  }, [mapLibre, mapRows, PROJECT_LAYER_ID, PROJECT_SOURCE_ID, is2K])
 
   // Click / context menu handlers for pins
   useEffect(() => {

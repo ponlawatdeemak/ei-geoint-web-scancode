@@ -4,6 +4,7 @@ import createMapLibreLayersFromConfig, { CreatedMapLibreLayers } from '../utils/
 import { LayerConfig, MapType } from '@interfaces/index'
 import useMapStore from '@/components/common/map/store/map'
 import { layerIdConfig } from '@/components/common/map/config/map'
+import useResponsive from '@/hook/responsive'
 
 export function useMapLibreLayers(params: {
   mapId: string
@@ -22,6 +23,7 @@ export function useMapLibreLayers(params: {
   const visibilityRef = useRef(layerVisibility)
   const prevOrderRef = useRef<string[]>([])
   const map = useMemo(() => mapLibre[mapId], [mapLibre, mapId])
+  const { is2K } = useResponsive()
 
   useEffect(() => {
     thresholdsRef.current = thresholds
@@ -90,13 +92,17 @@ export function useMapLibreLayers(params: {
         // Create layer if it doesn't exist
         if (!createdLayersRef.current.has(layerId)) {
           try {
-            const created = createMapLibreLayersFromConfig(cfg, {
-              map,
-              thresholds,
-              layerVisibility,
-              getFeatureConfidence,
-              getClickInfo: handleFeatureClick,
-            })
+            const created = createMapLibreLayersFromConfig(
+              cfg,
+              {
+                map,
+                thresholds,
+                layerVisibility,
+                getFeatureConfidence,
+                getClickInfo: handleFeatureClick,
+              },
+              is2K,
+            )
             if (created) {
               createdLayersRef.current.set(layerId, created)
               layerConfigHashRef.current.set(layerId, configHash)
@@ -108,7 +114,7 @@ export function useMapLibreLayers(params: {
         }
       }
     },
-    [thresholds, layerVisibility, getFeatureConfidence, handleFeatureClick],
+    [thresholds, layerVisibility, getFeatureConfidence, handleFeatureClick, is2K],
   )
 
   const cleanupRemovedLayers = useCallback((configIds: Set<string>) => {

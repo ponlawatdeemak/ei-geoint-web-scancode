@@ -22,6 +22,7 @@ import { findModelByKeyOrName } from '@/components/shared/ProjectMapView/utils/m
 import service from '@/api'
 import { useGlobalUI } from '@/providers/global-ui/GlobalUIContext'
 import { AxiosError } from 'axios'
+import useResponsive from '@/hook/responsive'
 
 const consumeOpticalSarData = (
   data: ProjectMapViewGroup,
@@ -114,6 +115,7 @@ const ShareApiDialog = ({
   shareType: 'optical-sar' | 'weekly'
 }) => {
   const { showAlert } = useGlobalUI()
+  const { is2K } = useResponsive()
 
   const profile = useProfileStore((state) => state.profile)
   const { t, i18n } = useTranslation('common')
@@ -189,7 +191,7 @@ const ShareApiDialog = ({
               <Typography
                 component='label'
                 noWrap
-                fontSize={12}
+                // fontSize={12}
                 onClick={(e) => e.stopPropagation()}
                 className='pr-13!'
               >
@@ -237,8 +239,8 @@ const ShareApiDialog = ({
   }, [shareApis, isShareApiLoading, t])
 
   return (
-    <Dialog open={open} fullWidth maxWidth='sm'>
-      <DialogTitle noWrap onClick={(e) => e.stopPropagation()} className='font-semibold! text-[28px]! max-sm:text-2xl!'>
+    <Dialog open={open} fullWidth maxWidth={is2K ? 'lg' : 'sm'}>
+      <DialogTitle noWrap onClick={(e) => e.stopPropagation()}>
         {t('dialog.shareApi.title')}
       </DialogTitle>
       <DialogContent className='px-8! py-2! max-sm:px-6!'>{dialogContent}</DialogContent>
@@ -247,9 +249,6 @@ const ShareApiDialog = ({
           onClick={(e) => {
             e.stopPropagation()
             onClose()
-          }}
-          sx={{
-            fontSize: 20,
           }}
         >
           {t('button.close')}

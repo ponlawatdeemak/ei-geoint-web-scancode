@@ -20,7 +20,7 @@ import LayerMenu from './LayerMenu'
 import { Typography } from '@mui/material'
 import { ItvMenuItem } from '../utils/importToVisualize'
 import { DnDIcon } from '@/icons'
-import { Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
+import { Droppable, Draggable } from '@hello-pangea/dnd'
 
 // Function to get display name of a layer
 const getLayerDisplayName = (
@@ -42,7 +42,7 @@ const LayerTypeIcon: React.FC<LayerTypeIconProps> = ({ layer }) => {
   if (layer.type === MapType.vector || layer.type === MapType.geojson) {
     return (
       <span
-        className={`inline-block h-[14px] min-h-[14px] w-[14px] min-w-[14px] flex-shrink-0 align-middle ${
+        className={`inline-block h-3.5 min-h-3.5 w-3.5 min-w-3.5 shrink-0 align-middle ${
           layer.key === SARChangeDetectionKey ? 'rounded-full' : 'rounded-[3px]'
         }`}
         style={{ background: withAlpha(layer.color, 0.5), border: `1px solid ${layer.color}` }}
@@ -50,7 +50,7 @@ const LayerTypeIcon: React.FC<LayerTypeIconProps> = ({ layer }) => {
     )
   }
   return (
-    <span className='inline-flex h-[14px] min-h-[14px] w-[14px] min-w-[14px] flex-shrink-0 items-center justify-center rounded-[3px] align-middle text-(--color-text-icon)'>
+    <span className='inline-flex h-3.5 min-h-3.5 w-3.5 min-w-3.5 shrink-0 items-center justify-center rounded-[3px] align-middle text-(--color-text-icon)'>
       <BorderAllIcon fontSize='small' />
     </span>
   )
@@ -81,7 +81,6 @@ const LayerGroupList: React.FC<Props> = ({
   isPanelOpen,
   onMenuSelect,
   isReordering,
-  onReorder,
 }) => {
   const [open, setOpen] = useState<Record<string, boolean>>({})
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null)
@@ -103,17 +102,6 @@ const LayerGroupList: React.FC<Props> = ({
   const isEmptyGroup = useMemo(() => {
     return groups.length === 0
   }, [groups])
-
-  const handleOnDragEnd = (result: DropResult) => {
-    if (!result.destination) return
-    if (!onReorder) return
-
-    const items = Array.from(groups)
-    const [reorderedItem] = items.splice(result.source.index, 1)
-    items.splice(result.destination.index, 0, reorderedItem)
-
-    onReorder(items)
-  }
 
   return (
     <div>
@@ -179,7 +167,7 @@ const LayerGroupList: React.FC<Props> = ({
                                           setOpen((prev) => ({ ...prev, [group.groupId]: !prev[group.groupId] }))
                                         }}
                                         aria-expanded={isOpen}
-                                        className={`inline-flex h-[16px] w-[16px] flex-shrink-0 transform cursor-pointer items-center justify-center p-1 transition-transform ${isOpen ? 'rotate-90' : 'rotate-0'} ${selectedGroup === group.groupId ? 'text-white' : 'text-(--color-text-icon)'}`}
+                                        className={`inline-flex h-[16px] w-[16px] shrink-0 transform cursor-pointer items-center justify-center p-1 transition-transform ${isOpen ? 'rotate-90' : 'rotate-0'} ${selectedGroup === group.groupId ? 'text-white' : 'text-(--color-text-icon)'}`}
                                       >
                                         <ArrowForwardIosSharp fontSize='small' className='h-[8px] w-[8px]' />
                                       </button>
@@ -187,7 +175,7 @@ const LayerGroupList: React.FC<Props> = ({
                                   )}
                                 </div>
                                 <div className='flex min-w-0 items-center gap-2'>
-                                  <div className='flex flex-shrink-0 items-center gap-2'>
+                                  <div className='flex shrink-0 items-center gap-2'>
                                     {!isReordering && (
                                       <Checkbox
                                         className={`px-0! py-0!`}
@@ -228,7 +216,7 @@ const LayerGroupList: React.FC<Props> = ({
                           {isTaskLayer && !isReordering && (
                             <AccordionDetails className='pt-0 pb-0 pl-2'>
                               {group.layers.map((layer) => (
-                                <div key={layer.id} className='flex min-w-0 items-start'>
+                                <div key={layer.id} className='flex min-w-0 items-center'>
                                   <div className='flex items-center gap-0'>
                                     <Checkbox
                                       size='small'
@@ -238,7 +226,10 @@ const LayerGroupList: React.FC<Props> = ({
                                     />
                                     <LayerTypeIcon layer={layer} />
                                   </div>
-                                  <label htmlFor={layer.id} className='ml-2 min-w-0 flex-1 break-words py-2 text-sm'>
+                                  <label
+                                    htmlFor={layer.id}
+                                    className='wrap-break-word ml-2 min-w-0 flex-1 py-2 text-sm'
+                                  >
                                     {getLayerDisplayName(layer, findModelByKeyOrName, t, i18n)}
                                   </label>
                                 </div>

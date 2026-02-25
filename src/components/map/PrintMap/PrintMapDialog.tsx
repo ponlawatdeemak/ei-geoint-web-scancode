@@ -22,6 +22,7 @@ import { useSettings } from '@/hook/useSettings'
 import { useTranslation } from 'react-i18next'
 import { MiniMapCompassIcon } from '@/components/common/map/svg/MenuIcon'
 import { BasemapType } from '@/components/common/map/config/map'
+import useResponsive from '@/hook/responsive'
 
 interface PrintMapDialogProps {
   className?: string
@@ -58,7 +59,7 @@ const PrintMapDialog: React.FC<PrintMapDialogProps> = ({
 }) => {
   const { basemap, mapLibre } = useMapStore()
   const { t } = useTranslation('common')
-
+  const { is2K } = useResponsive()
   const { language, copyLocationType } = useSettings()
 
   // Clone layers and sources from source map to export maps
@@ -164,7 +165,7 @@ const PrintMapDialog: React.FC<PrintMapDialogProps> = ({
           {gridColsArray.map((gridCol) => {
             return (
               <React.Fragment key={gridCol.key}>
-                <div className='absolute top-0 h-full w-[1px] bg-black' style={{ left: `${gridCol.percent}%` }} />
+                <div className='absolute top-0 h-full w-px bg-black' style={{ left: `${gridCol.percent}%` }} />
 
                 {/* Top Label */}
                 {showGridLabels && (
@@ -238,7 +239,7 @@ const PrintMapDialog: React.FC<PrintMapDialogProps> = ({
         }}
         slotProps={{
           paper: {
-            className: 'w-[1025px] !max-w-none lg:h-[627px] !m-6',
+            className: 'w-[64rem] !max-w-none lg:h-[39.25rem] !m-6',
           },
         }}
       >
@@ -257,12 +258,7 @@ const PrintMapDialog: React.FC<PrintMapDialogProps> = ({
                   <Box
                     id={`${id}-map-export-container`}
                     className={classNames(
-                      '[&_.maplibregl-compact]:!box-border [&_.maplibregl-compact]:!h-4 [&_.maplibregl-compact]:!min-h-0 [&_.maplibregl-compact]:!pr-4 [&_.maplibregl-ctrl-attrib-button]:!h-4 [&_.maplibregl-ctrl-attrib-button]:!w-4 [&_.maplibregl-ctrl-attrib-button]:!bg-contain [&_.maplibregl-ctrl-bottom-right]:!z-[0] [&_.maplibregl-ctrl-scale]:!mb-0 flex h-full w-full [&_.map-tools]:hidden [&_.maplibregl-compact]:flex [&_.maplibregl-compact]:items-center [&_.maplibregl-ctrl-attrib-inner]:mr-1 [&_.maplibregl-ctrl-attrib-inner]:text-[6px] [&_.maplibregl-ctrl-attrib-inner]:leading-3',
-                      {
-                        '[&_.maplibregl-ctrl-bottom-right]:max-sm:!mb-[22px]': id === 'burnt',
-                        '[&_.maplibregl-compact]:!mb-[42px] [&_.maplibregl-ctrl-bottom-right]:max-sm:!bottom-[-10px]':
-                          id === 'plant',
-                      },
+                      '[&_.maplibregl-compact]:!box-border [&_.maplibregl-compact]:!h-4 [&_.maplibregl-compact]:!min-h-0 [&_.maplibregl-compact]:!pr-4 [&_.maplibregl-ctrl-attrib-button]:!h-4 [&_.maplibregl-ctrl-attrib-button]:!w-4 [&_.maplibregl-ctrl-attrib-button]:!bg-contain [&_.maplibregl-ctrl-bottom-right]:!z-[0] [&_.maplibregl-ctrl-scale]:!mb-0 flex h-full w-full [&_.map-tools]:hidden [&_.maplibregl-compact]:flex [&_.maplibregl-compact]:items-center [&_.maplibregl-ctrl-attrib-inner]:mr-1 [&_.maplibregl-ctrl-attrib-inner]:text-[0.375rem] [&_.maplibregl-ctrl-attrib-inner]:leading-3',
                     )}
                   >
                     <MapView
@@ -272,6 +268,7 @@ const PrintMapDialog: React.FC<PrintMapDialogProps> = ({
                       mapId={`${id}-${MAP_EXPORT}`}
                       isPaddingGoogle={false}
                       isHideAttributionControl={true}
+                      zoomStyle={2}
                     />
                   </Box>
 
@@ -282,7 +279,7 @@ const PrintMapDialog: React.FC<PrintMapDialogProps> = ({
                   <Box className='relative aspect-215/287 w-full shrink-0'>
                     <Box
                       id={`${id}-mini-map-export-container`}
-                      className='[&_.maplibregl-compact]:!mr-[5px] [&_.maplibregl-compact]:!box-border [&_.maplibregl-compact]:!h-4 [&_.maplibregl-compact]:!min-h-0 [&_.maplibregl-compact]:!pr-4 [&_.maplibregl-ctrl-attrib-button]:!h-4 [&_.maplibregl-ctrl-attrib-button]:!w-4 [&_.maplibregl-ctrl-attrib-button]:!bg-contain flex h-full w-full [&_.map-tools]:hidden [&_.maplibregl-compact]:flex [&_.maplibregl-compact]:items-center [&_.maplibregl-ctrl-attrib-inner]:mr-1 [&_.maplibregl-ctrl-attrib-inner]:text-[6px] [&_.maplibregl-ctrl-scale]:hidden'
+                      className='[&_.maplibregl-compact]:!mr-[0.25rem] [&_.maplibregl-compact]:!box-border [&_.maplibregl-compact]:!h-4 [&_.maplibregl-compact]:!min-h-0 [&_.maplibregl-compact]:!pr-4 [&_.maplibregl-ctrl-attrib-button]:!h-4 [&_.maplibregl-ctrl-attrib-button]:!w-4 [&_.maplibregl-ctrl-attrib-button]:!bg-contain flex h-full w-full [&_.map-tools]:hidden [&_.maplibregl-compact]:flex [&_.maplibregl-compact]:items-center [&_.maplibregl-ctrl-attrib-inner]:mr-1 [&_.maplibregl-ctrl-attrib-inner]:text-[0.375rem] [&_.maplibregl-ctrl-scale]:hidden'
                     >
                       <MapView
                         isShowOpenBtn={false}
@@ -291,6 +288,7 @@ const PrintMapDialog: React.FC<PrintMapDialogProps> = ({
                         mapId={`${id}-${MINI_MAP_EXPORT}`}
                         isInteractive={false}
                         isHideAttributionControl={true}
+                        zoomStyle={is2K ? 2 : undefined}
                       />
                     </Box>
 
@@ -329,7 +327,7 @@ const PrintMapDialog: React.FC<PrintMapDialogProps> = ({
                         unoptimized
                         priority
                       />
-                      <Typography className='text-center text-[#1E1E1E] text-[10px]! lg:text-[8px]!'>
+                      <Typography className='text-center text-[#1E1E1E] text-[0.625rem]! lg:text-[0.5rem]!'>
                         {t('app.name')}
                       </Typography>
                     </Box>
@@ -339,7 +337,7 @@ const PrintMapDialog: React.FC<PrintMapDialogProps> = ({
 
               <Box className='mt-4 flex w-full gap-5 lg:gap-6'>
                 <Box className='flex-1'>
-                  <Typography className='font-bold text-[10px] text-black sm:text-[10px] lg:text-[10px]'>
+                  <Typography className='font-bold text-[0.625rem] text-black sm:text-[0.625rem] lg:text-[0.625rem]'>
                     {t('tools.printMap.coordinateType')}:{' '}
                     {!copyLocationType || copyLocationType === 'DD' ? 'GCS' : copyLocationType}
                   </Typography>
@@ -372,7 +370,7 @@ const PrintMapDialog: React.FC<PrintMapDialogProps> = ({
       {/* hidden Dialog for PDF image */}
       <Dialog
         className={classNames(
-          'hidden-dialog !z-[-9999] [&_.MuiBackdrop-root]:!opacity-0 [&_.MuiDialog-container]:!absolute [&_.MuiDialog-container]:!left-[-9999px] [&_.MuiDialog-container]:!top-[-9999px]',
+          'hidden-dialog !z-[-9999] [&_.MuiBackdrop-root]:!opacity-0 [&_.MuiDialog-container]:!absolute [&_.MuiDialog-container]:!left-[-625rem] [&_.MuiDialog-container]:!top-[-625rem]',
           className,
         )}
         open={open}
@@ -383,7 +381,8 @@ const PrintMapDialog: React.FC<PrintMapDialogProps> = ({
         }}
         slotProps={{
           paper: {
-            className: '!max-w-[1025px] !min-w-[1025px] !w-[1025px] !min-h-[627px] !max-h-[627px] !h-[627px] !m-6  ',
+            className:
+              '!max-w-[64rem] !min-w-[64rem] !w-[64rem] !min-h-[39.25rem] !max-h-[39.25rem] !h-[39.25rem] !m-6  ',
           },
         }}
       >
@@ -404,7 +403,7 @@ const PrintMapDialog: React.FC<PrintMapDialogProps> = ({
                       src={'/images/map/google_on_non_white_hdpi.png'}
                       width={59}
                       height={18}
-                      className={classNames(`absolute bottom-8 left-[calc(50%-29.5px)] z-9 md:bottom-8`)}
+                      className={classNames(`absolute bottom-8 left-[calc(50%-1.85rem)] z-9 md:bottom-8`)}
                       alt={`Google Logo`}
                       unoptimized
                       priority
@@ -431,7 +430,7 @@ const PrintMapDialog: React.FC<PrintMapDialogProps> = ({
                         src={'/images/map/google_on_non_white_hdpi.png'}
                         width={59}
                         height={18}
-                        className={classNames(`absolute bottom-2 left-[calc(50%-29.5px)] z-9 md:bottom-2`)}
+                        className={classNames(`absolute bottom-2 left-[calc(50%-1.85rem)] z-9 md:bottom-2`)}
                         alt={`Google Logo`}
                         unoptimized
                         priority
@@ -467,7 +466,7 @@ const PrintMapDialog: React.FC<PrintMapDialogProps> = ({
                       unoptimized
                       priority
                     />
-                    <Typography className='text-center text-[#1E1E1E] text-[10px]! lg:text-[8px]!'>
+                    <Typography className='text-center text-[#1E1E1E] text-[0.625rem]! lg:text-[0.5rem]!'>
                       {t('app.name')}
                     </Typography>
                   </Box>
@@ -477,7 +476,7 @@ const PrintMapDialog: React.FC<PrintMapDialogProps> = ({
 
             <Box className='mt-4 flex w-full gap-6'>
               <Box className='flex-1'>
-                <Typography className='font-bold text-[10px] text-black sm:text-[10px] lg:text-[10px]'>
+                <Typography className='font-bold text-[0.625rem] text-black sm:text-[0.625rem] lg:text-[0.625rem]'>
                   {t('tools.printMap.coordinateType')}:{' '}
                   {!copyLocationType || copyLocationType === 'DD' ? 'GCS' : copyLocationType}
                 </Typography>
