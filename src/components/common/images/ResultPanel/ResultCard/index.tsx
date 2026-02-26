@@ -96,7 +96,12 @@ const ResultCard: FC<Props> = ({ data, currentPage = 1, onPageChange, pageUse }:
           <Divider />
           <TablePagination
             component='div'
-            slotProps={{ select: { fullWidth: false } }}
+            slotProps={{
+              select: {
+                fullWidth: false,
+                className: '[&_.MuiTablePagination-select]:py-0! [&_.MuiTablePagination-select]:pr-[1.5rem]!',
+              },
+            }}
             labelRowsPerPage={t('table.labelRowsPerPage')}
             labelDisplayedRows={({ from, to, count }) => t('table.labelDisplayedRows', { from, to, count })}
             rowsPerPage={pageSize}

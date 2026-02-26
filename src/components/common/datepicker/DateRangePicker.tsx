@@ -13,6 +13,7 @@ interface DateRangePickerProps {
   onEndDateChange: (value: Dayjs | null) => void
   minWidth?: number
   startLabel?: string
+  className?: string
 }
 
 const DateRangePicker = ({
@@ -22,11 +23,12 @@ const DateRangePicker = ({
   onStartDateChange,
   onEndDateChange,
   startLabel,
+  className = '',
 }: DateRangePickerProps) => {
   const { t } = useTranslation('common')
 
   return (
-    <div className='col-span-1 flex w-full flex-col items-center gap-2 sm:col-span-3 sm:flex-row'>
+    <div className={`col-span-1 flex w-full flex-col items-center gap-2 sm:col-span-3 sm:flex-row ${className}`}>
       <DatePicker
         value={startDay}
         maxDate={endDay ?? undefined}

@@ -21,6 +21,7 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 
 import { useMediaQuery } from '@mui/material'
 import theme from '@/styles/theme'
+import useResponsive from '@/hook/responsive'
 
 interface WeeklyChartProps {
   className?: string
@@ -119,6 +120,7 @@ export const WeeklyChart: React.FC<WeeklyChartProps> = ({ className, data, model
   const { language } = useSettings()
   const { selectedModels } = useWeeklyMapStore()
 
+  const { is2K } = useResponsive()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const [hiddenDatasets, setHiddenDatasets] = useState<Set<number>>(new Set())
   const [chartColors, setChartColors] = useState({ grid: '#f0f0f0', text: '#666' })
@@ -145,6 +147,18 @@ export const WeeklyChart: React.FC<WeeklyChartProps> = ({ className, data, model
   }, [])
 
   const options = useMemo(() => {
+    // Scale up sizes for 2K+ screens
+    const tickFontSize = is2K ? 20 : 10
+    const legendFontSize = is2K ? 22 : 12
+    const legendBoxWidth = is2K ? 44 : 24
+    const legendBoxHeight = is2K ? 14 : 8
+    const legendPadding = is2K ? 28 : 16
+    const lineWidth = is2K ? 4 : 1.5
+    const pointRadius = is2K ? 7 : 3
+    const pointHoverRadius = is2K ? 10 : 5
+    const tooltipFontSize = is2K ? 20 : 12
+    const yStepSize = is2K ? 1000 : 2000
+
     return {
       responsive: true,
       maintainAspectRatio: false,
@@ -163,20 +177,20 @@ export const WeeklyChart: React.FC<WeeklyChartProps> = ({ className, data, model
           },
           labels: {
             usePointStyle: false,
-            boxWidth: 24,
-            boxHeight: 8,
+            boxWidth: legendBoxWidth,
+            boxHeight: legendBoxHeight,
             font: {
               family: chartFontFamily,
-              size: 12,
+              size: legendFontSize,
             },
-            padding: 16,
+            padding: legendPadding,
           },
         },
         tooltip: {
           mode: 'index' as const,
           intersect: false,
-          titleFont: { family: chartFontFamily },
-          bodyFont: { family: chartFontFamily },
+          titleFont: { family: chartFontFamily, size: tooltipFontSize },
+          bodyFont: { family: chartFontFamily, size: tooltipFontSize },
         },
       },
       scales: {
@@ -186,15 +200,15 @@ export const WeeklyChart: React.FC<WeeklyChartProps> = ({ className, data, model
             color: chartColors.grid,
           },
           ticks: {
-            font: { family: chartFontFamily, size: 10 },
+            font: { family: chartFontFamily, size: tickFontSize },
             color: chartColors.text,
           },
           border: { display: false },
         },
         y: {
           ticks: {
-            stepSize: 2000,
-            font: { family: chartFontFamily, size: 10 },
+            stepSize: yStepSize,
+            font: { family: chartFontFamily, size: tickFontSize },
             color: chartColors.text,
           },
           grid: {
@@ -212,15 +226,15 @@ export const WeeklyChart: React.FC<WeeklyChartProps> = ({ className, data, model
       elements: {
         line: {
           tension: 0,
-          borderWidth: 1.5,
+          borderWidth: lineWidth,
         },
         point: {
-          radius: 3,
-          hoverRadius: 5,
+          radius: pointRadius,
+          hoverRadius: pointHoverRadius,
         },
       },
     }
-  }, [isMobile, toggleDataset, chartColors])
+  }, [isMobile, is2K, toggleDataset, chartColors])
 
   const chartData = useMemo(() => {
     if (!data || data.length === 0 || !selectedModels) {

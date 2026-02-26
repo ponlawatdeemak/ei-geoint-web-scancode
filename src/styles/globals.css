@@ -396,6 +396,10 @@ body .slick-slide {
   :root {
     --mui-shape-borderRadius: 6px;
   }
+
+  .print-map-dialog .maplibregl-control-container .maplibregl-ctrl-attrib {
+    zoom:0.5;
+  }
   
 }
 
@@ -404,3 +408,4 @@ body .slick-slide {
     font-size: 2rem;
   }
 }
+

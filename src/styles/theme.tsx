@@ -197,7 +197,10 @@ let theme = createTheme({
   },
 })
 
-const isSafari = navigator?.userAgent?.includes('Safari') && !navigator?.userAgent?.includes('Chrome')
+const isSafari =
+  typeof navigator !== 'undefined'
+    ? navigator?.userAgent?.includes('Safari') && !navigator?.userAgent?.includes('Chrome')
+    : false
 
 theme = createTheme(theme, {
   components: {

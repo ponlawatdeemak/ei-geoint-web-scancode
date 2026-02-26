@@ -186,12 +186,13 @@ const UserPage = () => {
             ? async (value, filters, { setSelectOptions, setSelectLoading }) => {
                 setSelectLoading((prev: any) => ({ ...prev, projectId: true }))
                 const { data } = await service.projects.search(value ? { organizationId: value as string } : {})
+                const projectId = data.map((item) => ({
+                  id: item.id,
+                  name: item.name,
+                }))
                 setSelectOptions((prev: any) => ({
                   ...prev,
-                  projectId: data.map((item) => ({
-                    id: item.id,
-                    name: item.name,
-                  })),
+                  projectId: projectId,
                 }))
                 setSelectLoading((prev: any) => ({ ...prev, projectId: false }))
                 return { ...filters, projectId: '' }

@@ -152,7 +152,7 @@ const MapLibre: FC<MapLibreProps> = ({
 
   return (
     <ReactMap
-      //   style={zoomStyle ? { zoom: zoomStyle } : undefined}
+      style={zoomStyle ? { zoom: zoomStyle } : undefined}
       pixelRatio={is2K ? 2 : 1}
       initialViewState={viewState}
       mapStyle={resolvedStyle}

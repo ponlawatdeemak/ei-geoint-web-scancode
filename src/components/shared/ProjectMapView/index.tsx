@@ -100,7 +100,6 @@ const ProjectMapView = forwardRef<ProjectMapViewRef, ProjectMapViewProps>(
     const task = propTask
     const profile = useProfileStore((state) => state.profile)
     const isMobile = useMediaQuery(theme.breakpoints.down('md'))
-    const { is2K } = useResponsive()
     const { t, i18n } = useTranslation('common')
     const { showAlert } = useGlobalUI()
     const { loading } = useWeeklyMapStore()

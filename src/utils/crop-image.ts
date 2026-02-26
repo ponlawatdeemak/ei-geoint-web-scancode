@@ -69,6 +69,50 @@ export const cropImageLeftRight = (imageData: ImageData): ImageData => {
 }
 
 /**
+ * Helper function to find all bounds (left, right, top, bottom)
+ */
+function findImageBounds(
+  width: number,
+  height: number,
+  isColumnTransparent: (x: number) => boolean,
+  isRowTransparent: (y: number) => boolean,
+): { leftBound: number; rightBound: number; topBound: number; bottomBound: number } {
+  let leftBound = 0
+  for (let x = 0; x < width; x++) {
+    if (!isColumnTransparent(x)) {
+      leftBound = x
+      break
+    }
+  }
+
+  let rightBound = width
+  for (let x = width - 1; x >= 0; x--) {
+    if (!isColumnTransparent(x)) {
+      rightBound = x + 1
+      break
+    }
+  }
+
+  let topBound = 0
+  for (let y = 0; y < height; y++) {
+    if (!isRowTransparent(y)) {
+      topBound = y
+      break
+    }
+  }
+
+  let bottomBound = height
+  for (let y = height - 1; y >= 0; y--) {
+    if (!isRowTransparent(y)) {
+      bottomBound = y + 1
+      break
+    }
+  }
+
+  return { leftBound, rightBound, topBound, bottomBound }
+}
+
+/**
  * Crops transparent/empty pixels from all sides of an image
  * @param imageData - ImageData object from canvas
  * @returns Cropped ImageData with all padding removed
@@ -104,37 +148,12 @@ export const cropImageAllSides = (imageData: ImageData): ImageData => {
   }
 
   // Find bounds
-  let leftBound = 0
-  for (let x = 0; x < width; x++) {
-    if (!isColumnTransparent(x)) {
-      leftBound = x
-      break
-    }
-  }
-
-  let rightBound = width
-  for (let x = width - 1; x >= 0; x--) {
-    if (!isColumnTransparent(x)) {
-      rightBound = x + 1
-      break
-    }
-  }
-
-  let topBound = 0
-  for (let y = 0; y < height; y++) {
-    if (!isRowTransparent(y)) {
-      topBound = y
-      break
-    }
-  }
-
-  let bottomBound = height
-  for (let y = height - 1; y >= 0; y--) {
-    if (!isRowTransparent(y)) {
-      bottomBound = y + 1
-      break
-    }
-  }
+  const { leftBound, rightBound, topBound, bottomBound } = findImageBounds(
+    width,
+    height,
+    isColumnTransparent,
+    isRowTransparent,
+  )
 
   // If entire image is transparent, return as is
   if (leftBound >= rightBound || topBound >= bottomBound) {

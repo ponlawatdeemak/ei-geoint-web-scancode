@@ -1,5 +1,6 @@
 import * as mgrs from 'mgrs'
 import proj4 from 'proj4'
+import { formatMGRS } from '@/utils/geometry'
 
 export type CoordSystem = 'DD' | 'UTM47' | 'UTM48' | 'MGRS'
 
@@ -22,7 +23,7 @@ export function fromDecimalDegree(lng: number, lat: number, to: CoordSystem): st
     const [easting, northing] = proj4(wgs84, utmProj, [lng, lat])
     return `${easting.toFixed(6)}, ${northing.toFixed(6)}`
   } else if (to === 'MGRS') {
-    return mgrs.forward([lng, lat], 5)
+    return formatMGRS(mgrs.forward([lng, lat], 5))
   }
   return ''
 }

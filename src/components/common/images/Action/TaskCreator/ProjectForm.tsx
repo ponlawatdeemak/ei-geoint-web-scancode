@@ -60,7 +60,7 @@ const ProjectForm = ({ onCancel, onSaveComplete, setCurrentProjectId, orgId }: P
       content: t('form.projectForm.confirmContent'),
       showCancel: true,
       onConfirm: () => {
-        void onSave(values)
+        onSave(values)
       },
     })
   }, [form, onSave, showAlert, t])

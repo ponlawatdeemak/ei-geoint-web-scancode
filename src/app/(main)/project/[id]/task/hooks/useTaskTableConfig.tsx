@@ -237,8 +237,9 @@ export const useTaskTableConfig = ({
     [setSelectedServiceId],
   )
 
-  const filtersConfig: FilterFieldConfig[] = useMemo(
-    () => [
+  const filtersConfig: FilterFieldConfig[] = useMemo(() => {
+    const minWidth = 'min-w-55! 2k:min-w-60!'
+    return [
       {
         name: 'keyword',
         label: '',
@@ -249,36 +250,36 @@ export const useTaskTableConfig = ({
           { label: t('form.searchTask.option.name'), value: 'name:' },
           { label: t('form.searchTask.option.createdBy'), value: 'creator:' },
         ],
+        className: minWidth,
       },
       {
         name: 'serviceId',
         label: 'form.searchTask.filter.service',
         type: 'select',
-        minWidth: 220,
         options: async () => (await service.lookup.get({ name: 'services' })).filter((s: SelectOption) => s.id !== 3),
         onChange: handleServiceChange,
+        className: minWidth,
       },
       {
         name: 'rootModelId',
         label: 'form.searchTask.filter.rootModel',
         type: 'select',
-        minWidth: 220,
         options: fetchRootModels,
         disabled: !selectedServiceId,
+        className: minWidth,
       },
       {
         name: 'statusId',
         label: 'form.searchTask.filter.status',
         type: 'select',
-        minWidth: 220,
         options: async () =>
           (await service.lookup.get({ name: 'task_status' })).filter(
             (ts: SelectOption) => ts.id !== TaskStatus.waitingForResults,
           ),
+        className: minWidth,
       },
-    ],
-    [selectedServiceId, t, handleServiceChange],
-  )
+    ]
+  }, [selectedServiceId, t, handleServiceChange])
 
   return { columns, filtersConfig }
 }

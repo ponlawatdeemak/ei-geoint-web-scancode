@@ -42,6 +42,7 @@ import Image from 'next/image'
 import { GetResultImageDtoOut, PostTasksDtoIn, PutTasksDtoIn } from '@interfaces/index'
 import {
   ComparisionType,
+  Language,
   MappingChangeToObject,
   ModelConfig,
   Roles,
@@ -584,7 +585,7 @@ const EditTaskForm: React.FC<Props> = ({
               onChange={(e) => toggleNode(node, e.target.checked)}
               disabled={loading || disabled}
             />
-            <span className={isRoot ? 'font-medium' : undefined}>{node.name || node.nameEn}</span>
+            <span className={isRoot ? 'font-medium' : undefined}>{language === Language.TH ? node.name : node.nameEn}</span>
           </div>
           {hasChildren ? (
             <div className={`ml-8 ${isRoot ? 'grid md:grid-cols-2' : ''}`}>
@@ -594,7 +595,7 @@ const EditTaskForm: React.FC<Props> = ({
         </div>
       )
     },
-    [isNodeChecked, isNodeIndeterminate, toggleNode, loading],
+    [isNodeChecked, isNodeIndeterminate, toggleNode, loading, language],
   )
 
   const saveName = () => async (data: FormValues) => {
@@ -797,15 +798,15 @@ const EditTaskForm: React.FC<Props> = ({
   // human-readable labels for the summary step
   const selectedServiceLabel = useMemo(() => {
     const svc = services.find((s) => String(s.id) === String(watchedServiceId))
-    return svc ? svc.name || svc.nameEn || String(svc.id) : '-'
-  }, [services, watchedServiceId])
+    return svc ? (language === Language.TH ? svc.name : svc.nameEn) || String(svc.id) : '-'
+  }, [services, watchedServiceId, language])
 
   const selectedRootModelLabel = useMemo(() => {
     const m =
       allModels.find((mm) => String(mm.id) === String(watchedRootModelId)) ||
       models.find((mm) => String(mm.id) === String(watchedRootModelId))
-    return m ? m.name || m.nameEn || String(m.id) : '-'
-  }, [allModels, models, watchedRootModelId])
+    return m ? (language === Language.TH ? m.name : m.nameEn) || String(m.id) : '-'
+  }, [allModels, models, watchedRootModelId, language])
 
   const handleSelectObjectDetectionImage = async (id: string) => {
     setImageLoading(true)
@@ -961,7 +962,7 @@ const EditTaskForm: React.FC<Props> = ({
                       <Divider className='mb-4! hidden lg:block' />
                       <InputLabel className='font-medium' required>
                         {t('form.taskForm.selectDetectionModel', {
-                          name: node.name,
+                          name: language === Language.TH ? node.name : node.nameEn,
                         })}
                       </InputLabel>
                       <div className='overflow-hidden rounded-lg border border-(--color-divider)'>
@@ -1248,7 +1249,7 @@ const EditTaskForm: React.FC<Props> = ({
                 render={({ field, fieldState }) => (
                   <Autocomplete
                     options={services}
-                    getOptionLabel={(opt) => String(language === 'th' ? opt.name : opt.nameEn)}
+                    getOptionLabel={(opt) => String(language === Language.TH ? opt.name : opt.nameEn)}
                     value={services.find((s) => String(s.id) === String(field.value)) ?? null}
                     onChange={(_, v) => {
                       const id = v ? Number(v.id) : undefined
@@ -1282,7 +1283,7 @@ const EditTaskForm: React.FC<Props> = ({
                   <Autocomplete
                     disabled={loading || viewOnly || !watchedServiceId}
                     options={models}
-                    getOptionLabel={(opt) => String(language === 'th' ? opt.name : opt.nameEn)}
+                    getOptionLabel={(opt) => String(language === Language.TH ? opt.name : opt.nameEn)}
                     value={models.find((m) => String(m.id) === String(field.value)) ?? null}
                     onChange={(_, v) => {
                       const id = v ? Number(v.id) : undefined
@@ -1452,14 +1453,14 @@ const ModelResultsTable: React.FC<{
         label: t('form.taskForm.modelResultColumn.model'),
         className: 'min-w-32',
         sortable: true,
-        render: (row: any) => (language === 'th' ? row.rootModel.name : row.rootModel.nameEn),
+        render: (row: any) => (language === Language.TH ? row.rootModel.name : row.rootModel.nameEn),
       },
       {
         id: 'feature',
         label: t('form.taskForm.modelResultColumn.feature'),
         className: 'min-w-20',
         sortable: true,
-        render: (row: any) => (language === 'th' ? row.model.name : row.model.nameEn),
+        render: (row: any) => (language === Language.TH ? row.model.name : row.model.nameEn),
       },
       {
         id: 'processAt',
@@ -1492,9 +1493,9 @@ const ModelResultsTable: React.FC<{
     const getValue = (row: any, key: string): string | number => {
       switch (key) {
         case 'model':
-          return language === 'th' ? (row.rootModel?.name ?? '') : (row.rootModel?.nameEn ?? '')
+          return language === Language.TH ? (row.rootModel?.name ?? '') : (row.rootModel?.nameEn ?? '')
         case 'feature':
-          return language === 'th' ? (row.model?.name ?? '') : (row.model?.nameEn ?? '')
+          return language === Language.TH ? (row.model?.name ?? '') : (row.model?.nameEn ?? '')
         case 'processAt':
           return row.processAt ? new Date(row.processAt).getTime() : 0
         case 'project':

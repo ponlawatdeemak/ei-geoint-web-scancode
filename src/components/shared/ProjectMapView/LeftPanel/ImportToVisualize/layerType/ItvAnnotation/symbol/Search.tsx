@@ -7,6 +7,7 @@ import { App6eMainIcon, App6eSymbolSet } from '@interfaces/entities'
 import ms from 'milsymbol'
 import { useTranslation } from 'react-i18next'
 import InputLabel from '@/components/common/input/InputLabel'
+import useResponsive from '@/hook/responsive'
 
 interface SearchOption {
   sidc: string
@@ -26,6 +27,7 @@ const Search: React.FC<Props> = ({ onSelect }) => {
   const [results, setResults] = useState<SearchOption[]>([])
   const [searchTokens, setSearchTokens] = useState<string[]>([])
   const { t } = useTranslation('common')
+  const { is2K } = useResponsive()
 
   const allIcons = useMemo(() => {
     const icons: SearchOption[] = []
@@ -124,9 +126,9 @@ const Search: React.FC<Props> = ({ onSelect }) => {
                   <Image
                     src={url}
                     alt={item.icon.name}
-                    width={40}
-                    height={40}
-                    style={{ width: 'auto', height: 'auto' }}
+                    width={is2K ? 60 : 40}
+                    height={is2K ? 60 : 40}
+                    style={{ width: '4rem', height: 'auto' }}
                   />
                 </div>
                 <Typography variant='body2'>

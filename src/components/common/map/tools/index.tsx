@@ -365,7 +365,7 @@ const MapTools: React.FC<MapToolsProps> = ({
                 <Box className='group !h-8 !w-8 !rounded-[3px] !bg-white !shadow-sm flex overflow-hidden transition-colors hover:bg-background-dark-blue'>
                   <IconButton className='!h-8 !w-8 !rounded-none !p-1.5 !bg-transparent grow' onClick={handleShowImage}>
                     <InfoIcon
-                      sx={{ width: 20, height: 20, color: 'var(--color-text-icon-primary)' }}
+                      sx={{ width: '1rem', height: '1rem', color: 'var(--color-text-icon-primary)' }}
                       className='group-hover:!text-white'
                     />
                   </IconButton>
@@ -387,7 +387,7 @@ const MapTools: React.FC<MapToolsProps> = ({
                     }}
                   >
                     <HomeFilledIcon
-                      sx={{ width: '1rem', height: '1rem', color: 'var(--color-text-icon-primary)' }}
+                      sx={{ width: '1.1rem', height: '1.1rem', color: 'var(--color-text-icon-primary)' }}
                       className={'group-hover:!text-white'}
                     />
                   </IconButton>
@@ -413,7 +413,7 @@ const MapTools: React.FC<MapToolsProps> = ({
                       }}
                     >
                       <PrintIcon
-                        sx={{ width: '1rem', height: '1rem', color: 'var(--color-text-icon-primary)' }}
+                        sx={{ width: '1.1rem', height: '1.1rem', color: 'var(--color-text-icon-primary)' }}
                         className={classNames('group-hover:!text-white', {
                           '!text-white': showPrintMap,
                         })}
@@ -462,7 +462,7 @@ const MapTools: React.FC<MapToolsProps> = ({
                     className={classNames('group-hover:!text-white', {
                       '!text-white': showMeasurement,
                     })}
-                    sx={{ width: 18, height: 18, color: 'var(--color-text-icon-primary)' }}
+                    sx={{ width: '0.9rem', height: '0.9rem', color: 'var(--color-text-icon-primary)' }}
                   />
                 </IconButton>
               </div>
@@ -490,7 +490,7 @@ const MapTools: React.FC<MapToolsProps> = ({
                     className={classNames('group-hover:!text-white', {
                       '!text-white': showSearchCoordinate,
                     })}
-                    sx={{ width: 22, height: 22, color: 'var(--color-text-icon-primary)' }}
+                    sx={{ width: '1rem', height: '1rem', color: 'var(--color-text-icon-primary)' }}
                   />
                 </IconButton>
               </div>
@@ -510,7 +510,7 @@ const MapTools: React.FC<MapToolsProps> = ({
                     className={classNames('group-hover:!text-white', {
                       '!text-white': showCurrentLocation,
                     })}
-                    sx={{ width: 22, height: 22, color: 'var(--color-text-icon-primary)' }}
+                    sx={{ width: '1rem', height: '1rem', color: 'var(--color-text-icon-primary)' }}
                   />
                 </IconButton>
               </div>
@@ -539,7 +539,7 @@ const MapTools: React.FC<MapToolsProps> = ({
                   }}
                 >
                   <ThreeDIconMap
-                    sx={{ width: 22, height: 22, color: 'var(--color-text-icon-primary)' }}
+                    sx={{ width: '1rem', height: '1rem', color: 'var(--color-text-icon-primary)' }}
                     className={classNames('group-hover:!text-white', {
                       '!text-white': is3D,
                     })}
@@ -571,7 +571,7 @@ const MapTools: React.FC<MapToolsProps> = ({
                     className={classNames('group-hover:!text-white', {
                       '!text-white': showBasemapSelector,
                     })}
-                    sx={{ width: '1rem', height: '1rem', color: 'var(--color-text-icon-primary)' }}
+                    sx={{ width: '1.2rem', height: '1.2rem', color: 'var(--color-text-icon-primary)' }}
                   />
                 </IconButton>
               </div>

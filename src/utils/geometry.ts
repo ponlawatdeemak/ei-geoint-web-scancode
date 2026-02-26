@@ -2,6 +2,35 @@ import type { Geometry } from 'geojson'
 import { LngLatBoundsLike } from 'maplibre-gl'
 
 /**
+ * Check if a coordinate pair is valid (both x and y are numbers).
+ */
+function isValidCoordinate(x: unknown, y: unknown): boolean {
+  return typeof x === 'number' && typeof y === 'number'
+}
+
+/**
+ * Update bounds with a new coordinate pair.
+ */
+function updateBounds(x: number, y: number, bounds: { minX: number; minY: number; maxX: number; maxY: number }): void {
+  if (x < bounds.minX) bounds.minX = x
+  if (y < bounds.minY) bounds.minY = y
+  if (x > bounds.maxX) bounds.maxX = x
+  if (y > bounds.maxY) bounds.maxY = y
+}
+
+/**
+ * Check if all bounds are finite numbers.
+ */
+function areBoundsValid(bounds: { minX: number; minY: number; maxX: number; maxY: number }): boolean {
+  return (
+    Number.isFinite(bounds.minX) &&
+    Number.isFinite(bounds.minY) &&
+    Number.isFinite(bounds.maxX) &&
+    Number.isFinite(bounds.maxY)
+  )
+}
+
+/**
  * Extract flat [lng, lat] coordinate pairs from a GeoJSON Geometry.
  * Supports Point, MultiPoint, LineString, MultiLineString, Polygon, MultiPolygon and GeometryCollection.
  * Returns an array of coordinate pairs. May be empty if the geometry contains no coordinates.
@@ -48,28 +77,27 @@ export function extractCoordsFromGeometry(geom: Geometry | null | undefined): [n
 export function computeExtentFromGeometries(
   geoms: Array<Geometry | null | undefined>,
 ): [number, number, number, number] | null {
-  let minX = Number.POSITIVE_INFINITY
-  let minY = Number.POSITIVE_INFINITY
-  let maxX = Number.NEGATIVE_INFINITY
-  let maxY = Number.NEGATIVE_INFINITY
+  const bounds = {
+    minX: Number.POSITIVE_INFINITY,
+    minY: Number.POSITIVE_INFINITY,
+    maxX: Number.NEGATIVE_INFINITY,
+    maxY: Number.NEGATIVE_INFINITY,
+  }
 
   for (const g of geoms || []) {
     if (!g) continue
     const pts = extractCoordsFromGeometry(g)
     for (const [x, y] of pts) {
-      if (typeof x !== 'number' || typeof y !== 'number') continue
-      if (x < minX) minX = x
-      if (y < minY) minY = y
-      if (x > maxX) maxX = x
-      if (y > maxY) maxY = y
+      if (!isValidCoordinate(x, y)) continue
+      updateBounds(x as number, y as number, bounds)
     }
   }
 
-  if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
+  if (!areBoundsValid(bounds)) {
     return null
   }
 
-  return [minX, minY, maxX, maxY]
+  return [bounds.minX, bounds.minY, bounds.maxX, bounds.maxY]
 }
 
 export function zoomToGeometries(geometries: Geometry[], map: maplibregl.Map | null): { success: boolean } {
@@ -116,4 +144,19 @@ export function zoomToThaiExtent(map: maplibregl.Map | null): void {
   }
 }
 
-export default { extractCoordsFromGeometry, computeExtentFromGeometries, zoomToGeometries, zoomToThaiExtent }
+export function formatMGRS(mgrs: string): string {
+  const clean = mgrs.replace(/\s+/g, '').toUpperCase()
+
+  const match = clean.match(/^(\d{1,2}[A-Z])([A-Z]{2})(\d+)$/)
+  if (!match) return mgrs
+
+  const [, gzd, square, remainder] = match
+
+  const half = remainder.length / 2
+  const easting = remainder.slice(0, half)
+  const northing = remainder.slice(half)
+
+  return `${gzd} ${square} ${easting} ${northing}`
+}
+
+export default { extractCoordsFromGeometry, computeExtentFromGeometries, zoomToGeometries, zoomToThaiExtent, formatMGRS }

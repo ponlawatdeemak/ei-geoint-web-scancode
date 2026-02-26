@@ -12,7 +12,6 @@ import { useTranslation } from 'react-i18next'
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight'
 import TuneIcon from '@mui/icons-material/Tune'
 import GoogleMapsPlacesSearch from '@/components/map/GoogleMapsPlaces'
-import { GetProjectDtoOut } from '@interfaces/index'
 import { LngLatBoundsLike } from 'maplibre-gl'
 import useResponsive from '@/hook/responsive'
 
@@ -238,7 +237,7 @@ export function MapView({
       />
 
       {floatingPanel && (
-        <div className='pointer-events-none absolute inset-0 z-30'>
+        <div className='pointer-events-none absolute inset-0 z-[101]'>
           <div className='pointer-events-none absolute top-4 right-4 bottom-4 flex flex-col justify-start'>
             <div className='pointer-events-auto flex max-h-full w-auto flex-col'>{floatingPanel}</div>
           </div>

@@ -62,6 +62,7 @@ export interface FilterFieldConfig {
       setSelectLoading: (value: unknown) => void
     },
   ) => Promise<Record<string, string>>
+  className?: string
 }
 
 interface SearchWrapperProps<T extends { id: string | number }> {
@@ -213,6 +214,7 @@ const SearchAutocomplete = ({ field, value, onUpdate, onKeyDown, searchButton, t
               ),
             },
           }}
+          className={field.className}
         />
       )}
     />
@@ -525,6 +527,7 @@ function SearchWrapper<T extends { id: string | number }>({
                 : { select: { native: false } }
             }
             disabled={field.disabled || loadingOpt}
+            className={field.className}
           />
         )}
       />
@@ -558,6 +561,7 @@ function SearchWrapper<T extends { id: string | number }>({
             updateFilter(field, toKey, v ? v.format('YYYY-MM-DD') : '', Boolean(field.isPrimary))
           }
           startLabel={t(field.label)}
+          className={field.className}
         />
         {field.isPrimary && !hideButtons && (
           <IconButton onClick={handleSearch} size='small' aria-label='search'>

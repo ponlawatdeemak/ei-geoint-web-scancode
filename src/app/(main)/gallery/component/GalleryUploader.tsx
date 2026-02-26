@@ -886,12 +886,13 @@ const GalleryUploader: React.FC<GalleryUploaderProps> = ({ serviceId, open, onCl
   return (
     <Dialog
       open={open}
-      maxWidth='lg'
+      //   maxWidth={'lg'}
       fullWidth
       fullScreen={isSmallScreen}
       sx={{
         '& .MuiDialog-paper': {
           maxHeight: { xs: '100vh', md: '90vh' },
+          maxWidth: { xs: '100vw', md: '50vw' },
           m: { xs: 0, md: 2 },
         },
       }}

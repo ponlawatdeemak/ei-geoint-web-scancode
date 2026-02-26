@@ -127,6 +127,13 @@ const PrintMapDialog: React.FC<PrintMapDialogProps> = ({
         sourceStyle.layers.forEach((layer) => {
           try {
             if (!exportMap.getLayer(layer.id)) {
+              const isSymbolLayer = layer?.type === 'symbol'
+              if (is2K && isSymbolLayer) {
+                const iconSize = layer?.layout?.['icon-size'] as number
+                if (layer.layout) {
+                  layer.layout['icon-size'] = iconSize / 2
+                }
+              }
               exportMap.addLayer(layer as any)
               addedLayers.push(layer.id)
             }
@@ -230,7 +237,7 @@ const PrintMapDialog: React.FC<PrintMapDialogProps> = ({
   return (
     <div className='relative'>
       <Dialog
-        className={classNames('', className)}
+        className={classNames('print-map-dialog', className)}
         open={open}
         onClose={(_event, reason) => {
           if (reason !== 'backdropClick') {
@@ -293,7 +300,11 @@ const PrintMapDialog: React.FC<PrintMapDialogProps> = ({
                     </Box>
 
                     <Box className='absolute top-1.25 right-1.25'>
-                      <MiniMapCompassIcon fill={basemap === BasemapType.CartoLight ? 'black' : 'white'} />
+                      <MiniMapCompassIcon
+                        width={is2K ? 64 : 32}
+                        height={is2K ? 64 : 32}
+                        fill={basemap === BasemapType.CartoLight ? 'black' : 'white'}
+                      />
                     </Box>
                   </Box>
 

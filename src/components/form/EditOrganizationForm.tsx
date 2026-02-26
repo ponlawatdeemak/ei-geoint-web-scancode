@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useForm, Controller, useFieldArray, type Resolver } from 'react-hook-form'
+import { useForm, Controller, useFieldArray, type Resolver, type Control } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as Yup from 'yup'
 import TextField from '@mui/material/TextField'
@@ -52,6 +52,167 @@ type FormValues = {
   isActive: boolean
   subscriptions: SubscriptionField[]
 }
+
+type SubscriptionRowProps = {
+  idx: number
+  control: Control<FormValues>
+  subscriptionOptions: GetAllSubscriptionsDtoOut[]
+  subscriptionsWatch: SubscriptionField[]
+  language: string
+  t: (key: string) => string
+  remove: (index: number) => void
+  canDelete: boolean
+}
+
+const SubscriptionRow: React.FC<SubscriptionRowProps> = ({
+  idx,
+  control,
+  subscriptionOptions,
+  subscriptionsWatch,
+  language,
+  t,
+  remove,
+  canDelete,
+}) => (
+  <div className='rounded-lg border border-(--color-divider) p-4'>
+    <div className='grid gap-2 md:grid-cols-12'>
+      <div className='md:col-span-6'>
+        <InputLabel required>{t('form.organizationForm.subscriptionName')}</InputLabel>
+        <Controller
+          control={control}
+          name={`subscriptions.${idx}.subscriptionId` as const}
+          render={({ field, fieldState }) => {
+            const selectedIds = new Set<string>(subscriptionsWatch.map((s) => s?.subscriptionId).filter(Boolean))
+            const options = subscriptionOptions.filter((s) => !selectedIds.has(s.id) || s.id === field.value)
+            return (
+              <Autocomplete<GetAllSubscriptionsDtoOut, false, false, false>
+                options={options}
+                noOptionsText={t('filter.noOptions')}
+                getOptionLabel={(opt) => (language === 'th' ? opt.name : opt.nameEn)}
+                value={subscriptionOptions.find((s) => s.id === field.value) || null}
+                onChange={(_: React.SyntheticEvent, v: GetAllSubscriptionsDtoOut | null) =>
+                  field.onChange(v ? v.id : '')
+                }
+                renderInput={(params: AutocompleteRenderInputParams) => (
+                  <TextField
+                    {...params}
+                    placeholder={t('form.organizationForm.subscriptionName')}
+                    error={!!fieldState.error}
+                    helperText={fieldState.error?.message}
+                  />
+                )}
+              />
+            )
+          }}
+        />
+      </div>
+      <div className='md:col-span-3'>
+        <InputLabel required>{t('form.organizationForm.startAt')}</InputLabel>
+        <Controller
+          control={control}
+          name={`subscriptions.${idx}.startAt` as const}
+          render={({ field, fieldState }) => {
+            const endAt = subscriptionsWatch[idx]?.endAt ? dayjs(subscriptionsWatch[idx].endAt) : null
+            return (
+              <DatePicker
+                value={field.value ? dayjs(field.value) : null}
+                maxDate={endAt ?? undefined}
+                onChange={(v) => field.onChange(v ? v.toDate() : null)}
+                slots={{
+                  field: (params) => (
+                    <DateField
+                      {...params}
+                      label={t('form.organizationForm.startAt')}
+                      format='D MMM YY'
+                      size='small'
+                      focused={false}
+                      shouldRespectLeadingZeros
+                      fullWidth
+                      clearable
+                      slotProps={{
+                        textField: {
+                          onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => e.preventDefault(),
+                        },
+                      }}
+                      error={!!fieldState.error}
+                      helperText={fieldState.error?.message}
+                      sx={{
+                        '& .MuiInputLabel-shrink': {
+                          display: 'none',
+                        },
+                        '& fieldset.MuiPickersOutlinedInput-notchedOutline>legend': {
+                          width: '0px',
+                        },
+                      }}
+                    />
+                  ),
+                }}
+              />
+            )
+          }}
+        />
+      </div>
+      <div className='md:col-span-3'>
+        <InputLabel required>{t('form.organizationForm.endAt')}</InputLabel>
+        <Controller
+          control={control}
+          name={`subscriptions.${idx}.endAt` as const}
+          render={({ field, fieldState }) => {
+            const today = dayjs().startOf('day')
+            const startAt = subscriptionsWatch[idx]?.startAt ? dayjs(subscriptionsWatch[idx].startAt) : null
+            return (
+              <DatePicker
+                value={field.value ? dayjs(field.value) : null}
+                minDate={startAt?.isAfter(today) ? startAt : today}
+                onChange={(v) => field.onChange(v ? v.toDate() : null)}
+                slots={{
+                  field: (params) => (
+                    <DateField
+                      {...params}
+                      label={t('form.organizationForm.endAt')}
+                      format='D MMM YY'
+                      size='small'
+                      focused={false}
+                      shouldRespectLeadingZeros
+                      fullWidth
+                      clearable
+                      slotProps={{
+                        textField: {
+                          onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => e.preventDefault(),
+                        },
+                      }}
+                      error={!!fieldState.error}
+                      helperText={fieldState.error?.message}
+                      sx={{
+                        '& .MuiInputLabel-shrink': {
+                          display: 'none',
+                        },
+                        '& fieldset.MuiPickersOutlinedInput-notchedOutline>legend': {
+                          width: '0px',
+                        },
+                      }}
+                    />
+                  ),
+                }}
+              />
+            )
+          }}
+        />
+      </div>
+      <div className='flex flex-col items-center rounded-lg bg-(--color-background-default) p-2 md:col-span-12'>
+        <InputLabel>{t('form.organizationForm.duration')}</InputLabel>
+        <div className='font-semibold text-lg text-primary'>
+          {formatDuration(subscriptionsWatch[idx]?.startAt, subscriptionsWatch[idx]?.endAt, t)}
+        </div>
+      </div>
+      <div className='flex justify-center md:col-span-12'>
+        <Button startIcon={<DeleteIcon />} color='error' onClick={() => remove(idx)} disabled={!canDelete}>
+          {t('form.organizationForm.deleteSubscription')}
+        </Button>
+      </div>
+    </div>
+  </div>
+)
 
 const EditOrganizationForm: React.FC<Props> = ({ organizationId }) => {
   const router = useRouter()
@@ -461,155 +622,17 @@ const EditOrganizationForm: React.FC<Props> = ({ organizationId }) => {
           <div className='my-2 font-medium text-lg text-primary'>{t('form.organizationForm.subscriptionDetails')}</div>
           <div className='space-y-4'>
             {fields.map((fld, idx) => (
-              <div key={fld.id} className='rounded-lg border border-(--color-divider) p-4'>
-                <div className='grid gap-2 md:grid-cols-12'>
-                  <div className='md:col-span-6'>
-                    <InputLabel required>{t('form.organizationForm.subscriptionName')}</InputLabel>
-                    <Controller
-                      control={control}
-                      name={`subscriptions.${idx}.subscriptionId` as const}
-                      render={({ field, fieldState }) => {
-                        // build set of selected ids from other rows
-                        const selectedIds = new Set<string>(
-                          subscriptionsWatch.map((s) => s?.subscriptionId).filter(Boolean),
-                        )
-                        const options = subscriptionOptions.filter(
-                          (s) => !selectedIds.has(s.id) || s.id === field.value,
-                        )
-                        return (
-                          <Autocomplete<GetAllSubscriptionsDtoOut, false, false, false>
-                            options={options}
-                            noOptionsText={t('filter.noOptions')}
-                            getOptionLabel={(opt) => (language === 'th' ? opt.name : opt.nameEn)}
-                            value={subscriptionOptions.find((s) => s.id === field.value) || null}
-                            onChange={(_: React.SyntheticEvent, v: GetAllSubscriptionsDtoOut | null) =>
-                              field.onChange(v ? v.id : '')
-                            }
-                            renderInput={(params: AutocompleteRenderInputParams) => (
-                              <TextField
-                                {...params}
-                                placeholder={t('form.organizationForm.subscriptionName')}
-                                error={!!fieldState.error}
-                                helperText={fieldState.error?.message}
-                              />
-                            )}
-                          />
-                        )
-                      }}
-                    />
-                  </div>
-                  <div className='md:col-span-3'>
-                    <InputLabel required>{t('form.organizationForm.startAt')}</InputLabel>
-                    <Controller
-                      control={control}
-                      name={`subscriptions.${idx}.startAt` as const}
-                      render={({ field, fieldState }) => {
-                        // compute maxDate from the corresponding endAt in the watched subscriptions
-                        const endAt = subscriptionsWatch[idx]?.endAt ? dayjs(subscriptionsWatch[idx].endAt) : null
-                        return (
-                          <DatePicker
-                            value={field.value ? dayjs(field.value) : null}
-                            maxDate={endAt ?? undefined}
-                            onChange={(v) => field.onChange(v ? v.toDate() : null)}
-                            slots={{
-                              field: (params) => (
-                                <DateField
-                                  {...params}
-                                  label={t('form.organizationForm.startAt')}
-                                  format='D MMM YY'
-                                  size='small'
-                                  focused={false}
-                                  shouldRespectLeadingZeros
-                                  fullWidth
-                                  clearable
-                                  slotProps={{
-                                    textField: {
-                                      onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => e.preventDefault(),
-                                    },
-                                  }}
-                                  error={!!fieldState.error}
-                                  helperText={fieldState.error?.message}
-                                  sx={{
-                                    '& .MuiInputLabel-shrink': {
-                                      display: 'none',
-                                    },
-                                    '& fieldset.MuiPickersOutlinedInput-notchedOutline>legend': {
-                                      width: '0px',
-                                    },
-                                  }}
-                                />
-                              ),
-                            }}
-                          />
-                        )
-                      }}
-                    />
-                  </div>
-                  <div className='md:col-span-3'>
-                    <InputLabel required>{t('form.organizationForm.endAt')}</InputLabel>
-                    <Controller
-                      control={control}
-                      name={`subscriptions.${idx}.endAt` as const}
-                      render={({ field, fieldState }) => {
-                        const today = dayjs().startOf('day')
-                        const startAt = subscriptionsWatch[idx]?.startAt ? dayjs(subscriptionsWatch[idx].startAt) : null
-                        return (
-                          <DatePicker
-                            value={field.value ? dayjs(field.value) : null}
-                            minDate={startAt?.isAfter(today) ? startAt : today}
-                            onChange={(v) => field.onChange(v ? v.toDate() : null)}
-                            slots={{
-                              field: (params) => (
-                                <DateField
-                                  {...params}
-                                  label={t('form.organizationForm.endAt')}
-                                  format='D MMM YY'
-                                  size='small'
-                                  focused={false}
-                                  shouldRespectLeadingZeros
-                                  fullWidth
-                                  clearable
-                                  slotProps={{
-                                    textField: {
-                                      onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => e.preventDefault(),
-                                    },
-                                  }}
-                                  error={!!fieldState.error}
-                                  helperText={fieldState.error?.message}
-                                  sx={{
-                                    '& .MuiInputLabel-shrink': {
-                                      display: 'none',
-                                    },
-                                    '& fieldset.MuiPickersOutlinedInput-notchedOutline>legend': {
-                                      width: '0px',
-                                    },
-                                  }}
-                                />
-                              ),
-                            }}
-                          />
-                        )
-                      }}
-                    />
-                  </div>
-                  <div className='flex flex-col items-center rounded-lg bg-(--color-background-default) p-2 md:col-span-12'>
-                    <InputLabel>{t('form.organizationForm.duration')}</InputLabel>
-                    <div className='font-semibold text-lg text-primary'>
-                      {formatDuration(subscriptionsWatch[idx]?.startAt, subscriptionsWatch[idx]?.endAt, t)}
-                    </div>
-                  </div>
-                  <div className='flex justify-center md:col-span-12'>
-                    <Button
-                      startIcon={<DeleteIcon />}
-                      color='error'
-                      onClick={() => remove(idx)}
-                      disabled={fields.length <= 1}
-                    >
-                      {t('form.organizationForm.deleteSubscription')}
-                    </Button>
-                  </div>
-                </div>
-              </div>
+              <SubscriptionRow
+                key={fld.id}
+                idx={idx}
+                control={control}
+                subscriptionOptions={subscriptionOptions}
+                subscriptionsWatch={subscriptionsWatch}
+                language={language}
+                t={t}
+                remove={remove}
+                canDelete={fields.length > 1}
+              />
             ))}
             <div className='flex justify-center'>
               <Button

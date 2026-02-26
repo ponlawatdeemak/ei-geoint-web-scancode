@@ -21,6 +21,76 @@ const parseJwt = (token: string) => {
   return JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString())
 }
 
+// Helper: Log debug messages
+const logDebug = (message: string, ...args: any[]) => {
+  if (process.env.MIDDLEWARE_DEBUG === 'true') {
+    console.log(message, ...args)
+  }
+}
+
+// Helper: Check if token is expired
+const isTokenExpired = (expiredTime: number): boolean => {
+  const currentTime = Math.floor(Date.now() / 1000)
+  return currentTime >= expiredTime
+}
+
+// Helper: Refresh access token
+const refreshAccessToken = async (accessToken: string, refreshToken: string) => {
+  try {
+    const refreshed = await service.auth.refreshToken({
+      accessToken: accessToken ?? '',
+      refreshToken: refreshToken ?? '',
+    })
+    return { newAccessToken: refreshed?.accessToken, error: undefined }
+  } catch (err) {
+    console.log('next-auth refresh token failed for user:', err)
+    return { newAccessToken: undefined, error: 'RefreshAccessTokenError' }
+  }
+}
+
+// Helper: Handle session update from trigger
+const handleSessionUpdate = (token: any, user: any, session: any) => {
+  logDebug('🔐 [JWT CALLBACK] Updating token with session data')
+  return { ...token, ...user, ...session } as JWT
+}
+
+// Helper: Handle token validation and refresh
+const validateAndRefreshToken = async (token: any, user: any): Promise<JWT> => {
+  const accessToken = token?.accessToken
+  const jwtToken = { ...token, ...user }
+
+  if (!accessToken) {
+    return jwtToken as JWT
+  }
+
+  logDebug('🔐 [JWT CALLBACK] Access token exists:', !!accessToken)
+
+  try {
+    const data = parseJwt(accessToken)
+    const expiredTime = data?.exp
+    const currentTime = Math.floor(Date.now() / 1000)
+
+    logDebug('🔐 [JWT CALLBACK] Token expiry time:', new Date(expiredTime * 1000).toISOString())
+    logDebug('🔐 [JWT CALLBACK] Current time:', new Date(currentTime * 1000).toISOString())
+    logDebug('🔐 [JWT CALLBACK] Token expired:', isTokenExpired(expiredTime))
+
+    if (isTokenExpired(expiredTime)) {
+      const { newAccessToken, error } = await refreshAccessToken(token.accessToken ?? '', token.refreshToken ?? '')
+      if (newAccessToken) {
+        jwtToken.accessToken = newAccessToken
+      }
+      if (error) {
+        jwtToken.error = error
+      }
+    }
+  } catch (error) {
+    console.log('next-auth refreshAccessToken RefreshAccessTokenError error:', error)
+    jwtToken.error = 'RefreshAccessTokenError'
+  }
+
+  return jwtToken as JWT
+}
+
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   session: {
@@ -79,60 +149,18 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user, session, trigger }) {
-      if (process.env.MIDDLEWARE_DEBUG === 'true') {
-        console.log('🔐 [JWT CALLBACK] Processing JWT callback')
-        console.log('🔐 [JWT CALLBACK] Trigger:', trigger)
-        console.log('🔐 [JWT CALLBACK] User exists:', !!user)
-        console.log('🔐 [JWT CALLBACK] Token ID:', token?.id)
-      }
+      logDebug('🔐 [JWT CALLBACK] Processing JWT callback')
+      logDebug('🔐 [JWT CALLBACK] Trigger:', trigger)
+      logDebug('🔐 [JWT CALLBACK] User exists:', !!user)
+      logDebug('🔐 [JWT CALLBACK] Token ID:', token?.id)
 
       delete token.error
+
       if (trigger === 'update' && session) {
-        if (process.env.MIDDLEWARE_DEBUG === 'true') {
-          console.log('🔐 [JWT CALLBACK] Updating token with session data')
-        }
-        // เมื่อมีการแก้ไข profile ต้องเอาค่าจาก session เข้าไปด้วย
-        return { ...token, ...user, ...session } as JWT
+        return handleSessionUpdate(token, user, session)
       }
 
-      const accessToken = token?.accessToken
-      const jwtToken = { ...token, ...user }
-
-      if (process.env.MIDDLEWARE_DEBUG === 'true') {
-        console.log('🔐 [JWT CALLBACK] Access token exists:', !!accessToken)
-      }
-
-      if (accessToken) {
-        try {
-          const data = parseJwt(accessToken)
-          const expiredTime = data?.exp
-          const currentTime = Math.floor(Date.now() / 1000)
-
-          if (process.env.MIDDLEWARE_DEBUG === 'true') {
-            console.log('🔐 [JWT CALLBACK] Token expiry time:', new Date(expiredTime * 1000).toISOString())
-            console.log('🔐 [JWT CALLBACK] Current time:', new Date(currentTime * 1000).toISOString())
-            console.log('🔐 [JWT CALLBACK] Token expired:', currentTime >= expiredTime)
-          }
-
-          if (currentTime >= expiredTime) {
-            // Refresh using this user's refresh token (do NOT use process-global state)
-            try {
-              const refreshed = await service.auth.refreshToken({
-                accessToken: token.accessToken ?? '',
-                refreshToken: token.refreshToken ?? '',
-              })
-              if (refreshed?.accessToken) jwtToken.accessToken = refreshed.accessToken
-            } catch (err) {
-              console.log('next-auth refresh token failed for user:', err)
-              jwtToken.error = 'RefreshAccessTokenError'
-            }
-          }
-        } catch (error) {
-          console.log('next-auth refreshAccessToken RefreshAccessTokenError error:', error)
-          jwtToken.error = 'RefreshAccessTokenError'
-        }
-      }
-      return jwtToken as JWT
+      return await validateAndRefreshToken(token, user)
     },
     session({ session, token }) {
       if (process.env.MIDDLEWARE_DEBUG === 'true') {

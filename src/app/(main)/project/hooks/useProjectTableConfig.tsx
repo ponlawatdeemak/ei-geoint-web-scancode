@@ -104,8 +104,9 @@ export const useProjectTableConfig = ({
     [t, language, profile, onEdit, onDelete],
   )
 
-  const filtersConfig: FilterFieldConfig[] = useMemo(
-    () => [
+  const filtersConfig: FilterFieldConfig[] = useMemo(() => {
+    const minWidth = 'min-w-30! 2k:min-w-60!'
+    return [
       {
         name: 'keyword',
         label: '',
@@ -124,12 +125,13 @@ export const useProjectTableConfig = ({
             value: language === Language.TH ? s.name : s.nameEn,
           })),
         },
+        className: minWidth,
       },
       {
         name: 'organizationId',
         label: 'form.searchProject.filter.organization',
         type: 'select',
-        minWidth: 120,
+        className: minWidth,
         options: async () => await service.organizations.getItem(),
         disabled: (profile?.roleId ?? 99) > 2,
       },
@@ -137,7 +139,7 @@ export const useProjectTableConfig = ({
         name: 'subscriptionId',
         label: 'form.searchProject.filter.subscription',
         type: 'select',
-        minWidth: 120,
+        className: minWidth,
         options: async () =>
           profile?.organizationId ? await service.subscriptions.getItemByOrg(profile.organizationId) : [],
       },
@@ -145,11 +147,10 @@ export const useProjectTableConfig = ({
         name: 'createdAt',
         label: 'form.searchProject.filter.createdAtRange',
         type: 'dateRange',
-        minWidth: 220,
+        className: minWidth,
       },
-    ],
-    [profile?.organizationId, profile?.roleId, t, cacheTaskStatuses, language],
-  )
+    ]
+  }, [profile?.organizationId, profile?.roleId, t, cacheTaskStatuses, language])
 
   return { columns, filtersConfig }
 }
