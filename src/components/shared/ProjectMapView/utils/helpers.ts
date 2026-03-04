@@ -94,3 +94,14 @@ export function extractConfidenceNum(data: Record<string, unknown>): number | un
 }
 
 export type FeatureLike = { properties?: Record<string, unknown> }
+
+/** Get normalized confidence value (0–100) from a feature-like object */
+export function getFeatureConfidence(feature: FeatureLike | null): number {
+  if (!feature) return 100
+  const props: Record<string, unknown> = feature.properties ?? {}
+  const rawValue = props.confidence ?? props.confidence_mean ?? props.condidence ?? 1
+  let conf = typeof rawValue === 'number' ? rawValue : Number.parseFloat(String(rawValue))
+  if (Number.isNaN(conf)) conf = 1
+  if (conf <= 1) conf = conf * 100
+  return typeof conf === 'number' && !Number.isNaN(conf) ? conf : 100
+}

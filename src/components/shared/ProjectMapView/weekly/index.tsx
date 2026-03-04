@@ -31,12 +31,82 @@ import {
   extractConfidenceNum,
   extractCoordinatesFromObject,
   extractPropertiesFromObject,
+  getFeatureConfidence,
 } from '../utils/helpers'
 import { zoomToGeometries } from '@/utils/geometry'
 import { processWeeklyLayers } from '../utils/weeklyLayerProcess'
 import { createHeatmap } from '../utils/heatmapCreator'
 import DateRangeIcon from '@mui/icons-material/DateRange'
 import useResponsive from '@/hook/responsive'
+
+/** Build a confidence-range filter expression for MapLibre */
+function buildConfidenceFilter(minTh: number, maxTh: number): maplibregl.ExpressionSpecification {
+  const confExpr: maplibregl.ExpressionSpecification = [
+    'coalesce',
+    ['get', 'confidence'],
+    ['get', 'confidence_mean'],
+    1,
+  ]
+  return ['all', ['>=', confExpr, minTh / 100], ['<=', confExpr, maxTh / 100]]
+}
+
+/** Check if a layer ID represents a filterable geometry layer */
+function isFilterableLayer(layerId: string): boolean {
+  return layerId.includes('fill') || layerId.includes('line') || layerId.includes('point')
+}
+
+/** Apply visibility to a set of map layers */
+function applyLayerVisibility(m: maplibregl.Map, layerIds: string[], isVisible: boolean) {
+  for (const lid of layerIds) {
+    if (m.getLayer(lid)) {
+      try {
+        m.setLayoutProperty(lid, 'visibility', isVisible ? 'visible' : 'none')
+      } catch {
+        // ignore if layer missing
+      }
+    }
+  }
+}
+
+/** Apply threshold filter to filterable layers */
+function applyThresholdFilterToLayers(m: maplibregl.Map, layerIds: string[], minTh: number, maxTh: number) {
+  const filter = buildConfidenceFilter(minTh, maxTh)
+  for (const lid of layerIds) {
+    if (isFilterableLayer(lid)) {
+      try {
+        m.setFilter(lid, filter)
+      } catch {
+        // ignore if layer missing
+      }
+    }
+  }
+}
+
+/** Create heatmap layers from configs, cleaning up any existing ones */
+function addHeatmapLayers(
+  map: maplibregl.Map,
+  configs: LayerConfig[],
+  cleanupRef: Map<string, () => void>,
+  createHeatmapFn: typeof createHeatmap,
+) {
+  for (const cfg of configs) {
+    const heatMapData = cfg as VectorLayerConfig
+    const href = heatMapData.data
+    const color = heatMapData.color_code
+    if (typeof href !== 'string') continue
+
+    const prevCleanup = cleanupRef.get(cfg.id)
+    if (prevCleanup) {
+      try {
+        prevCleanup()
+      } catch {
+        // ignore
+      }
+    }
+    const cleanup = createHeatmapFn(map, cfg.id, href, color)
+    cleanupRef.set(cfg.id, cleanup)
+  }
+}
 
 type WeeklyProps = {
   onSelected?: (data: TaskLayer[]) => void
@@ -114,7 +184,7 @@ const Weekly: React.FC<WeeklyProps> = ({
         if (map.getLayer(layerId)) {
           map.removeLayer(layerId)
         }
-      } catch (e) {
+      } catch {
         // Layer might not exist
       }
 
@@ -122,7 +192,7 @@ const Weekly: React.FC<WeeklyProps> = ({
         if (map.getSource(layerId)) {
           map.removeSource(layerId)
         }
-      } catch (e) {
+      } catch {
         // Source might not exist
       }
     },
@@ -139,7 +209,7 @@ const Weekly: React.FC<WeeklyProps> = ({
       for (const [, cleanup] of heatmapCleanup) {
         try {
           cleanup()
-        } catch (e) {
+        } catch {
           // ignore cleanup errors
         }
       }
@@ -415,10 +485,14 @@ const Weekly: React.FC<WeeklyProps> = ({
     return () => {
       try {
         clearAllCreatedLayers()
-      } catch {}
+      } catch {
+        // ignore cleanup errors on unmount
+      }
       try {
         closeActivePopup()
-      } catch {}
+      } catch {
+        // ignore cleanup errors on unmount
+      }
     }
   }, [clearAllCreatedLayers, closeActivePopup])
 
@@ -448,19 +522,6 @@ const Weekly: React.FC<WeeklyProps> = ({
     [closeActivePopup, renderPopup, map],
   )
 
-  type FeatureLike = { properties?: Record<string, unknown> }
-
-  // Extract helper: get feature confidence (stable - no dependencies)
-  const getFeatureConfidence = useCallback((feature: FeatureLike | null): number => {
-    if (!feature) return 100
-    const props: Record<string, unknown> = feature.properties ?? {}
-    const rawValue = props.confidence ?? props.confidence_mean ?? props.condidence ?? 1
-    let conf = typeof rawValue === 'number' ? rawValue : Number.parseFloat(String(rawValue))
-    if (Number.isNaN(conf)) conf = 1
-    if (conf <= 1) conf = conf * 100
-    return typeof conf === 'number' && !Number.isNaN(conf) ? conf : 100
-  }, [])
-
   const createLayersFromConfigs = useCallback(
     (configs: LayerConfig[]) => {
       if (!map) return []
@@ -485,7 +546,7 @@ const Weekly: React.FC<WeeklyProps> = ({
       }
       return createdConfigs
     },
-    [thresholds, layerVisibility, getFeatureConfidence, handleFeatureClick, map, is2K],
+    [thresholds, layerVisibility, handleFeatureClick, map, is2K],
   )
 
   // Handler when user selects new layers from search
@@ -544,24 +605,7 @@ const Weekly: React.FC<WeeklyProps> = ({
         createLayersFromConfigs(vectorConfigs)
 
         // Add/update MapLibre heatmap for centroid tiles (added last to sit on top)
-        for (const cfg of centroidHeatConfigs) {
-          const heatMapData = cfg as VectorLayerConfig
-          const href = heatMapData.data
-          const color = heatMapData?.color_code
-          if (typeof href === 'string') {
-            const prevCleanup = heatmapCleanupRef.current.get(cfg.id)
-            if (prevCleanup) {
-              try {
-                prevCleanup()
-              } catch {
-                // ignore
-              }
-            }
-
-            const cleanup = createHeatmap(map as maplibregl.Map, cfg.id, href, color)
-            heatmapCleanupRef.current.set(cfg.id, cleanup)
-          }
-        }
+        addHeatmapLayers(map as maplibregl.Map, centroidHeatConfigs, heatmapCleanupRef.current, createHeatmap)
       }
 
       onSelected?.(data)
@@ -597,22 +641,9 @@ const Weekly: React.FC<WeeklyProps> = ({
 
   // Helper: apply threshold filter to a single layer
   const applyThresholdFilter = useCallback((map: maplibregl.Map, layerId: string, minTh: number, maxTh: number) => {
-    const confExpr: maplibregl.ExpressionSpecification = [
-      'coalesce',
-      ['get', 'confidence'],
-      ['get', 'confidence_mean'],
-      1,
-    ]
-
-    const filter: maplibregl.ExpressionSpecification = [
-      'all',
-      ['>=', confExpr, minTh / 100],
-      ['<=', confExpr, maxTh / 100],
-    ]
-
-    if (layerId.includes('fill') || layerId.includes('line') || layerId.includes('point')) {
+    if (isFilterableLayer(layerId)) {
       try {
-        map.setFilter(layerId, filter)
+        map.setFilter(layerId, buildConfidenceFilter(minTh, maxTh))
       } catch {
         // ignore if layer missing
       }
@@ -659,38 +690,11 @@ const Weekly: React.FC<WeeklyProps> = ({
         if (!configId) continue
 
         const isVisible = visibilityRef.current[configId] ?? true
-        for (const lid of created.layerIds ?? []) {
-          if (m.getLayer(lid)) {
-            try {
-              m.setLayoutProperty(lid, 'visibility', isVisible ? 'visible' : 'none')
-            } catch {
-              // ignore
-            }
-          }
-        }
+        applyLayerVisibility(m, created.layerIds ?? [], isVisible)
 
         if (configType === MapType.vector) {
           const [minTh, maxTh] = thresholdsRef.current[configId] ?? [0, 100]
-          const confExpr: maplibregl.ExpressionSpecification = [
-            'coalesce',
-            ['get', 'confidence'],
-            ['get', 'confidence_mean'],
-            1,
-          ]
-          const filter: maplibregl.ExpressionSpecification = [
-            'all',
-            ['>=', confExpr, minTh / 100],
-            ['<=', confExpr, maxTh / 100],
-          ]
-          for (const lid of created.layerIds ?? []) {
-            if (lid.includes('fill') || lid.includes('line') || lid.includes('point')) {
-              try {
-                m.setFilter(lid, filter)
-              } catch {
-                // ignore
-              }
-            }
-          }
+          applyThresholdFilterToLayers(m, created.layerIds ?? [], minTh, maxTh)
         }
       }
     }

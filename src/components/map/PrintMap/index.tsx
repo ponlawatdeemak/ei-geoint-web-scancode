@@ -275,6 +275,46 @@ const PrintMapExportMain: React.FC<PrintMapExportMainProps> = ({
     [mapEndBounds.ymax, mapEndBounds.ymin, mapEndBounds.xmin, copyLocationType, isMobile],
   )
 
+  const getMapDimensions = useCallback(() => {
+    return {
+      mapWidth: is2K ? MAP_WIDTH * 2 : MAP_WIDTH,
+      mapHeight: is2K ? MAP_HEIGHT * 2 : MAP_HEIGHT,
+      miniMapWidth: is2K ? MINI_MAP_WIDTH * 2 : MINI_MAP_WIDTH,
+      miniMapHeight: is2K ? MINI_MAP_HEIGHT * 2 : MINI_MAP_HEIGHT,
+    }
+  }, [is2K])
+
+  const captureAndSetImages = useCallback(
+    async (mapImage: string, miniMapImage: string, dimensions: ReturnType<typeof getMapDimensions>) => {
+      const mapCapturedImage = await captureMapWithControl(mapImage, '', dimensions.mapWidth, dimensions.mapHeight)
+      const miniMapCapturedImage = await captureMapWithControl(
+        miniMapImage,
+        '',
+        dimensions.miniMapWidth,
+        dimensions.miniMapHeight,
+      )
+
+      const capturedMapElement = document.querySelector('.captured-map-image') as HTMLImageElement
+      const capturedMiniMapElement = document.querySelector('.captured-mini-map-image') as HTMLImageElement
+
+      if (capturedMapElement && capturedMiniMapElement) {
+        capturedMapElement.src = mapCapturedImage
+        capturedMiniMapElement.src = miniMapCapturedImage
+        await new Promise((resolve) => setTimeout(resolve, 100))
+      } else {
+        console.error('Image element not found!')
+      }
+    },
+    [],
+  )
+
+  const exportMapPdf = useCallback(async () => {
+    const dialogDiv: HTMLDivElement | null = document.querySelector('.hidden-dialog .MuiDialog-paper')
+    if (dialogDiv) {
+      await exportPdf({ dialogDiv: dialogDiv, fileName: `${id}_map` })
+    }
+  }, [id])
+
   const handleMapPdfExport = useCallback(async () => {
     try {
       showLoading()
@@ -295,32 +335,11 @@ const PrintMapExportMain: React.FC<PrintMapExportMainProps> = ({
       const miniMapControlElement = miniMapElement.querySelector('.maplibregl-ctrl-bottom-right') as HTMLElement
 
       if (mapExport && miniMapExport && mapControlElement && miniMapControlElement) {
-        // Use MapLibre's canvas directly instead of html2canvas
         const mapImage = mapExport.getCanvas().toDataURL('image/png', 1.0)
         const miniMapImage = miniMapExport.getCanvas().toDataURL('image/png', 1.0)
-        const mapWidth = is2K ? MAP_WIDTH * 2 : MAP_WIDTH
-        const mapHeight = is2K ? MAP_HEIGHT * 2 : MAP_HEIGHT
-        const miniMapWidth = is2K ? MINI_MAP_WIDTH * 2 : MINI_MAP_WIDTH
-        const miniMapHeight = is2K ? MINI_MAP_HEIGHT * 2 : MINI_MAP_HEIGHT
-        const mapCapturedImage = await captureMapWithControl(mapImage, '', mapWidth, mapHeight)
-        const miniMapCapturedImage = await captureMapWithControl(miniMapImage, '', miniMapWidth, miniMapHeight)
-
-        const capturedMapElement = document.querySelector('.captured-map-image') as HTMLImageElement
-        const capturedMiniMapElement = document.querySelector('.captured-mini-map-image') as HTMLImageElement
-
-        if (capturedMapElement && capturedMiniMapElement) {
-          capturedMapElement.src = mapCapturedImage
-          capturedMiniMapElement.src = miniMapCapturedImage
-          await new Promise((resolve) => setTimeout(resolve, 100))
-        } else {
-          console.error('Image element not found!')
-        }
-
-        const dialogDiv: HTMLDivElement | null = document.querySelector('.hidden-dialog .MuiDialog-paper')
-
-        if (dialogDiv) {
-          await exportPdf({ dialogDiv: dialogDiv, fileName: `${id}_map` })
-        }
+        const dimensions = getMapDimensions()
+        await captureAndSetImages(mapImage, miniMapImage, dimensions)
+        await exportMapPdf()
       } else {
         console.error('Map is not loaded yet!')
       }
@@ -330,7 +349,7 @@ const PrintMapExportMain: React.FC<PrintMapExportMainProps> = ({
       setIsCapturing(false)
       hideLoading()
     }
-  }, [id, mapExport, miniMapExport, showLoading, hideLoading])
+  }, [id, mapExport, miniMapExport, showLoading, hideLoading, getMapDimensions, captureAndSetImages, exportMapPdf])
 
   return (
     <Box className={classNames('absolute right-4 z-10 flex md:right-20 [&_button]:bg-white', className)}>

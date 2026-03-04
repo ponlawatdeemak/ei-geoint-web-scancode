@@ -12,7 +12,7 @@ import LocationPinIcon from '@mui/icons-material/LocationPin'
 import InfoIcon from '@mui/icons-material/Info'
 
 import { layerIdConfig } from '@/components/common/map/config/map'
-import { GeoJSONSource } from 'maplibre-gl'
+import type { GeoJSONSource } from 'maplibre-gl'
 import useMapStore from '@/components/common/map/store/map'
 import SearchCoordinateHelpDialog from './SearchCoordinateHelpDialog'
 import useResponsive from '@/hook/responsive'
@@ -29,72 +29,95 @@ interface PinPlacerProps {
   onClose?: () => void
 }
 
+// --- DD regex patterns ---
+const DD_NUM = String.raw`-?\d+(?:\.\d+)?`
+const DM_PART = String.raw`(\d+)°\s*(\d+(?:\.\d+)?)'`
+const DMS_PART = String.raw`(\d{1,3})°\s*(\d{1,2})'\s*(\d+(?:\.\d+)?)"`
+
+const RE_DD = new RegExp(String.raw`^(${DD_NUM})\s*(?:,|\s+)\s*(${DD_NUM})$`)
+const RE_DM = new RegExp(String.raw`^${DM_PART}\s*([NS])?\s+${DM_PART}\s*([EW])?$`)
+const RE_DMS = new RegExp(String.raw`^${DMS_PART}\s*([NS])?\s+${DMS_PART}\s*([EW])?$`)
+
+function isValidLatLng(lat: number | undefined, lng: number | undefined): lat is number {
+  if (lat === undefined || lng === undefined) return false
+  if (Number.isNaN(lat) || Number.isNaN(lng)) return false
+  return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180
+}
+
+function applyHemisphere(value: number, dir: string | undefined, negativeLetter: string): number {
+  if (dir) return value * (dir === negativeLetter ? -1 : 1)
+  return value
+}
+
+function parseDM(value: string): [number, number] | null {
+  const matchDM = RE_DM.exec(value)
+  if (!matchDM) return null
+  let lat = Number.parseFloat(matchDM[1]) + Number.parseFloat(matchDM[2]) / 60
+  let lng = Number.parseFloat(matchDM[4]) + Number.parseFloat(matchDM[5]) / 60
+  lat = applyHemisphere(lat, matchDM[3], 'S')
+  lng = applyHemisphere(lng, matchDM[6], 'W')
+  return isValidLatLng(lat, lng) ? [lng, lat] : null
+}
+
+function parseDMS(value: string): [number, number] | null {
+  const matchDMS = RE_DMS.exec(value)
+  if (!matchDMS) return null
+  let lat =
+    +Number.parseFloat(matchDMS[1]) + Number.parseFloat(matchDMS[2]) / 60 + Number.parseFloat(matchDMS[3]) / 3600
+  let lng =
+    +Number.parseFloat(matchDMS[5]) + Number.parseFloat(matchDMS[6]) / 60 + Number.parseFloat(matchDMS[7]) / 3600
+  lat = applyHemisphere(lat, matchDMS[4], 'S')
+  lng = applyHemisphere(lng, matchDMS[8], 'W')
+  return isValidLatLng(lat, lng) ? [lng, lat] : null
+}
+
+function parseDD(value: string): [number, number] | null {
+  const matchDD = RE_DD.exec(value)
+  if (matchDD) {
+    const lat = Number.parseFloat(matchDD[1])
+    const lng = Number.parseFloat(matchDD[2])
+    return isValidLatLng(lat, lng) ? [lng, lat] : null
+  }
+  return parseDM(value) ?? parseDMS(value)
+}
+
+function parseUTM(value: string): [number, number] | null {
+  const match = /^(\d{1,2})([NS])[:\s]+(\d+(?:\.\d+)?)(?:\s*,\s*|\s+)(\d+(?:\.\d+)?)$/.exec(value)
+  const matchWithoutZone = /^(-?\d+(?:\.\d+)?)(?:\s*,\s*|\s+)(-?\d+(?:\.\d+)?)$/.exec(value)
+
+  let zone = 47
+  let isNorth = true
+  let easting: number | undefined
+  let northing: number | undefined
+
+  if (match) {
+    zone = Number.parseInt(match[1], 10)
+    isNorth = match[2].toUpperCase() === 'N'
+    easting = Number.parseFloat(match[3])
+    northing = Number.parseFloat(match[4])
+  } else if (matchWithoutZone) {
+    easting = Number.parseFloat(matchWithoutZone[1])
+    northing = Number.parseFloat(matchWithoutZone[2])
+  }
+
+  if (Number.isNaN(easting) || easting === undefined || Number.isNaN(northing) || northing === undefined) return null
+
+  const utmProj = `+proj=utm +zone=${zone} +datum=WGS84 +units=m +no_defs${isNorth ? '' : ' +south'}`
+  const [lng, lat] = proj4(utmProj, '+proj=longlat +datum=WGS84 +no_defs', [easting, northing])
+  return [lng, lat]
+}
+
+function parseMGRS(value: string): [number, number] | null {
+  const [lng, lat] = mgrs.toPoint(value.replaceAll(/\s+/g, ''))
+  return [lng, lat]
+}
+
 function toDecimalDegree(value: string, from: CoordSystem): [number, number] | null {
   try {
-    value = value.trim()
-    if (from === 'DD') {
-      const ddNum = String.raw`-?\d+(?:\.\d+)?`
-      const dmPart = String.raw`(\d+)°\s*(\d+(?:\.\d+)?)'`
-      const dmsPart = String.raw`(\d{1,3})°\s*(\d{1,2})'\s*(\d+(?:\.\d+)?)"`
-
-      const matchDD = new RegExp(String.raw`^(${ddNum})\s*(?:,|\s+)\s*(${ddNum})$`).exec(value)
-      const matchDM = new RegExp(String.raw`^${dmPart}\s*([NS])?\s+${dmPart}\s*([EW])?$`).exec(value)
-      const matchDMS = new RegExp(String.raw`^${dmsPart}\s*([NS])?\s+${dmsPart}\s*([EW])?$`).exec(value)
-      let lat: number | undefined, lng: number | undefined
-      if (matchDD) {
-        lat = Number.parseFloat(matchDD[1])
-        lng = Number.parseFloat(matchDD[2])
-      } else if (matchDM) {
-        lat = Number.parseFloat(matchDM[1]) * 1 + Number.parseFloat(matchDM[2]) / 60
-        lng = Number.parseFloat(matchDM[4]) * 1 + Number.parseFloat(matchDM[5]) / 60
-        if (matchDM[3]) lat *= matchDM[3] === 'S' ? -1 : 1
-        if (matchDM[6]) lng *= matchDM[6] === 'W' ? -1 : 1
-      } else if (matchDMS) {
-        lat =
-          +Number.parseFloat(matchDMS[1]) + Number.parseFloat(matchDMS[2]) / 60 + Number.parseFloat(matchDMS[3]) / 3600
-        lng =
-          +Number.parseFloat(matchDMS[5]) + Number.parseFloat(matchDMS[6]) / 60 + Number.parseFloat(matchDMS[7]) / 3600
-        if (matchDMS[4]) lat *= matchDMS[4] === 'S' ? -1 : 1
-        if (matchDMS[8]) lng *= matchDMS[8] === 'W' ? -1 : 1
-      }
-      if (
-        Number.isNaN(lat) ||
-        lat === undefined ||
-        Number.isNaN(lng) ||
-        lng === undefined ||
-        lat < -90 ||
-        lat > 90 ||
-        lng < -180 ||
-        lng > 180
-      )
-        return null
-      return [lng, lat]
-    } else if (from === 'UTM') {
-      const match = /^(\d{1,2})([NS])[:\s]+(\d+(?:\.\d+)?)(?:\s*,\s*|\s+)(\d+(?:\.\d+)?)$/.exec(value)
-      const matchWithoutZone = /^(-?\d+(?:\.\d+)?)(?:\s*,\s*|\s+)(-?\d+(?:\.\d+)?)$/.exec(value)
-      // console.log('match', match, matchWithoutZone)
-      let zone = 47,
-        isNorth = true,
-        easting: number | undefined,
-        northing: number | undefined
-      if (match) {
-        zone = Number.parseInt(match[1], 10)
-        isNorth = match[2].toUpperCase() === 'N'
-        easting = Number.parseFloat(match[3])
-        northing = Number.parseFloat(match[4])
-      } else if (matchWithoutZone) {
-        easting = Number.parseFloat(matchWithoutZone[1])
-        northing = Number.parseFloat(matchWithoutZone[2])
-      }
-      if (Number.isNaN(easting) || easting === undefined || Number.isNaN(northing) || northing === undefined)
-        return null
-      const utmProj = `+proj=utm +zone=${zone} +datum=WGS84 +units=m +no_defs${isNorth ? '' : ' +south'}`
-      const [lng, lat] = proj4(utmProj, '+proj=longlat +datum=WGS84 +no_defs', [easting, northing])
-      return [lng, lat]
-    } else if (from === 'MGRS') {
-      const [lng, lat] = mgrs.toPoint(value.replaceAll(/\s+/g, ''))
-      return [lng, lat]
-    }
+    const trimmed = value.trim()
+    if (from === 'DD') return parseDD(trimmed)
+    if (from === 'UTM') return parseUTM(trimmed)
+    if (from === 'MGRS') return parseMGRS(trimmed)
   } catch {
     return null
   }
@@ -164,7 +187,7 @@ const PinPlacer: React.FC<PinPlacerProps> = ({ map, disabled, onMapClick, onClos
 
   // --- Map event handlers ---
   const handleMapClick = useCallback(
-    (e: maplibregl.MapMouseEvent) => {
+    (_e: maplibregl.MapMouseEvent) => {
       if (!disabled) {
         onMapClick?.()
       }
@@ -193,9 +216,13 @@ const PinPlacer: React.FC<PinPlacerProps> = ({ map, disabled, onMapClick, onClos
           if (!map.hasImage(ICON_NAME)) {
             map.addImage(ICON_NAME, img)
           }
-        } catch {}
+        } catch {
+          // image may already exist
+        }
       }
-      img.onerror = () => {}
+      img.onerror = () => {
+        // icon load failed – non-critical
+      }
       img.src = '/map/current.svg'
       iconImageRef.current = img
     }
@@ -243,7 +270,9 @@ const PinPlacer: React.FC<PinPlacerProps> = ({ map, disabled, onMapClick, onClos
         if (!m.hasImage(ICON_NAME) && iconImageRef.current && iconLoadedRef.current) {
           try {
             m.addImage(ICON_NAME, iconImageRef.current)
-          } catch {}
+          } catch {
+            // image may already exist
+          }
         }
         if (!m.getSource(RESULT_SOURCE)) {
           const initialData = placedPinRef.current

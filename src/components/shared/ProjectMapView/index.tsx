@@ -37,6 +37,7 @@ import LeftPanel from './LeftPanel'
 import WeeklyPanelControls from './WeeklyPanelControls'
 import GroupCompareButtons from './GroupCompareButtons'
 import { findModelByKeyOrName as findModelByKeyOrNameUtil } from './utils/model'
+import { getFeatureConfidence } from './utils/helpers'
 import {
   processMapLayers as processMapLayersUtil,
   processGeoJsonLayers as processGeoJsonLayersUtil,
@@ -55,7 +56,6 @@ import { useDownloads } from './hooks/useDownloads'
 import { useFeaturePopup } from './hooks/useFeaturePopup'
 import ServiceIcon from './layer/LayerIcon/ServiceIcon'
 import RootModelIcon from './layer/LayerIcon/RootModelIcon'
-import useResponsive from '@/hook/responsive'
 
 type ProjectMapViewProps = {
   task?: Task // only in pageLevel task
@@ -447,20 +447,6 @@ const ProjectMapView = forwardRef<ProjectMapViewRef, ProjectMapViewProps>(
       if (allItvLayers && popupRef.current) popupRef.current.remove()
     }, [allItvLayers, popupRef])
 
-    // helper: normalized feature-like shape
-    type FeatureLike = { properties?: Record<string, unknown> }
-
-    // Extract helper: get feature confidence (stable - no dependencies)
-    const getFeatureConfidence = useCallback((feature: FeatureLike | null): number => {
-      if (!feature) return 100
-      const props: Record<string, unknown> = feature.properties ?? {}
-      const rawValue = props.confidence ?? props.confidence_mean ?? props.condidence ?? 1
-      let conf = typeof rawValue === 'number' ? rawValue : Number.parseFloat(String(rawValue))
-      if (Number.isNaN(conf)) conf = 1
-      if (conf <= 1) conf = conf * 100
-      return typeof conf === 'number' && !Number.isNaN(conf) ? conf : 100
-    }, [])
-
     // Manage maplibre layers via hook (creates/updates/cleans based on configs/state)
     useMapLibreLayers({
       mapId,
@@ -517,6 +503,42 @@ const ProjectMapView = forwardRef<ProjectMapViewRef, ProjectMapViewProps>(
       )
     }, [selectedGroup])
 
+    const getPanelClassName = useCallback(
+      () =>
+        `all 300ms bg-white transition-all duration-300 ${
+          isMobile ? 'flex h-full w-full flex-col' : 'flex-none overflow-visible'
+        }`,
+      [isMobile],
+    )
+
+    const getWidth = useCallback(() => {
+      if (isMobile) {
+        return showPanelLeft ? '100%' : '0'
+      } else {
+        return showPanelLeft ? '30%' : '0'
+      }
+    }, [isMobile, showPanelLeft])
+
+    const getPanelSx = useCallback(() => {
+      const position = isMobile ? 'absolute' : 'relative'
+      const zIndex = isMobile ? (showPanelLeft ? 120 : -1) : 20
+      const width = getWidth()
+      const maxWidth = isMobile ? 'auto' : showPanelLeft ? '30rem' : '0'
+      const minWidth = isMobile ? '0' : showPanelLeft ? '24rem' : '0'
+      const opacity = showPanelLeft ? 1 : 0
+      const pointerEvents = showPanelLeft ? 'auto' : 'none'
+
+      return {
+        position,
+        zIndex,
+        width,
+        maxWidth,
+        minWidth,
+        opacity,
+        pointerEvents,
+      } as const
+    }, [isMobile, showPanelLeft, getWidth])
+
     return (
       <Box className='flex h-full w-full grow'>
         {!isMobile && (
@@ -538,20 +560,7 @@ const ProjectMapView = forwardRef<ProjectMapViewRef, ProjectMapViewProps>(
           </Box>
         )}
         <Box className='relative flex min-h-0 w-full flex-row overflow-hidden'>
-          <Box
-            className={`all 300ms bg-white transition-all duration-300 ${
-              isMobile ? 'flex h-full w-full flex-col' : 'flex-none overflow-visible'
-            }`}
-            sx={{
-              position: isMobile ? 'absolute' : 'relative',
-              zIndex: isMobile ? (showPanelLeft ? 120 : -1) : 20,
-              width: isMobile ? (showPanelLeft ? '100%' : '0') : showPanelLeft ? '30%' : '0',
-              maxWidth: isMobile ? 'auto' : showPanelLeft ? '30rem' : '0',
-              minWidth: isMobile ? '0' : showPanelLeft ? '24rem' : '0',
-              opacity: showPanelLeft ? 1 : 0,
-              pointerEvents: showPanelLeft ? 'auto' : 'none',
-            }}
-          >
+          <Box className={getPanelClassName()} sx={getPanelSx()}>
             <LeftPanel
               isMobile={isMobile}
               showPanelLeft={showPanelLeft}

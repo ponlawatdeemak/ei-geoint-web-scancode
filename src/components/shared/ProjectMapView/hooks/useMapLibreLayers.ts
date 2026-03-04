@@ -261,6 +261,39 @@ export function useMapLibreLayers(params: {
     const registerHandler = useMapStore.getState().registerStyleDataHandler
     const unregisterHandler = useMapStore.getState().unregisterStyleDataHandler
 
+    const applyLayerVisibility = (m: maplibregl.Map, created: CreatedMapLibreLayers, configId: string) => {
+      const isVisible = visibilityRef.current[configId] ?? true
+      for (const lid of created.layerIds) {
+        if (m.getLayer(lid)) {
+          try {
+            m.setLayoutProperty(lid, 'visibility', isVisible ? 'visible' : 'none')
+          } catch {}
+        }
+      }
+    }
+
+    const applyVectorLayerFilters = (m: maplibregl.Map, created: CreatedMapLibreLayers, configId: string) => {
+      const [minTh, maxTh] = thresholdsRef.current[configId] ?? [0, 100]
+      const confExpr: maplibregl.ExpressionSpecification = [
+        'coalesce',
+        ['get', 'confidence'],
+        ['get', 'confidence_mean'],
+        1,
+      ]
+      const filter: maplibregl.ExpressionSpecification = [
+        'all',
+        ['>=', confExpr, minTh / 100],
+        ['<=', confExpr, maxTh / 100],
+      ]
+      for (const lid of created.layerIds) {
+        if (lid.includes('fill') || lid.includes('line') || lid.includes('point')) {
+          try {
+            if (m.getLayer(lid)) m.setFilter(lid, filter)
+          } catch {}
+        }
+      }
+    }
+
     const handler = (m: maplibregl.Map) => {
       for (const created of createdLayersRef.current.values()) {
         const firstLayerId = created.layerIds[0]
@@ -269,37 +302,10 @@ export function useMapLibreLayers(params: {
         const { configId, configType } = findConfigForLayer(firstLayerId)
         if (!configId) continue
 
-        // apply visibility from latest ref
-        const isVisible = visibilityRef.current[configId] ?? true
-        for (const lid of created.layerIds) {
-          if (m.getLayer(lid)) {
-            try {
-              m.setLayoutProperty(lid, 'visibility', isVisible ? 'visible' : 'none')
-            } catch {}
-          }
-        }
+        applyLayerVisibility(m, created, configId)
 
-        // apply filters for vector layers from latest thresholds
         if (configType === MapType.vector) {
-          const [minTh, maxTh] = thresholdsRef.current[configId] ?? [0, 100]
-          const confExpr: maplibregl.ExpressionSpecification = [
-            'coalesce',
-            ['get', 'confidence'],
-            ['get', 'confidence_mean'],
-            1,
-          ]
-          const filter: maplibregl.ExpressionSpecification = [
-            'all',
-            ['>=', confExpr, minTh / 100],
-            ['<=', confExpr, maxTh / 100],
-          ]
-          for (const lid of created.layerIds) {
-            if (lid.includes('fill') || lid.includes('line') || lid.includes('point')) {
-              try {
-                if (m.getLayer(lid)) m.setFilter(lid, filter)
-              } catch {}
-            }
-          }
+          applyVectorLayerFilters(m, created, configId)
         }
       }
     }

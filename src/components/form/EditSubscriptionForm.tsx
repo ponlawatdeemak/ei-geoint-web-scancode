@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm, type Resolver } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
@@ -16,11 +16,11 @@ import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import { useTranslation } from 'react-i18next'
 import { useSettings } from '@/hook/useSettings'
-import service from '@/api'
-import { PostSubscriptionDtoIn, PutSubscriptionDtoIn } from '@interfaces/index'
 import { useGlobalUI } from '@/providers/global-ui/GlobalUIContext'
 import { Checkbox, Divider } from '@mui/material'
-import { buildHierarchicalLookup, HierarchicalLookupNode } from '@/utils/transformData'
+import type { HierarchicalLookupNode } from '@/utils/transformData'
+import { useHierarchicalCheckboxes } from './hooks/useHierarchicalCheckboxes'
+import { useSubscriptionForm } from './hooks/useSubscriptionForm'
 
 type Props = {
   subscriptionId?: string
@@ -32,67 +32,52 @@ type FormValues = {
   modelIds: number[]
 }
 
+const NodeItem: React.FC<{
+  node: HierarchicalLookupNode & { parentModelId?: number | null }
+  language: string
+  isNodeChecked: (node: HierarchicalLookupNode) => boolean
+  isNodeIndeterminate: (node: HierarchicalLookupNode) => boolean
+  toggleNode: (node: HierarchicalLookupNode, checked: boolean) => void
+}> = ({ node, language, isNodeChecked, isNodeIndeterminate, toggleNode }) => {
+  const hasChildren = !!node.children && node.children.length > 0
+  const isRoot = !node.parentModelId && hasChildren
+
+  return (
+    <div className={`flex flex-col ${isRoot ? 'md:col-span-2' : ''}`}>
+      <div className='flex items-center'>
+        <Checkbox
+          checked={isNodeChecked(node)}
+          indeterminate={isNodeIndeterminate(node)}
+          onChange={(e) => toggleNode(node, e.target.checked)}
+        />
+        <InputLabel className={isRoot ? 'font-medium' : undefined}>
+          {language === 'th' ? node.name : node.nameEn}
+        </InputLabel>
+      </div>
+      {hasChildren ? (
+        <div className={`ml-8 ${isRoot ? 'grid md:grid-cols-2' : ''}`}>
+          {(node.children || []).map((child) => (
+            <NodeItem
+              key={child.id}
+              node={child}
+              language={language}
+              isNodeChecked={isNodeChecked}
+              isNodeIndeterminate={isNodeIndeterminate}
+              toggleNode={toggleNode}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 const EditSubscriptionForm: React.FC<Props> = ({ subscriptionId }) => {
   const router = useRouter()
   const { t } = useTranslation('common')
   const { language } = useSettings()
-  const { showLoading, hideLoading, showAlert } = useGlobalUI()
-  const [loading, setLoading] = useState(false)
-  const [services, setServices] = useState<HierarchicalLookupNode[]>([])
-  const [selectedModelIds, setSelectedModelIds] = useState<number[]>([])
-
-  // Helpers for hierarchical checkbox behavior
-  const getLeafIds = (node: HierarchicalLookupNode): number[] => {
-    if (!node.children || node.children.length === 0) return [node.id]
-    return node.children.flatMap((child) => getLeafIds(child))
-  }
-
-  const isNodeChecked = (node: HierarchicalLookupNode) => {
-    const leafIds = getLeafIds(node)
-    if (leafIds.length === 0) return false
-    return leafIds.every((id) => selectedModelIds.includes(id))
-  }
-
-  const isNodeIndeterminate = (node: HierarchicalLookupNode) => {
-    const leafIds = getLeafIds(node)
-    if (leafIds.length === 0) return false
-    const some = leafIds.some((id) => selectedModelIds.includes(id))
-    return some && !isNodeChecked(node)
-  }
-
-  const toggleNode = (node: HierarchicalLookupNode, checked: boolean) => {
-    const leafIds = getLeafIds(node)
-    setSelectedModelIds((prev) => {
-      const set = new Set(prev)
-      if (checked) {
-        for (const id of leafIds) set.add(id)
-      } else {
-        for (const id of leafIds) set.delete(id)
-      }
-      return Array.from(set)
-    })
-  }
-
-  // Global helpers for top-level "select all"
-  const getAllLeafIds = () => services.flatMap((s) => getLeafIds(s))
-
-  const isAllChecked = () => {
-    const all = getAllLeafIds()
-    if (all.length === 0) return false
-    return all.every((id) => selectedModelIds.includes(id))
-  }
-
-  const isAllIndeterminate = () => {
-    const all = getAllLeafIds()
-    if (all.length === 0) return false
-    const some = all.some((id) => selectedModelIds.includes(id))
-    return some && !isAllChecked()
-  }
-
-  const toggleAll = (checked: boolean) => {
-    const all = getAllLeafIds()
-    setSelectedModelIds(() => (checked ? Array.from(new Set(all)) : []))
-  }
+  const { showAlert } = useGlobalUI()
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
 
   const schema = Yup.object().shape({
     name: Yup.string().required(),
@@ -114,71 +99,39 @@ const EditSubscriptionForm: React.FC<Props> = ({ subscriptionId }) => {
     },
   })
 
+  const { selectedModelIds, setSelectedModelIds, isNodeChecked, isNodeIndeterminate, toggleNode, getLeafIds } =
+    useHierarchicalCheckboxes()
+
+  const { loading, services, loadData, saveData, deleteSubscription } = useSubscriptionForm({
+    subscriptionId,
+    setValue,
+    setSelectedModelIds,
+  })
+
   useEffect(() => {
-    const load = async () => {
-      try {
-        showLoading()
-        const services = await service.lookup.get({ name: 'services' })
-        const models = await service.lookup.getModelAll()
-        setServices(
-          services.map((s) => ({
-            ...s,
-            children: buildHierarchicalLookup(
-              models.filter((m) => m.serviceId === s.id),
-              'parentModelId',
-            ),
-          })),
-        )
-        if (subscriptionId) {
-          const sub = await service.subscriptions.get(subscriptionId)
-          setValue('name', sub.name || '')
-          setValue('nameEn', sub.nameEn || '')
-          const ids = (sub.subscriptionModels || []).map(({ modelId }) => modelId)
-          setSelectedModelIds(ids)
-          setValue('modelIds', ids, { shouldValidate: true })
-        }
-      } catch (err: any) {
-        showAlert({
-          status: 'error',
-          errorCode: err?.message,
-        })
-      } finally {
-        hideLoading()
-      }
-    }
-    void load()
-  }, [subscriptionId, setValue, showLoading, hideLoading, showAlert])
+    void loadData()
+  }, [loadData])
 
-  const save = async (data: FormValues) => {
-    setLoading(true)
-    try {
-      // Build payload matching PostSubscriptionDtoIn | PutSubscriptionDtoIn
-      const payload: Partial<PostSubscriptionDtoIn | PutSubscriptionDtoIn> = {
-        name: data.name,
-        nameEn: data.nameEn,
-        modelIds: selectedModelIds,
-      }
+  // Global helpers for top-level "select all"
+  const allLeafIds = useMemo(() => services.flatMap((s) => getLeafIds(s)), [services, getLeafIds])
 
-      if (subscriptionId) {
-        // update existing subscription
-        await service.subscriptions.update(subscriptionId, payload as PutSubscriptionDtoIn)
-      } else {
-        // create new subscription
-        await service.subscriptions.create(payload as PostSubscriptionDtoIn)
-      }
+  const isAllChecked = useCallback(() => {
+    if (allLeafIds.length === 0) return false
+    return allLeafIds.every((id) => selectedModelIds.includes(id))
+  }, [allLeafIds, selectedModelIds])
 
-      showAlert({ status: 'success', title: t('alert.saveSuccess') })
+  const isAllIndeterminate = useCallback(() => {
+    if (allLeafIds.length === 0) return false
+    const some = allLeafIds.some((id) => selectedModelIds.includes(id))
+    return some && !isAllChecked()
+  }, [allLeafIds, selectedModelIds, isAllChecked])
 
-      router.replace('/subscription')
-    } catch (err: any) {
-      showAlert({
-        status: 'error',
-        errorCode: err?.message,
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
+  const toggleAll = useCallback(
+    (checked: boolean) => {
+      setSelectedModelIds(() => (checked ? Array.from(new Set(allLeafIds)) : []))
+    },
+    [allLeafIds, setSelectedModelIds],
+  )
 
   // Sync selectedModelIds into form value so validation runs
   useEffect(() => {
@@ -191,7 +144,7 @@ const EditSubscriptionForm: React.FC<Props> = ({ subscriptionId }) => {
       content: t('form.subscriptionForm.confirmContent'),
       showCancel: true,
       onConfirm: () => {
-        void save(data as FormValues)
+        void saveData(data as FormValues, selectedModelIds)
       },
     })
   }
@@ -200,24 +153,10 @@ const EditSubscriptionForm: React.FC<Props> = ({ subscriptionId }) => {
     showAlert({
       status: 'confirm-delete',
       showCancel: true,
-      onConfirm: async () => {
-        setLoading(true)
-        try {
-          await service.subscriptions.delete({ ids: [subscriptionId as string] })
-          router.replace('/subscription')
-        } catch (err: any) {
-          showAlert({
-            status: 'error',
-            errorCode: err?.message,
-          })
-        } finally {
-          setLoading(false)
-        }
-      },
+      onConfirm: deleteSubscription,
     })
   }
 
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const handleMenuOpen = (e: React.MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget)
 
   return (
@@ -333,30 +272,16 @@ const EditSubscriptionForm: React.FC<Props> = ({ subscriptionId }) => {
             </div>
             <Divider />
             <div className='grid md:grid-cols-2'>
-              {/* Recursive renderer for hierarchical nodes. Only leaf node ids are stored in selectedModelIds. */}
-              {service.children?.map(function renderNode(node) {
-                const hasChildren = !!node.children && node.children.length > 0
-                const isRoot = !(node as any).parentModelId && hasChildren
-                return (
-                  <div key={node.id} className={`flex flex-col ${isRoot ? 'md:col-span-2' : ''}`}>
-                    <div className='flex items-center'>
-                      <Checkbox
-                        checked={isNodeChecked(node)}
-                        indeterminate={isNodeIndeterminate(node)}
-                        onChange={(e) => toggleNode(node, e.target.checked)}
-                      />
-                      <InputLabel className={isRoot ? 'font-medium' : undefined}>
-                        {language === 'th' ? node.name : node.nameEn}
-                      </InputLabel>
-                    </div>
-                    {hasChildren ? (
-                      <div className={`ml-8 ${isRoot ? 'grid md:grid-cols-2' : ''}`}>
-                        {(node.children || []).map(renderNode)}
-                      </div>
-                    ) : null}
-                  </div>
-                )
-              })}
+              {service.children?.map((node) => (
+                <NodeItem
+                  key={node.id}
+                  node={node}
+                  language={language}
+                  isNodeChecked={isNodeChecked}
+                  isNodeIndeterminate={isNodeIndeterminate}
+                  toggleNode={toggleNode}
+                />
+              ))}
             </div>
           </div>
         ))}
