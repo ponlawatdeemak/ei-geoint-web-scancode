@@ -585,7 +585,9 @@ const EditTaskForm: React.FC<Props> = ({
               onChange={(e) => toggleNode(node, e.target.checked)}
               disabled={loading || disabled}
             />
-            <span className={isRoot ? 'font-medium' : undefined}>{language === Language.TH ? node.name : node.nameEn}</span>
+            <span className={isRoot ? 'font-medium' : undefined}>
+              {language === Language.TH ? node.name : node.nameEn}
+            </span>
           </div>
           {hasChildren ? (
             <div className={`ml-8 ${isRoot ? 'grid md:grid-cols-2' : ''}`}>

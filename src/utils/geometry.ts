@@ -159,4 +159,10 @@ export function formatMGRS(mgrs: string): string {
   return `${gzd} ${square} ${easting} ${northing}`
 }
 
-export default { extractCoordsFromGeometry, computeExtentFromGeometries, zoomToGeometries, zoomToThaiExtent, formatMGRS }
+export default {
+  extractCoordsFromGeometry,
+  computeExtentFromGeometries,
+  zoomToGeometries,
+  zoomToThaiExtent,
+  formatMGRS,
+}

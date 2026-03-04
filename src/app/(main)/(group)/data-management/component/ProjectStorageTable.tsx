@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { UsedStorageProjectItem } from '@/api/data-management'
 import { bytesToTB } from '@/utils/convert'
 import { SortType } from '@interfaces/index'
-import { IconButton } from '@mui/material'
+import { IconButton, Tooltip } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
 import MuiTableHOC, { MuiTableColumn } from '@/components/common/display/MuiTableHOC'
 import Empty from '@/components/common/empty'
@@ -58,9 +58,13 @@ const ProjectStorageTable = ({
       {
         id: 'name',
         label: t('dataManagement.project'),
-        className: 'min-w-200',
+        className: 'min-w-200 overflow-hidden',
         sortable: false,
-        render: (row) => row.name || '-',
+        render: (row) => (
+          <Tooltip title={row.name || '-'} arrow>
+            <div className='truncate'>{row.name || '-'}</div>
+          </Tooltip>
+        ),
       },
       {
         id: 'total',
@@ -91,32 +95,34 @@ const ProjectStorageTable = ({
     [t, handleOpenModal],
   )
 
-  let content = null
-
-  if (data.length === 0) {
-    if (!isLoading) {
-      content = <Empty message={t('table.noData')} className='py-10' />
+  const renderTableContent = () => {
+    if (data.length > 0) {
+      return (
+        <MuiTableHOC
+          columns={columns}
+          rows={data}
+          rowKey={(row) => row.id}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          totalRows={total}
+          onPageChange={onPageChange}
+          onRowsPerPageChange={onRowsPerPageChange}
+          sortState={sortState}
+          onSortChange={onSortChange}
+        />
+      )
     }
-  } else {
-    content = (
-      <MuiTableHOC
-        columns={columns}
-        rows={data}
-        rowKey={(row) => row.id}
-        page={page}
-        rowsPerPage={rowsPerPage}
-        totalRows={total}
-        onPageChange={onPageChange}
-        onRowsPerPageChange={onRowsPerPageChange}
-        sortState={sortState}
-        onSortChange={onSortChange}
-      />
-    )
+
+    if (isLoading) {
+      return null
+    }
+
+    return <Empty message={t('table.noData')} className='py-10' />
   }
 
   return (
     <>
-      <div className='rounded-lg bg-white'>{content}</div>
+      <div className='rounded-lg bg-white'>{renderTableContent()}</div>
 
       <Dialog
         open={modalOpen}

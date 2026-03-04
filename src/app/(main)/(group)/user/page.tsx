@@ -59,8 +59,7 @@ const UserPage = () => {
       render: (row) => {
         let organizationName = ''
         if (row.organization) {
-          organizationName =
-            language === Language.TH ? row.organization.name : row.organization.nameEn
+          organizationName = language === Language.TH ? row.organization.name : row.organization.nameEn
         }
         return organizationName
       },
@@ -87,7 +86,11 @@ const UserPage = () => {
                 : a.subscription.nameEn.localeCompare(b.subscription.nameEn),
             )
             .map(({ subscription }, idx) => (
-              <Chip key={subscription?.id || idx} label={language === Language.TH ? subscription.name : subscription.nameEn} size='small' />
+              <Chip
+                key={subscription?.id || idx}
+                label={language === Language.TH ? subscription.name : subscription.nameEn}
+                size='small'
+              />
             ))}
         </div>
       ),

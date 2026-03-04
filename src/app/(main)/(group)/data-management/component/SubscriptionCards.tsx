@@ -13,6 +13,7 @@ import LinearProgress from '@mui/material/LinearProgress'
 import Divider from '@mui/material/Divider'
 import ExpiredSubscriptionsDialog from './modal/ExpiredSubscriptionsDialog'
 import Empty from '@/components/common/empty'
+import { Tooltip } from '@mui/material'
 
 interface SubscriptionCardsProps {
   organizationId?: string
@@ -107,8 +108,10 @@ const SubscriptionCard = ({ subscription, language }: SubscriptionCardProps) => 
   }, [subscription.startAt, subscription.endAt])
 
   return (
-    <div className='w-full rounded-lg border border-[#D9DAD9] bg-white p-4 shadow-sm sm:w-[calc(50%-8px)] xl:w-[calc(25%-12px)]'>
-      <h2 className='mb-4 text-start font-semibold text-md'>{subscriptionName}</h2>
+    <div className='w-full rounded-lg border border-[#D9DAD9] bg-white p-4 shadow-sm sm:w-[calc(50%-8px)] xl:w-[calc(25%-12px)] overflow-hidden'>
+      <Tooltip title={subscriptionName} arrow>
+        <h2 className='mb-4 truncate text-start font-semibold text-md'>{subscriptionName}</h2>
+      </Tooltip>
 
       {/* วันที่ */}
       <div className='mb-2 flex items-start justify-between px-2'>

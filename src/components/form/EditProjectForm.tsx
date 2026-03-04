@@ -99,9 +99,7 @@ const EditProjectForm: React.FC<Props> = ({
   )
 
   const renderRole = useCallback(
-    (row: any) => (
-      <Chip label={language === 'th' ? row.role.name : row.role.nameEn} color='primary' size='small' />
-    ),
+    (row: any) => <Chip label={language === 'th' ? row.role.name : row.role.nameEn} color='primary' size='small' />,
     [language],
   )
 
@@ -116,61 +114,67 @@ const EditProjectForm: React.FC<Props> = ({
     [sortSubscriptions, renderSubscriptionChip],
   )
 
-  const userColumns: MuiTableColumn<any>[] = useMemo(() => [
-    {
-      id: 'name',
-      label: t('form.searchUser.column.name'),
-      className: 'min-w-60',
-      sortable: true,
-      render: renderUserName,
-    },
-    {
-      id: 'email',
-      label: t('form.searchUser.column.email'),
-      className: 'min-w-60',
-      sortable: true,
-      render: renderUserEmail,
-    },
-    {
-      id: 'organization',
-      label: t('form.searchUser.column.organization'),
-      className: 'min-w-60',
-      sortable: true,
-      render: renderOrganization,
-    },
-    {
-      id: 'role',
-      label: t('form.searchUser.column.role'),
-      className: 'min-w-40',
-      sortable: true,
-      render: renderRole,
-    },
-    {
-      id: 'subscriptions',
-      label: t('form.searchUser.column.subscriptions'),
-      className: 'min-w-60',
-      render: renderSubscriptions,
-    },
-  ], [t, renderUserName, renderUserEmail, renderOrganization, renderRole, renderSubscriptions])
+  const userColumns: MuiTableColumn<any>[] = useMemo(
+    () => [
+      {
+        id: 'name',
+        label: t('form.searchUser.column.name'),
+        className: 'min-w-60',
+        sortable: true,
+        render: renderUserName,
+      },
+      {
+        id: 'email',
+        label: t('form.searchUser.column.email'),
+        className: 'min-w-60',
+        sortable: true,
+        render: renderUserEmail,
+      },
+      {
+        id: 'organization',
+        label: t('form.searchUser.column.organization'),
+        className: 'min-w-60',
+        sortable: true,
+        render: renderOrganization,
+      },
+      {
+        id: 'role',
+        label: t('form.searchUser.column.role'),
+        className: 'min-w-40',
+        sortable: true,
+        render: renderRole,
+      },
+      {
+        id: 'subscriptions',
+        label: t('form.searchUser.column.subscriptions'),
+        className: 'min-w-60',
+        render: renderSubscriptions,
+      },
+    ],
+    [t, renderUserName, renderUserEmail, renderOrganization, renderRole, renderSubscriptions],
+  )
 
   const getRolesOptions = useCallback(async () => await service.lookup.get({ name: 'roles' }), [])
 
-  const searchUserFiltersConfig: FilterFieldConfig[] = useMemo(() => [
-    {
-      name: 'keyword',
-      label: '',
-      type: 'text',
-      placeholder: 'form.searchUser.filter.keywordPlaceholder',
-      isPrimary: true,
-    },
-    {
-      name: 'roleId',
-      label: 'form.searchUser.filter.role',
-      type: 'select',
-      minWidth: 100,
-      options: getRolesOptions,
-    },
-  ], [getRolesOptions])
+  const searchUserFiltersConfig: FilterFieldConfig[] = useMemo(
+    () => [
+      {
+        name: 'keyword',
+        label: '',
+        type: 'text',
+        placeholder: 'form.searchUser.filter.keywordPlaceholder',
+        isPrimary: true,
+      },
+      {
+        name: 'roleId',
+        label: 'form.searchUser.filter.role',
+        type: 'select',
+        minWidth: 100,
+        options: getRolesOptions,
+      },
+    ],
+    [getRolesOptions],
+  )
 
   const schema = Yup.object().shape({
     name: Yup.string().required(),
@@ -347,44 +351,50 @@ const EditProjectForm: React.FC<Props> = ({
     void loadInitialData()
   }, [loadInitialData])
 
-  const save = useCallback(async (data: FormValues) => {
-    setLoading(true)
-    try {
-      const payload: Partial<PostProjectDtoIn | PutProjectDtoIn> = {
-        name: data.name,
-        detail: data.detail,
-        organizationId: data.organizationId,
-        userIds: selectedUsers.map((u) => u.id),
+  const save = useCallback(
+    async (data: FormValues) => {
+      setLoading(true)
+      try {
+        const payload: Partial<PostProjectDtoIn | PutProjectDtoIn> = {
+          name: data.name,
+          detail: data.detail,
+          organizationId: data.organizationId,
+          userIds: selectedUsers.map((u) => u.id),
+        }
+
+        if (projectId) {
+          await service.projects.update(projectId, payload as PutProjectDtoIn)
+        } else {
+          await service.projects.create(payload as PostProjectDtoIn)
+        }
+
+        showAlert({ status: 'success', title: t('alert.saveSuccess') })
+
+        router.replace('/project')
+      } catch (err: any) {
+        showAlert({
+          status: 'error',
+          errorCode: err?.message,
+        })
+      } finally {
+        setLoading(false)
       }
+    },
+    [projectId, selectedUsers, t, showAlert, router],
+  )
 
-      if (projectId) {
-        await service.projects.update(projectId, payload as PutProjectDtoIn)
-      } else {
-        await service.projects.create(payload as PostProjectDtoIn)
-      }
-
-      showAlert({ status: 'success', title: t('alert.saveSuccess') })
-
-      router.replace('/project')
-    } catch (err: any) {
+  const onSubmit = useCallback(
+    (data: unknown) => {
+      const confirmSubmit = () => save(data as FormValues)
       showAlert({
-        status: 'error',
-        errorCode: err?.message,
+        status: 'confirm-save',
+        content: t('form.projectForm.confirmContent'),
+        showCancel: true,
+        onConfirm: confirmSubmit,
       })
-    } finally {
-      setLoading(false)
-    }
-  }, [projectId, selectedUsers, t, showAlert, router])
-
-  const onSubmit = useCallback((data: unknown) => {
-    const confirmSubmit = () => save(data as FormValues)
-    showAlert({
-      status: 'confirm-save',
-      content: t('form.projectForm.confirmContent'),
-      showCancel: true,
-      onConfirm: confirmSubmit,
-    })
-  }, [showAlert, t, save])
+    },
+    [showAlert, t, save],
+  )
 
   const confirmDelete = useCallback(async () => {
     setLoading(true)
@@ -500,10 +510,7 @@ const EditProjectForm: React.FC<Props> = ({
                     <MoreVertIcon />
                   </Button>
                   <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-                    <MenuItem
-                      className='text-error!'
-                      onClick={handleMenuDelete}
-                    >
+                    <MenuItem className='text-error!' onClick={handleMenuDelete}>
                       {t('button.delete')}
                     </MenuItem>
                   </Menu>

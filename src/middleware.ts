@@ -4,7 +4,11 @@ import { authPathPrefix, Roles } from '@interfaces/index'
 
 export const config = {
   // Exclude _next/image, _next/static, and all media extensions except .txt and .xml
-  matcher: ['/((?!_next/static|_next/image|.*\\.(?:ico|png|jpg|jpeg|svg|gif|webp|css|js|woff|woff2|ttf|eot)).*)', '/', '/(api|trpc)(.*)'],
+  matcher: [
+    '/((?!_next/static|_next/image|.*\\.(?:ico|png|jpg|jpeg|svg|gif|webp|css|js|woff|woff2|ttf|eot)).*)',
+    '/',
+    '/(api|trpc)(.*)',
+  ],
 }
 
 // Pre-generated hashes for inline styles (Emotion/MUI client-side injection)
@@ -86,8 +90,11 @@ export async function middleware(req: NextRequest) {
 
   // --- CSP: Read API URLs from environment (extract origin only, no path) ---
   const getOrigin = (url?: string) => {
-    try { return url ? new URL(url).origin : '' }
-    catch { return url ?? '' }
+    try {
+      return url ? new URL(url).origin : ''
+    } catch {
+      return url ?? ''
+    }
   }
   const apiOrigin = getOrigin(process.env.API_URL)
   const mapApiOrigin = getOrigin(process.env.API_URL_MAP)
@@ -103,7 +110,7 @@ export async function middleware(req: NextRequest) {
     `style-src-attr 'self' ${styleHashesString}`,
     `img-src 'self' blob: data: ${apiOrigin} ${mapApiOrigin} ${thaicomApiOrigin} https://tile.googleapis.com https://mt1.google.com https://tile.openstreetmap.org https://api.maptiler.com https://basemaps.cartocdn.com https://iris-ap-southeast-7-811478435729.s3.ap-southeast-7.amazonaws.com`,
     `font-src 'self' https://fonts.gstatic.com data:`,
-    `connect-src 'self' ${apiOrigin} ${mapApiOrigin} ${thaicomApiOrigin} ${wssUploadOrigin} https://tile.googleapis.com https://places.googleapis.com https://mt1.google.com https://api.maptiler.com https://tile.openstreetmap.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://tiles-a.basemaps.cartocdn.com https://tiles-b.basemaps.cartocdn.com https://tiles-c.basemaps.cartocdn.com https://tiles-d.basemaps.cartocdn.com https://iris-ap-southeast-7-811478435729.s3.ap-southeast-7.amazonaws.com${process.env.NODE_ENV === 'development' ? ' http://localhost:*' : ''}`,
+    `connect-src 'self' ${apiOrigin} ${mapApiOrigin} ${thaicomApiOrigin} ${wssUploadOrigin} https://tile.googleapis.com https://places.googleapis.com https://mt1.google.com https://api.maptiler.com https://tile.openstreetmap.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://tiles-a.basemaps.cartocdn.com https://tiles-b.basemaps.cartocdn.com https://tiles-c.basemaps.cartocdn.com https://tiles-d.basemaps.cartocdn.com https://iris-ap-southeast-7-811478435729.s3.ap-southeast-7.amazonaws.com${process.env.NODE_ENV === 'development' ? process.env.NEXTAUTH_URL : ''}`,
     `worker-src 'self' blob:`,
     `frame-src 'self'`,
     `base-uri 'self'`,
@@ -193,7 +200,7 @@ function handleRoleBasedAccess(
   pathname: string,
   origin: string,
   applyCSP: (response: NextResponse) => NextResponse,
-  requestHeaders: Headers
+  requestHeaders: Headers,
 ) {
   const allowedPaths = protectedPaths[token.roleId as keyof typeof protectedPaths]
   const allProtectedPaths = Object.values(protectedPaths).flat()

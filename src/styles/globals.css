@@ -382,25 +382,22 @@ body .slick-slide {
     display: none !important;
   }
   .mobile-landscape-scroll {
-      overflow-y: auto !important;
-      height: 100% !important;
+    overflow-y: auto !important;
+    height: 100% !important;
   }
 }
-
 
 @media (min-width: 2880px) {
   html {
     font-size: 1.5rem;
-
   }
   :root {
     --mui-shape-borderRadius: 6px;
   }
 
   .print-map-dialog .maplibregl-control-container .maplibregl-ctrl-attrib {
-    zoom:0.5;
+    zoom: 0.5;
   }
-  
 }
 
 @media (min-width: 3840px) {
@@ -408,4 +405,3 @@ body .slick-slide {
     font-size: 2rem;
   }
 }
-

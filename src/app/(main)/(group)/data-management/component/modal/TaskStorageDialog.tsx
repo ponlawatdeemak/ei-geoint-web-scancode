@@ -177,9 +177,7 @@ const TaskStorageDialog = ({ open, onClose, projectId, name, organizationId }: T
   return (
     <Dialog open={open} onClose={handleClose} maxWidth='xl' fullWidth>
       <DialogTitle>{name}</DialogTitle>
-      <DialogContent className='h-[500px]'>
-        {renderContent()}
-      </DialogContent>
+      <DialogContent className='h-[500px]'>{renderContent()}</DialogContent>
       <DialogActions>
         <Button onClick={handleClose} sx={{ color: '#185A9D' }}>
           {t('button.close')}

@@ -53,7 +53,11 @@ const OrganizationPage = () => {
                 : a.subscription.nameEn.localeCompare(b.subscription.nameEn),
             )
             .map(({ subscription }) => (
-              <Chip key={subscription.id} label={language === Language.TH ? subscription.name : subscription.nameEn} size='small' />
+              <Chip
+                key={subscription.id}
+                label={language === Language.TH ? subscription.name : subscription.nameEn}
+                size='small'
+              />
             ))}
         </div>
       ),

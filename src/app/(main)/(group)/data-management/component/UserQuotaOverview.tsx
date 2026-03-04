@@ -7,12 +7,13 @@ import { useSettings } from '@/hook/useSettings'
 import { useProfileStore } from '@/hook/useProfileStore'
 import service from '@/api'
 import { GetOrganizationDtoOut, GetUsersDataManagementDtoOut, Roles } from '@interfaces/index'
-import { ArcElement, Chart as ChartJS, Tooltip } from 'chart.js'
+import { ArcElement, Chart as ChartJS, Tooltip as ChartTooltip } from 'chart.js'
 import { Doughnut } from 'react-chartjs-2'
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount'
 import PersonIcon from '@mui/icons-material/Person'
 import PersonSearchIcon from '@mui/icons-material/PersonSearch'
-ChartJS.register(ArcElement, Tooltip)
+import { Tooltip } from '@mui/material'
+ChartJS.register(ArcElement, ChartTooltip)
 
 interface OrganizationHeaderProps {
   organizationId: string
@@ -53,8 +54,10 @@ const OrganizationHeader = ({ organizationId }: OrganizationHeaderProps) => {
   return (
     <div className='rounded-lg bg-white p-4'>
       {/* ชื่อหน่วยงาน */}
-      <div className='mb-6 flex items-center justify-center'>
-        <h1 className='font-semibold text-2xl'>{organizationName}</h1>
+      <div className='mb-6 flex items-center justify-center text-center overflow-hidden'>
+        <Tooltip title={organizationName} arrow>
+          <h1 className='truncate font-semibold text-2xl'>{organizationName}</h1>
+        </Tooltip>
       </div>
 
       {/* ส่วนจำนวนผู้ใช้งาน */}

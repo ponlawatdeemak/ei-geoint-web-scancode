@@ -74,7 +74,11 @@ const WeeklyPanelControls: React.FC<Props> = ({
                     '!text-white': isChartOpen,
                     'text-header-blue': !isChartOpen,
                   })}
-                  sx={{ width: '1rem', height: '1rem', color: isChartOpen ? 'white' : 'var(--color-text-icon-primary)' }}
+                  sx={{
+                    width: '1rem',
+                    height: '1rem',
+                    color: isChartOpen ? 'white' : 'var(--color-text-icon-primary)',
+                  }}
                 />
               </IconButton>
             </div>

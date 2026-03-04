@@ -122,9 +122,7 @@ const ExpiredSubscriptionsDialog = ({ open, onClose, organizationId }: ExpiredSu
   return (
     <Dialog open={open} onClose={onClose} maxWidth='xl' fullWidth>
       <DialogTitle>{t('dataManagement.expiredSubscriptions')}</DialogTitle>
-      <DialogContent className='h-[500px]'>
-        {renderContent()}
-      </DialogContent>
+      <DialogContent className='h-[500px]'>{renderContent()}</DialogContent>
       <DialogActions>
         <Button onClick={onClose} sx={{ color: '#185A9D' }}>
           {t('button.close')}
