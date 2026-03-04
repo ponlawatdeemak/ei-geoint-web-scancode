@@ -158,7 +158,7 @@ const PhotoLocator: FC<PhotoLocatorProps> = ({ photoList, setPhotoList, onClose,
       URL.revokeObjectURL(url)
     }
     img.src = url
-  }, [mapLocator, is2K])
+  }, [mapLocator, is2K, redPinSvg])
 
   const initMapLayer = useCallback(() => {
     initInfoLayer()
@@ -268,6 +268,30 @@ const PhotoLocator: FC<PhotoLocatorProps> = ({ photoList, setPhotoList, onClose,
     }
   }, [selectedList, onCancelLocateAddress])
 
+  const handleDeleteConfirm = useCallback(
+    async (uploadIds: string[]) => {
+      if (!layerInfo) return
+      const featureList = layerInfo.features.filter((feature) => !uploadIds.includes(feature.photoUploadId as string))
+      const param: UpdateItvLayerDtoIn = {
+        projectId: layerInfo.projectId,
+        id: layerInfo.id,
+        features: featureList,
+        name: layerInfo.name,
+        uploadIdListDelete: uploadIds,
+      }
+      try {
+        await importToVisualize.updateLayer(param)
+        setLayerInfo({ ...layerInfo, features: featureList })
+        setPhotoList((prev) => prev.filter((photo) => !uploadIds.includes(photo.uploadId)))
+        showAlert({ status: 'success', title: t('alert.saveSuccess') })
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        showAlert({ status: 'error', errorCode: errorMessage })
+      }
+    },
+    [layerInfo, t, showAlert, setLayerInfo, setPhotoList],
+  )
+
   const onDelete = useCallback(
     (uploadIds: string[]) => {
       // ลบรายการรูปภาพที่ไม่มีตำแหน่ง
@@ -275,101 +299,98 @@ const PhotoLocator: FC<PhotoLocatorProps> = ({ photoList, setPhotoList, onClose,
       showAlert({
         status: 'confirm-save',
         showCancel: true,
-        async onConfirm() {
-          const featureList = layerInfo.features.filter(
-            (feature) => !uploadIds.includes(feature.photoUploadId as string),
-          )
-          const param: UpdateItvLayerDtoIn = {
-            projectId: layerInfo.projectId,
-            id: layerInfo.id,
-            features: featureList,
-            name: layerInfo.name,
-            uploadIdListDelete: uploadIds,
-          }
-          try {
-            await importToVisualize.updateLayer(param)
-            setLayerInfo({ ...layerInfo, features: featureList })
-            setPhotoList((prev) => prev.filter((photo) => !uploadIds.includes(photo.uploadId)))
-            showAlert({ status: 'success', title: t('alert.saveSuccess') })
-          } catch (error: any) {
-            showAlert({ status: 'error', errorCode: error?.message })
-          }
-        },
+        onConfirm: () => handleDeleteConfirm(uploadIds),
       })
     },
-    [layerInfo, t, showAlert, setLayerInfo, setPhotoList],
+    [layerInfo, showAlert, handleDeleteConfirm],
   )
+
+  const transformPhotoWithGeometry = useCallback(
+    (photo: ItvPhotoFeature, photoGroupId: string | null) => {
+      const selectedIds = selectedList.map((item) => item.id)
+      if (selectedIds.includes(photo.id)) {
+        const geometry = (
+          locationSelect ? { type: 'Point', coordinates: [locationSelect?.lng, locationSelect?.lat] } : photo.geometry
+        ) as Point
+        return {
+          ...photo,
+          groupId: photoGroupId,
+          geometry,
+          photoItem: { ...photo.photoItem, geometry },
+        }
+      }
+      return photo
+    },
+    [selectedList, locationSelect],
+  )
+
+  const handleSaveAddressConfirm = useCallback(async () => {
+    if (!layerInfo) return
+
+    const photoGroupId = selectedList.length > 1 ? nanoid() : null
+    const featureList: ItvFeatureProperties[] = layerInfo.features.map((feature) => {
+      const temp = { ...feature }
+      const matchPhoto = selectedList.find((photo) => photo.uploadId === feature.photoUploadId)
+      if (matchPhoto) {
+        return {
+          ...feature,
+          photoGroupId,
+          geometry: locationSelect
+            ? { type: 'Point', coordinates: [locationSelect?.lng, locationSelect?.lat] }
+            : feature.geometry,
+        }
+      }
+      return temp
+    })
+    const param: UpdateItvLayerDtoIn = {
+      projectId: layerInfo.projectId,
+      id: layerInfo.id,
+      features: featureList,
+      name: layerInfo.name,
+      uploadIdListLatlng: locationSelect
+        ? selectedList.map((photo) => ({
+            uploadId: photo.uploadId,
+            latitude: locationSelect?.lat,
+            longitude: locationSelect?.lng,
+          }))
+        : [],
+    }
+    try {
+      await importToVisualize.updateLayer(param)
+      setLayerInfo({ ...layerInfo, features: featureList })
+      setPhotoList((prev) => prev.map((photo) => transformPhotoWithGeometry(photo, photoGroupId)))
+      showAlert({
+        status: 'success',
+        title: t('alert.saveSuccess'),
+      })
+      clearAddressOnMap()
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      showAlert({
+        status: 'error',
+        errorCode: errorMessage,
+      })
+    }
+  }, [
+    layerInfo,
+    t,
+    showAlert,
+    setLayerInfo,
+    setPhotoList,
+    selectedList,
+    locationSelect,
+    clearAddressOnMap,
+    transformPhotoWithGeometry,
+  ])
 
   const onSaveAddress = useCallback(() => {
     if (!layerInfo) return
     showAlert({
       status: 'confirm-save',
       showCancel: true,
-      async onConfirm() {
-        const photoGroupId = selectedList.length > 1 ? nanoid() : null
-        const featureList: ItvFeatureProperties[] = layerInfo.features.map((feature) => {
-          const temp = { ...feature }
-          const matchPhoto = selectedList.find((photo) => photo.uploadId === feature.photoUploadId)
-          if (matchPhoto) {
-            return {
-              ...feature,
-              photoGroupId,
-              geometry: locationSelect
-                ? { type: 'Point', coordinates: [locationSelect?.lng, locationSelect?.lat] }
-                : feature.geometry,
-            }
-          }
-          return temp
-        })
-        const param: UpdateItvLayerDtoIn = {
-          projectId: layerInfo.projectId,
-          id: layerInfo.id,
-          features: featureList,
-          name: layerInfo.name,
-          uploadIdListLatlng: locationSelect
-            ? selectedList.map((photo) => ({
-                uploadId: photo.uploadId,
-                latitude: locationSelect?.lat,
-                longitude: locationSelect?.lng,
-              }))
-            : [],
-        }
-        try {
-          await importToVisualize.updateLayer(param)
-          setLayerInfo({ ...layerInfo, features: featureList })
-          setPhotoList((prev) =>
-            prev.map((photo) => {
-              const selectedIds = selectedList.map((item) => item.id)
-              if (selectedIds.includes(photo.id)) {
-                const geometry = (
-                  locationSelect
-                    ? { type: 'Point', coordinates: [locationSelect?.lng, locationSelect?.lat] }
-                    : photo.geometry
-                ) as Point
-                return {
-                  ...photo,
-                  groupId: photoGroupId,
-                  geometry,
-                  photoItem: { ...photo.photoItem, geometry },
-                }
-              }
-              return photo
-            }),
-          )
-          showAlert({
-            status: 'success',
-            title: t('alert.saveSuccess'),
-          })
-          clearAddressOnMap()
-        } catch (error: any) {
-          showAlert({
-            status: 'error',
-            errorCode: error?.message,
-          })
-        }
-      },
+      onConfirm: handleSaveAddressConfirm,
     })
-  }, [layerInfo, t, showAlert, setLayerInfo, setPhotoList, selectedList, locationSelect, clearAddressOnMap])
+  }, [layerInfo, showAlert, handleSaveAddressConfirm])
 
   const onPanelOpen = useCallback(() => {
     setShowMapMobile(false)
@@ -473,7 +494,7 @@ const PhotoLocator: FC<PhotoLocatorProps> = ({ photoList, setPhotoList, onClose,
                       startIcon={<LocationPin />}
                       onClick={onLocateClick}
                       disabled={selectedList.length === 0}
-                      className={isMobile ? 'w-[40px] min-w-[40px]! [&>span]:m-0!' : ''}
+                      className={isMobile ? 'w-10 min-w-10! [&>span]:m-0!' : ''}
                     >
                       {isMobile ? '' : t('itv.upload.locator.defindCoordinates')}
                     </Button>

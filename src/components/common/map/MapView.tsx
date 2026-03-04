@@ -85,6 +85,29 @@ export function MapView({
     [setBasemap],
   )
 
+  const ensurePinImage = useCallback((map: any) => {
+    if (map.hasImage('current-pin')) return Promise.resolve()
+    return new Promise<void>((resolve, reject) => {
+      const img = document.createElement('img')
+      img.crossOrigin = 'anonymous'
+      img.onload = () => {
+        try {
+          if (!map.hasImage('current-pin')) {
+            map.addImage('current-pin', img)
+          }
+          resolve()
+        } catch (e) {
+          reject(e as Error)
+        }
+      }
+      img.onerror = () => {
+        console.warn('Failed to load pin icon')
+        reject(new Error('Failed to load pin icon'))
+      }
+      img.src = '/map/current.svg'
+    })
+  }, [])
+
   const onGetLocation = useCallback(
     (coords: GeolocationCoordinates) => {
       const map = mapLibre[mapId]
@@ -118,30 +141,7 @@ export function MapView({
         data: point,
       })
 
-      const ensurePinImage = () => {
-        if (map.hasImage('current-pin')) return Promise.resolve()
-        return new Promise<void>((resolve, reject) => {
-          const img = document.createElement('img') as HTMLImageElement
-          img.crossOrigin = 'anonymous'
-          img.onload = () => {
-            try {
-              if (!map.hasImage('current-pin')) {
-                map.addImage('current-pin', img)
-              }
-              resolve()
-            } catch (e) {
-              reject(e as Error)
-            }
-          }
-          img.onerror = () => {
-            console.warn('Failed to load pin icon')
-            reject(new Error('Failed to load pin icon'))
-          }
-          img.src = '/map/current.svg'
-        })
-      }
-
-      ensurePinImage()
+      ensurePinImage(map)
         .then(() => {
           if (!map.getLayer(layerId)) {
             map.addLayer(
@@ -164,7 +164,7 @@ export function MapView({
 
       map.flyTo({ center: [longitude, latitude], zoom: CURRENT_LOCATION_ZOOM, duration: 3000 })
     },
-    [mapLibre, mapId, is2K],
+    [mapLibre, mapId, is2K, ensurePinImage],
   )
 
   return (
@@ -172,7 +172,7 @@ export function MapView({
       {loading && (
         <CircularProgress
           size={16}
-          className={classNames('absolute top-[145px] right-[50px] z-20 md:top-3 md:right-16', {
+          className={classNames('absolute top-36.25 right-12.5 z-20 md:top-3 md:right-16', {
             '!text-[#fff]': basemap !== BasemapType.CartoLight,
           })}
         />
@@ -193,9 +193,9 @@ export function MapView({
 
       <Box className='pointer-events-none absolute top-4 right-4 left-4 z-20 flex items-center gap-2'>
         {isShowOpenBtn && (
-          <Box className='!rounded-lg !bg-white !shadow-sm flex h-10 w-10 items-center justify-center border border-(--color-gray-border)'>
+          <Box className='flex h-10 w-10 items-center justify-center rounded-lg! border border-(--color-gray-border) bg-white! shadow-sm!'>
             <Tooltip title={t('button.openPanel')} arrow>
-              <IconButton className='!h-8 !w-8 !p-0 pointer-events-auto' onClick={onPanelOpen}>
+              <IconButton className='pointer-events-auto h-8! w-8! p-0!' onClick={onPanelOpen}>
                 <KeyboardArrowRightIcon />
               </IconButton>
             </Tooltip>
@@ -207,9 +207,9 @@ export function MapView({
           </Box>
         )}
         {isShowLayerDetailsBtn && (
-          <Box className='!rounded-lg !bg-white !shadow-sm flex h-10 w-10 items-center justify-center border border-(--color-gray-border)'>
+          <Box className='flex h-10 w-10 items-center justify-center rounded-lg! border border-(--color-gray-border) bg-white! shadow-sm!'>
             <Tooltip title={t('button.details')} arrow>
-              <IconButton className='!h-8 !w-8 !p-0 pointer-events-auto' onClick={onShowLayerDetails}>
+              <IconButton className='pointer-events-auto h-8! w-8! p-0!' onClick={onShowLayerDetails}>
                 <TuneIcon />
               </IconButton>
             </Tooltip>
@@ -223,7 +223,7 @@ export function MapView({
           width={59}
           height={18}
           className={classNames(
-            `absolute z-[9] md:bottom-3 ${isPaddingGoogle ? 'left-[calc(50%+38px)]' : 'left-[calc(50%-29.5px)]'} ${isHideAttributionControl ? 'bottom-2' : 'bottom-[52px]'}`,
+            `absolute z-9 md:bottom-3 ${isPaddingGoogle ? 'left-[calc(50%+38px)]' : 'left-[calc(50%-29.5px)]'} ${isHideAttributionControl ? 'bottom-2' : 'bottom-13'}`,
           )}
           alt={`Google Logo`}
         />
@@ -237,7 +237,7 @@ export function MapView({
       />
 
       {floatingPanel && (
-        <div className='pointer-events-none absolute inset-0 z-[101]'>
+        <div className='pointer-events-none absolute inset-0 z-101'>
           <div className='pointer-events-none absolute top-4 right-4 bottom-4 flex flex-col justify-start'>
             <div className='pointer-events-auto flex max-h-full w-auto flex-col'>{floatingPanel}</div>
           </div>

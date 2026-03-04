@@ -1,6 +1,6 @@
 'use client'
 
-import React, { use, useEffect, useState, type ReactNode } from 'react'
+import React, { use, useEffect, useState, useCallback, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import maplibregl, { LngLatBoundsLike } from 'maplibre-gl'
 import { useQuery } from '@tanstack/react-query'
@@ -81,6 +81,37 @@ const LandingWeekly: React.FC = () => {
 
   const { loading } = useWeeklyMapStore()
 
+  // UI Helper functions
+  const getPanelClassName = useCallback(
+    () =>
+      `all 300ms bg-white transition-all duration-300 ${
+        isMobile ? 'flex h-full w-full flex-col' : 'flex-none overflow-visible'
+      }`,
+    [isMobile],
+  )
+
+  const getWidth = useCallback(() => {
+    if (isMobile) {
+      return showPanelLeft ? '100%' : '0'
+    } else {
+      return showPanelLeft ? '30%' : '0'
+    }
+  }, [isMobile, showPanelLeft])
+
+  const getPanelSx = useCallback(
+    () =>
+      ({
+        position: isMobile ? 'absolute' : 'relative',
+        zIndex: isMobile ? (showPanelLeft ? 40 : -1) : 20,
+        width: getWidth(),
+        maxWidth: isMobile ? 'auto' : showPanelLeft ? '30rem' : '0',
+        minWidth: isMobile ? '0' : showPanelLeft ? '24rem' : '0',
+        opacity: showPanelLeft ? 1 : 0,
+        pointerEvents: showPanelLeft ? 'auto' : 'none',
+      }) as const,
+    [isMobile, showPanelLeft, getWidth],
+  )
+
   // Queries
   const { data: weeklySubscriptionModel, isLoading: isLoadingWeeklySubscriptionModel } = useQuery({
     queryKey: ['weekly-subscription-model'],
@@ -135,20 +166,7 @@ const LandingWeekly: React.FC = () => {
         </div>
       ) : (
         <Box className='relative flex min-h-0 w-full flex-row overflow-hidden'>
-          <Box
-            className={`all 300ms bg-white transition-all duration-300 ${
-              isMobile ? 'flex h-full w-full flex-col' : 'flex-none overflow-visible'
-            }`}
-            sx={{
-              position: isMobile ? 'absolute' : 'relative',
-              zIndex: isMobile ? (showPanelLeft ? 40 : -1) : 20,
-              width: isMobile ? (showPanelLeft ? '100%' : '0') : showPanelLeft ? '30%' : '0',
-              maxWidth: isMobile ? 'auto' : showPanelLeft ? '30rem' : '0',
-              minWidth: isMobile ? '0' : showPanelLeft ? '24rem' : '0',
-              opacity: showPanelLeft ? 1 : 0,
-              pointerEvents: showPanelLeft ? 'auto' : 'none',
-            }}
-          >
+          <Box className={getPanelClassName()} sx={getPanelSx()}>
             {isMobile && (
               <Box className='flex flex-col'>
                 <Box className='flex justify-end p-2 pb-0'>
