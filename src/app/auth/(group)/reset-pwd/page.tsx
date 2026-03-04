@@ -6,8 +6,7 @@ import ResetPasswordForm from '@/components/form/ResetPasswordForm'
 import service from '@/api'
 import { useGlobalUI } from '@/providers/global-ui/GlobalUIContext'
 import { useTranslation } from 'react-i18next'
-import { signOut } from 'next-auth/react'
-import { useSession } from 'next-auth/react'
+import { signOut, useSession } from 'next-auth/react'
 
 const ResetPasswordPage = () => {
   const { t } = useTranslation('common')

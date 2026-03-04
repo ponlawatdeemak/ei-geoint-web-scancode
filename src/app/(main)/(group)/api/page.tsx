@@ -4,12 +4,10 @@ import { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import { useSettings } from '@/hook/useSettings'
-import { useGlobalUI } from '@/providers/global-ui/GlobalUIContext'
 import service from '@/api'
 import SearchWrapper, { FilterFieldConfig } from '@/components/layout/SearchWrapper'
 import { MuiTableColumn } from '@/components/common/display/MuiTableHOC'
 import { SortType } from '@interfaces/config'
-import { formatDateTime } from '@/utils/formatDate'
 import { Button, Chip } from '@mui/material'
 import Link from 'next/link'
 import AddIcon from '@mui/icons-material/Add'
@@ -24,8 +22,7 @@ const ApiManagementPage = () => {
   const router = useRouter()
   const { t } = useTranslation('common')
   const { language } = useSettings()
-  const { showLoading, hideLoading, showAlert } = useGlobalUI()
-  const [searchTrigger, setSearchTrigger] = useState<number>(0) // force re-search
+  const [searchTrigger] = useState<number>(0) // force re-search
 
   const columns: MuiTableColumn<any>[] = [
     {

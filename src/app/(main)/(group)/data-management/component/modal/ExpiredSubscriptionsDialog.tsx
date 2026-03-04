@@ -94,31 +94,36 @@ const ExpiredSubscriptionsDialog = ({ open, onClose, organizationId }: ExpiredSu
     setPage(0)
   }
 
+  const renderContent = () => {
+    if ((subscriptionData?.data ?? []).length === 0) {
+      if (isPageLoading) return null
+      return <Empty message={t('table.noData')} className='h-full' />
+    }
+
+    return (
+      <MuiTableHOC
+        columns={columns}
+        rows={subscriptionData?.data ?? []}
+        rowKey={(row) => row.id}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        totalRows={subscriptionData?.total ?? 0}
+        onPageChange={setPage}
+        onRowsPerPageChange={(rpp) => {
+          setRowsPerPage(rpp)
+          setPage(0)
+        }}
+        sortState={sortState}
+        onSortChange={handleSortChange}
+      />
+    )
+  }
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth='xl' fullWidth>
       <DialogTitle>{t('dataManagement.expiredSubscriptions')}</DialogTitle>
       <DialogContent className='h-[500px]'>
-        {(subscriptionData?.data ?? []).length === 0 ? (
-          isPageLoading ? null : (
-            <Empty message={t('table.noData')} className='h-full' />
-          )
-        ) : (
-          <MuiTableHOC
-            columns={columns}
-            rows={subscriptionData?.data ?? []}
-            rowKey={(row) => row.id}
-            page={page}
-            rowsPerPage={rowsPerPage}
-            totalRows={subscriptionData?.total ?? 0}
-            onPageChange={setPage}
-            onRowsPerPageChange={(rpp) => {
-              setRowsPerPage(rpp)
-              setPage(0)
-            }}
-            sortState={sortState}
-            onSortChange={handleSortChange}
-          />
-        )}
+        {renderContent()}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} sx={{ color: '#185A9D' }}>

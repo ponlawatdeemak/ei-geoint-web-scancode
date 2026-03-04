@@ -1,8 +1,7 @@
 'use client'
 
 import NavigationBar from '@/components/layout/NavigationBar'
-import { SortType } from '@interfaces/config'
-import { Roles } from '@interfaces/config'
+import { SortType, Roles } from '@interfaces/config'
 import MuiTableHOC, { MuiTableColumn } from '@/components/common/display/MuiTableHOC'
 import { useSettings } from '@/hook/useSettings'
 import { useProfileStore } from '@/hook/useProfileStore'
@@ -13,7 +12,7 @@ import { Visibility, VisibilityOff, ContentCopy, Add as AddIcon, Delete as Delet
 import { useTranslation } from 'react-i18next'
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { useGlobalUI } from '@/providers/global-ui/GlobalUIContext'
-import { OrganizationApiDtoOut, OrgApiKeyItem } from '@interfaces/dto/organization-api-key'
+import { OrgApiKeyItem } from '@interfaces/dto/organization-api-key'
 import { Organization } from '@interfaces/entities'
 
 const ApiKeyPage = ({ params }: { params: Promise<{ id: string }> }) => {

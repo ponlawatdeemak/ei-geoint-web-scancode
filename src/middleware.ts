@@ -3,8 +3,61 @@ import { getToken } from 'next-auth/jwt'
 import { authPathPrefix, Roles } from '@interfaces/index'
 
 export const config = {
-  matcher: ['/((?!.*\\..*|_next).*)', '/', '/(api|trpc)(.*)'],
+  // Exclude _next/image, _next/static, and all media extensions except .txt and .xml
+  matcher: ['/((?!_next/static|_next/image|.*\\.(?:ico|png|jpg|jpeg|svg|gif|webp|css|js|woff|woff2|ttf|eot)).*)', '/', '/(api|trpc)(.*)'],
 }
+
+// Pre-generated hashes for inline styles (Emotion/MUI client-side injection)
+const styleHashes = [
+  'sha256-35A1/pwgLgN595SDWf5kr/ucDdu0+aqFuMYeBfNoalQ=',
+  'sha256-afB/G/g130QM7E/dXMc5e2JQadDVQ8gEEqTgNRDV9lA=',
+  'sha256-UP0QZg7irvSMvOBz9mH2PIIE28+57UiavRfeVea0l3g=',
+  'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=',
+  'sha256-tgZ3fni/+2+PuzoE6rJP/SIwz+7Upv3oDA15KtInCEc=',
+  'sha256-PbpXm98imfa7wEIqow+T0DQFdT9EIRrp9nmGBbC8tfA=',
+  'sha256-3hw8t0JD82luaV7OaGdt7JfC8Nh9v+2ELcOKg4QYBCA=',
+  'sha256-tIWeTci4xCj6Rx5h5Gu+7oaazoCBi1YtDnjwNrO8gN0=',
+  'sha256-VQSyrlBiWj2YW83jqaTD3o3J1RX/n9LR+CCf6PukRcE=',
+  'sha256-cpJAYgzSUOtlB5E1gEXgMPFBBLQmrazzq/U1eLXp7i8=',
+  'sha256-RYXZ7e70jAlrBmrEsOHw/KYe9AGItdx/MyeV+ZrRxf4=',
+  'sha256-cZ2QLNrtWO7Cyn14lue/Ge2mpkCmBVJ9Jro85w0W9qc=',
+  'sha256-v3h+GCe0QolypTD6anWafyq3t6okHpKjU9QbTAiQfqs=',
+  'sha256-kMldrx9Byj0dj/EdLzAzFsWTlQp8en0t9ULceqboM0w=',
+  'sha256-hjzBsdefmGEL3Wq2LeoSvH8quadFkGlZZ1RxVD0aCKg=',
+  'sha256-JszimT9F5kzkpAOcRvI9+JwUSSh8LiXqrVIN8wk0x60=',
+  'sha256-vcAPIwtkyGYAib9fqB9x2914jj8vt7smJqLhKeLMPYE=',
+  'sha256-OhzvD91YiQjMPz449BPAoiIcAA34jqN5FQI98QbKPb8=',
+  'sha256-xgcl3TM1V41Al4zPC3aF1zgmU289Y93sITGCxNlN78w=',
+  'sha256-2WBy9xJamyvOLlcHMBflFtPlgfn7hiKoPO+LtpEB4IU=',
+  'sha256-hZipTRQV/dnyDR9MIE2iY7q80UMEgcNMpeAiefegY/c=',
+  'sha256-vMDUZsfQW3pHiHs5xomKD9iCv7w60/hAM6vx4TE1WtY=',
+  'sha256-YO9yC82B7pmwFbciZ10MeKqOEwqxQSqyh+MmeS3LbKY=',
+  'sha256-7+X7DQA/TxfF0oj5dpUqKm7t6h5sO5GCAwaOSEJGsEE=',
+  'sha256-sHwQzC2ZsVrt1faUYCjF/eo8aIoBlQbGjVstzanL9CU=',
+  'sha256-jsEp169jvFxdolAJPP6ut/EA6OZTxX+VyFmzI4bXYGs=',
+  'sha256-sz6S8cfRhfIChTAYwba/l3rk4feQBhuiWdtQjb6AiF0=',
+  'sha256-p2VjXaq/afEwXQAyI2IZo1pebx7mEHaMeOTNGwO+p7I=',
+  'sha256-FMUprRSEaFFpM8ARuLPDDH3zeLUMZ7ROneEjo388GsM=',
+  'sha256-p2VjXaq/afEwXQAyI2IZo1pebx7mEHaMeOTNGwO+p7I=',
+  'sha256-s5HbhDUCx8DqDfbngK6bboED2Yq3hYq2VQGwuPMIfog=',
+  'sha256-OyNV2hHkSynT5QKx3QiZzNc7CjiY0MW8JEquSRPEz+E=',
+  'sha256-vOLcDQU4lDr18QogJNH85VmuCwfkNVZYnnJp5PV3Ry0=',
+  'sha256-lo/VtTzYJU712ZqgvYoo4quub9GGgRtruDv7JXPGnok=',
+  'sha256-fYiHlQV/Xkzu+fjxnU4AFsy2X70KP9/1GH69KLsNAVg=',
+  'sha256-aelB2Ag9Y9rxyKaUn9ro2JSUOGIn21WsMkVExMb1DR4=',
+  'sha256-HnQKhgg7HF2UtWsf5KYvBGtK4IAtKhoT4ThCN5O7G68=',
+  'sha256-E0Zl8SMNoih9QQGYZvUNR7vqKoYXIxbNOXEsWMSqXMM=',
+  'sha256-FzHzM6xtfhlZ9b8pa396iouFu1DUgSnGMJNRYg09zdc=',
+  'sha256-okAmGyG+qhh4J2kXMT3KEurAf+HgLqhYo2eFVE+/ds4=',
+  'sha256-9Y8sB/EP157SQ4m6IfqDBT5gH6ZxKnUXRZ4mCV7iXTs=',
+  'sha256-4YXnylBNPn6NtwILuFPWGHLZWslTfFG0j5EI4jDIiCw=',
+  'sha256-E/B7+e3ZMYNGd489tBrrVV96zNkd0Q9odZ/1S44tbnY=',
+  'sha256-ZMscZVq2XSUqy4l28iOnxLcPnPoG6CpjkEBu7RA+n7E=',
+  'sha256-/kUxLQaU+oPqjC7m6wcPBQ7Qr5Rhr6ukxQhKHTCo0A4=',
+  'sha256-425t/KMRM55oJma7r1v7SuS3+D1IeKCxCzicBWs7j+g=',
+  'sha256-kZMtULapeF+e/9MsffC6RMWZZSlErfTAA/+MXb+Dflc=',
+  'sha256-FXHa1ncFDeKm3Zrf7uLbEeVamkObq7qyA3emwUQn0W0=',
+]
 
 // Debug: Log the matcher configuration
 console.log('🔧 [MIDDLEWARE CONFIG] Matcher patterns:', config.matcher)
@@ -28,6 +81,58 @@ export async function middleware(req: NextRequest) {
   console.log('🔧 [MIDDLEWARE] Origin:', origin)
   console.log('🔧 [MIDDLEWARE] Method:', req.method)
 
+  // --- CSP: Generate nonce ---
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
+
+  // --- CSP: Read API URLs from environment (extract origin only, no path) ---
+  const getOrigin = (url?: string) => {
+    try { return url ? new URL(url).origin : '' }
+    catch { return url ?? '' }
+  }
+  const apiOrigin = getOrigin(process.env.API_URL)
+  const mapApiOrigin = getOrigin(process.env.API_URL_MAP)
+  const thaicomApiOrigin = getOrigin(process.env.THAICOM_API_URL)
+  const wssUploadOrigin = getOrigin(process.env.NEXT_PUBLIC_WSS_UPLOAD_URL)
+  const styleHashesString = styleHashes.map((h) => `'${h}'`).join(' ')
+
+  const cspDirectives = [
+    `default-src 'self' ${apiOrigin} ${mapApiOrigin} ${thaicomApiOrigin}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+    `style-src 'self' 'nonce-${nonce}' ${styleHashesString}`,
+    `style-src-elem 'self' 'nonce-${nonce}' ${styleHashesString}`,
+    `style-src-attr 'self' ${styleHashesString}`,
+    `img-src 'self' blob: data: ${apiOrigin} ${mapApiOrigin} ${thaicomApiOrigin} https://tile.googleapis.com https://mt1.google.com https://tile.openstreetmap.org https://api.maptiler.com https://basemaps.cartocdn.com https://iris-ap-southeast-7-811478435729.s3.ap-southeast-7.amazonaws.com`,
+    `font-src 'self' https://fonts.gstatic.com data:`,
+    `connect-src 'self' ${apiOrigin} ${mapApiOrigin} ${thaicomApiOrigin} ${wssUploadOrigin} https://tile.googleapis.com https://places.googleapis.com https://mt1.google.com https://api.maptiler.com https://tile.openstreetmap.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://tiles-a.basemaps.cartocdn.com https://tiles-b.basemaps.cartocdn.com https://tiles-c.basemaps.cartocdn.com https://tiles-d.basemaps.cartocdn.com https://iris-ap-southeast-7-811478435729.s3.ap-southeast-7.amazonaws.com${process.env.NODE_ENV === 'development' ? ' http://localhost:*' : ''}`,
+    `worker-src 'self' blob:`,
+    `frame-src 'self'`,
+    `base-uri 'self'`,
+    `form-action 'self'`,
+    `frame-ancestors 'self'`,
+    `object-src 'none'`,
+    ...(process.env.NODE_ENV === 'production' ? [`upgrade-insecure-requests`] : []),
+  ]
+
+  const cspHeader = cspDirectives.join('; ')
+
+  const requestHeaders = new Headers(req.headers)
+  requestHeaders.set('x-nonce', nonce)
+  requestHeaders.set('Content-Security-Policy', cspHeader)
+
+  // Helper: attach CSP header + nonce cookie to any response
+  function applyCSP(response: NextResponse) {
+    response.headers.set('Content-Security-Policy', cspHeader)
+    response.cookies.set('csp-nonce', nonce, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+    })
+    // Also set nonce in request headers so Server Components can read it
+    response.headers.set('x-nonce', nonce)
+    return response
+  }
+
   // Special debug for auth callback credentials
   if (
     pathname === '/api/auth/callback/credentials' &&
@@ -37,8 +142,7 @@ export async function middleware(req: NextRequest) {
     console.log('🔐 [MIDDLEWARE] Detected POST /api/auth/callback/credentials')
     console.log('🔐 [MIDDLEWARE] Request headers:', Object.fromEntries(req.headers.entries()))
     try {
-      const body = await req.clone().text()
-      // console.log('🔐 [MIDDLEWARE] Request body:', body)
+      await req.clone().text()
     } catch (error) {
       console.log('🔐 [MIDDLEWARE] Could not read request body:', error)
     }
@@ -48,9 +152,8 @@ export async function middleware(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
 
   // กรณี reset password ให้เข้าถึงได้เสมอ
-  const isResetPassword = pathname === resetPasswordPath || pathname.startsWith(`${resetPasswordPath}/`)
-  if (isResetPassword) {
-    return NextResponse.next()
+  if (pathname === resetPasswordPath || pathname.startsWith(`${resetPasswordPath}/`)) {
+    return applyCSP(NextResponse.next({ request: { headers: requestHeaders } }))
   }
   console.log('🔧 [MIDDLEWARE] Token exists:', !!token)
   console.log('🔧 [MIDDLEWARE] User role:', token?.roleId || 'No role')
@@ -62,7 +165,7 @@ export async function middleware(req: NextRequest) {
 
   if (isAuthPath && token) {
     console.log('🔧 [MIDDLEWARE] Redirecting logged-in user away from auth path')
-    return NextResponse.redirect(new URL('/profile', origin))
+    return applyCSP(NextResponse.redirect(new URL('/profile', origin)))
   }
 
   // Define public paths
@@ -72,39 +175,38 @@ export async function middleware(req: NextRequest) {
 
   if (isPublic) {
     console.log('🔧 [MIDDLEWARE] Allowing access to public path')
-    return NextResponse.next()
-  }
-
-  // Helper to redirect to login with callback
-  function redirectToLogin() {
-    // const callbackParam = isAuthPath || pathname === '/' ? '' : `?callbackUrl=${encodeURIComponent(pathname)}`
-    const callbackParam = ''
-    const loginUrl = new URL(`${loginPath}${callbackParam}`, origin)
-    console.log('🔧 [MIDDLEWARE] Redirecting to login:', loginUrl.toString())
-    return NextResponse.redirect(loginUrl)
+    return applyCSP(NextResponse.next({ request: { headers: requestHeaders } }))
   }
 
   if (!token) {
-    console.log('🔧 [MIDDLEWARE] No token found, redirecting to login')
-    return redirectToLogin()
+    const loginUrl = new URL(loginPath, origin)
+    console.log('🔧 [MIDDLEWARE] No token found, redirecting to login:', loginUrl.toString())
+    return applyCSP(NextResponse.redirect(loginUrl))
   }
 
   // Role-based route protection
-  const allowedPaths = protectedPaths[token.roleId as keyof typeof protectedPaths]
+  return handleRoleBasedAccess(token, pathname, origin, applyCSP, requestHeaders)
+}
 
-  // Check if the path exists in any role's protected paths
+function handleRoleBasedAccess(
+  token: { roleId?: unknown },
+  pathname: string,
+  origin: string,
+  applyCSP: (response: NextResponse) => NextResponse,
+  requestHeaders: Headers
+) {
+  const allowedPaths = protectedPaths[token.roleId as keyof typeof protectedPaths]
   const allProtectedPaths = Object.values(protectedPaths).flat()
   const pathExists = allProtectedPaths.some((p) => pathname.includes(p))
 
   if (pathExists) {
     if (allowedPaths && !allowedPaths.some((p) => pathname.includes(p))) {
-      return NextResponse.redirect(new URL('/error/unauthorized', origin))
+      return applyCSP(NextResponse.redirect(new URL('/error/unauthorized', origin)))
     }
   } else {
-    return NextResponse.redirect(new URL('/project', origin))
+    return applyCSP(NextResponse.redirect(new URL('/project', origin)))
   }
 
-  // All other protected routes: allow if authenticated
   console.log('🔧 [MIDDLEWARE] Access granted - continuing to requested path')
-  return NextResponse.next()
+  return applyCSP(NextResponse.next({ request: { headers: requestHeaders } }))
 }

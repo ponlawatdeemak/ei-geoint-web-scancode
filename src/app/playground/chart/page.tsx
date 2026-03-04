@@ -11,7 +11,7 @@ import {
   PointElement,
   Tooltip,
 } from 'chart.js'
-import { Bar, Doughnut, Line } from 'react-chartjs-2'
+import { Doughnut } from 'react-chartjs-2'
 
 ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, LineElement, PointElement, Tooltip, Legend)
 

@@ -8,7 +8,6 @@ import Providers from '@/providers'
 import theme from '@/styles/theme'
 import { ThemeProvider } from '@mui/material/styles'
 import { Prompt } from 'next/font/google'
-import { useMemo } from 'react'
 
 const font = Prompt({
   weight: ['300', '400', '500', '700'],
@@ -40,7 +39,7 @@ export default async function RootLayout({
         <link rel='icon' href='/favicon.ico' sizes='32x32' type='image/x-icon' />
       </head>
       <body className={`${font.variable} antialiased`}>
-        <AppRouterCacheProvider options={{ enableCssLayer: true }}>
+        <AppRouterCacheProvider options={{ enableCssLayer: true, key: 'mui', nonce }}>
           <ThemeProvider theme={theme}>
             <Providers nonce={nonce}>
               <div className='flex h-full flex-1 flex-col bg-background'>{children}</div>

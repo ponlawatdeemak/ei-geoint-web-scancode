@@ -60,6 +60,21 @@ const EditProjectForm: React.FC<Props> = ({
   const [organizations, setOrganizations] = useState<{ id: string | number; name?: string; nameEn?: string }[]>([])
   const [sortState, setSortState] = useState<{ orderBy: string; order: SortType }>({ orderBy: '', order: SortType.ASC })
 
+  const sortSubscriptions = useCallback(
+    (a: any, b: any) =>
+      language === 'th'
+        ? a.subscription.name.localeCompare(b.subscription.name)
+        : a.subscription.nameEn.localeCompare(b.subscription.nameEn),
+    [language],
+  )
+
+  const renderSubscriptionChip = useCallback(
+    ({ subscription }: any, idx: number) => (
+      <Chip key={idx} label={language === 'th' ? subscription.name : subscription.nameEn} size='small' />
+    ),
+    [language],
+  )
+
   const viewOnly = useMemo(() => {
     if (![Roles.superAdmin, Roles.admin, Roles.customerAdmin, Roles.user].includes(profile.roleId)) return true
     if (profile.roleId === Roles.user) {
@@ -68,64 +83,79 @@ const EditProjectForm: React.FC<Props> = ({
     return false
   }, [profile.roleId, projectId, createdBy, profile.id])
 
-  const userColumns: MuiTableColumn<any>[] = [
+  const renderUserName = useCallback((row: any) => [row.firstName, row.lastName].filter(Boolean).join(' '), [])
+
+  const renderUserEmail = useCallback((row: any) => row.email, [])
+
+  const renderOrganization = useCallback(
+    (row: any) => {
+      let organizationName = ''
+      if (row.organization) {
+        organizationName = language === 'th' ? row.organization.name : row.organization.nameEn
+      }
+      return organizationName
+    },
+    [language],
+  )
+
+  const renderRole = useCallback(
+    (row: any) => (
+      <Chip label={language === 'th' ? row.role.name : row.role.nameEn} color='primary' size='small' />
+    ),
+    [language],
+  )
+
+  const renderSubscriptions = useCallback(
+    (row: any) => (
+      <div className='flex gap-2'>
+        {[...(row.userSubscriptions as any[])]
+          .sort(sortSubscriptions)
+          .map((item, idx) => renderSubscriptionChip(item, idx))}
+      </div>
+    ),
+    [sortSubscriptions, renderSubscriptionChip],
+  )
+
+  const userColumns: MuiTableColumn<any>[] = useMemo(() => [
     {
       id: 'name',
       label: t('form.searchUser.column.name'),
       className: 'min-w-60',
       sortable: true,
-      render: (row) => [row.firstName, row.lastName].filter(Boolean).join(' '),
+      render: renderUserName,
     },
     {
       id: 'email',
       label: t('form.searchUser.column.email'),
       className: 'min-w-60',
       sortable: true,
-      render: (row) => row.email,
+      render: renderUserEmail,
     },
     {
       id: 'organization',
       label: t('form.searchUser.column.organization'),
       className: 'min-w-60',
       sortable: true,
-      render: (row) => {
-        let organizationName = ''
-        if (row.organization) {
-          organizationName = language === 'th' ? row.organization.name : row.organization.nameEn
-        }
-        return organizationName
-      },
+      render: renderOrganization,
     },
     {
       id: 'role',
       label: t('form.searchUser.column.role'),
       className: 'min-w-40',
       sortable: true,
-      render: (row) => (
-        <Chip label={language === 'th' ? row.role.name : row.role.nameEn} color='primary' size='small' />
-      ),
+      render: renderRole,
     },
     {
       id: 'subscriptions',
       label: t('form.searchUser.column.subscriptions'),
       className: 'min-w-60',
-      render: (row) => (
-        <div className='flex gap-2'>
-          {(row.userSubscriptions as any[])
-            .sort((a, b) =>
-              language === 'th'
-                ? a.subscription.name.localeCompare(b.subscription.name)
-                : a.subscription.nameEn.localeCompare(b.subscription.nameEn),
-            )
-            .map(({ subscription }, idx) => (
-              <Chip key={idx} label={language === 'th' ? subscription.name : subscription.nameEn} size='small' />
-            ))}
-        </div>
-      ),
+      render: renderSubscriptions,
     },
-  ]
+  ], [t, renderUserName, renderUserEmail, renderOrganization, renderRole, renderSubscriptions])
 
-  const searchUserFiltersConfig: FilterFieldConfig[] = [
+  const getRolesOptions = useCallback(async () => await service.lookup.get({ name: 'roles' }), [])
+
+  const searchUserFiltersConfig: FilterFieldConfig[] = useMemo(() => [
     {
       name: 'keyword',
       label: '',
@@ -138,9 +168,9 @@ const EditProjectForm: React.FC<Props> = ({
       label: 'form.searchUser.filter.role',
       type: 'select',
       minWidth: 100,
-      options: async () => await service.lookup.get({ name: 'roles' }),
+      options: getRolesOptions,
     },
-  ]
+  ], [getRolesOptions])
 
   const schema = Yup.object().shape({
     name: Yup.string().required(),
@@ -233,15 +263,22 @@ const EditProjectForm: React.FC<Props> = ({
     fetchSelectedUsers()
   }, [selectedUserIds, fetchSelectedUsers])
 
-  const handleRemoveUser = (row: any) => {
-    showAlert({
-      status: 'confirm-delete',
-      showCancel: true,
-      onConfirm: () => {
-        setSelectedUserIds((prev) => prev.filter((x) => x !== row.id))
-      },
-    })
-  }
+  const removeSelectedUser = useCallback((rowId: string) => {
+    const isNotRowId = (x: string) => x !== rowId
+    setSelectedUserIds((prev) => prev.filter(isNotRowId))
+  }, [])
+
+  const handleRemoveUser = useCallback(
+    (row: any) => {
+      const onConfirm = () => removeSelectedUser(row.id)
+      showAlert({
+        status: 'confirm-delete',
+        showCancel: true,
+        onConfirm,
+      })
+    },
+    [showAlert, removeSelectedUser],
+  )
 
   const userPickerOnSearch = useCallback(
     async (
@@ -265,51 +302,52 @@ const EditProjectForm: React.FC<Props> = ({
     [orgId],
   )
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        showLoading()
-        // fetch organizations for the organization autocomplete
-        const orgs = await service.organizations.getItem?.()
-        setOrganizations(orgs || [])
-        if (!projectId && viewOnly) {
-          router.replace('/project')
-          return
-        }
-        if (projectId) {
-          const p: GetProjectDtoOut = await service.projects.get(projectId)
-          // p is GetProjectDtoOut, set form values directly
-          setValue('name', p.name || '')
-          setValue('detail', p.detail ?? '')
-          setValue('organizationId', p.organizationId || '')
-          setCreatedBy(p.createdBy || null)
-          setSelectedUserIds(p.projectUsers.map(({ userId }) => userId) || [])
-        } else if (![Roles.superAdmin].includes(profile.roleId)) {
-          setValue('organizationId', profile.organizationId)
-        }
-      } catch (err: any) {
-        showAlert({
-          status: 'error',
-          errorCode: err?.message,
-        })
-      } finally {
-        hideLoading()
+  const loadInitialData = useCallback(async () => {
+    try {
+      showLoading()
+      // fetch organizations for the organization autocomplete
+      const orgs = await service.organizations.getItem?.()
+      setOrganizations(orgs || [])
+      if (!projectId && viewOnly) {
+        router.replace('/project')
+        return
       }
+      if (projectId) {
+        const p: GetProjectDtoOut = await service.projects.get(projectId)
+        // p is GetProjectDtoOut, set form values directly
+        setValue('name', p.name || '')
+        setValue('detail', p.detail ?? '')
+        setValue('organizationId', p.organizationId || '')
+        setCreatedBy(p.createdBy || null)
+        setSelectedUserIds(p.projectUsers.map(({ userId }) => userId) || [])
+      } else if (![Roles.superAdmin].includes(profile.roleId)) {
+        setValue('organizationId', profile.organizationId)
+      }
+    } catch (err: any) {
+      showAlert({
+        status: 'error',
+        errorCode: err?.message,
+      })
+    } finally {
+      hideLoading()
     }
-    void load()
   }, [
     projectId,
+    viewOnly,
     setValue,
     showLoading,
     hideLoading,
     showAlert,
     profile.organizationId,
     profile.roleId,
-    router.replace,
-    viewOnly,
+    router,
   ])
 
-  const save = async (data: FormValues) => {
+  useEffect(() => {
+    void loadInitialData()
+  }, [loadInitialData])
+
+  const save = useCallback(async (data: FormValues) => {
     setLoading(true)
     try {
       const payload: Partial<PostProjectDtoIn | PutProjectDtoIn> = {
@@ -336,54 +374,62 @@ const EditProjectForm: React.FC<Props> = ({
     } finally {
       setLoading(false)
     }
-  }
+  }, [projectId, selectedUsers, t, showAlert, router])
 
-  const onSubmit = (data: unknown) => {
+  const onSubmit = useCallback((data: unknown) => {
+    const confirmSubmit = () => save(data as FormValues)
     showAlert({
       status: 'confirm-save',
       content: t('form.projectForm.confirmContent'),
       showCancel: true,
-      onConfirm: () => {
-        void save(data as FormValues)
-      },
+      onConfirm: confirmSubmit,
     })
-  }
+  }, [showAlert, t, save])
 
-  const handleDelete = () => {
+  const confirmDelete = useCallback(async () => {
+    setLoading(true)
+    try {
+      await service.projects.delete({ ids: [projectId as string] })
+      router.replace('/project')
+    } catch (err: any) {
+      showAlert({
+        status: 'error',
+        errorCode: err?.message,
+      })
+    } finally {
+      setLoading(false)
+    }
+  }, [projectId, router, showAlert])
+
+  const handleDelete = useCallback(() => {
     showAlert({
       status: 'confirm-delete',
       showCancel: true,
-      onConfirm: async () => {
-        setLoading(true)
-        try {
-          await service.projects.delete({ ids: [projectId as string] })
-          router.replace('/project')
-        } catch (err: any) {
-          showAlert({
-            status: 'error',
-            errorCode: err?.message,
-          })
-        } finally {
-          setLoading(false)
-        }
-      },
+      onConfirm: confirmDelete,
     })
-  }
+  }, [showAlert, confirmDelete])
 
-  const handleCancel = () => {
+  const confirmCancel = useCallback(() => router.replace('/project'), [router])
+
+  const handleCancel = useCallback(() => {
     if (viewOnly) {
       router.replace('/project')
     } else {
       showAlert({
         status: 'confirm-cancel',
         showCancel: true,
-        onConfirm: () => router.replace('/project'),
+        onConfirm: confirmCancel,
       })
     }
-  }
+  }, [viewOnly, showAlert, confirmCancel, router])
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const handleMenuOpen = (e: React.MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget)
+  const handleMenuOpen = useCallback((e: React.MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget), [])
+  const handleMenuClose = useCallback(() => setAnchorEl(null), [])
+  const handleMenuDelete = useCallback(() => {
+    setAnchorEl(null)
+    handleDelete()
+  }, [handleDelete])
 
   const isOwner = !projectId || createdBy === profile.id
 
@@ -401,16 +447,36 @@ const EditProjectForm: React.FC<Props> = ({
     [profile.roleId, isOwner],
   )
 
-  const handleSortChange = (orderBy: string, order: SortType) => {
+  const handleSortChange = useCallback((orderBy: string, order: SortType) => {
     setSortState({ orderBy, order })
+  }, [])
+
+  const handlePickerClose = useCallback(() => setPickerOpen(false), [])
+
+  const handlePickerConfirm = useCallback((rows: any[]) => {
+    setSelectedUserIds((prev) => {
+      const existingIds = new Set(prev)
+      const merged = [...prev]
+      for (const r of rows) if (!existingIds.has(r.id)) merged.push(r.id)
+      return merged
+    })
+    setPickerOpen(false)
+  }, [])
+
+  const isRowSelectable = useCallback(
+    (row: any) => (projectId ? createdBy : profile.id) !== row.id && !selectedUsers.some((u) => u.id === row.id),
+    [projectId, createdBy, profile.id, selectedUsers],
+  )
+
+  let formTitle = null
+  if (!isOpenFromGallery) {
+    formTitle = projectId ? t('form.projectForm.editTitle') : t('form.projectForm.addTitle')
   }
 
   return (
     <>
       <FormWrapper
-        title={
-          !isOpenFromGallery ? (projectId ? t('form.projectForm.editTitle') : t('form.projectForm.addTitle')) : null
-        }
+        title={formTitle}
         actions={
           !isOpenFromGallery && (
             <div className='flex justify-end gap-2'>
@@ -433,13 +499,10 @@ const EditProjectForm: React.FC<Props> = ({
                   >
                     <MoreVertIcon />
                   </Button>
-                  <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
+                  <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
                     <MenuItem
                       className='text-error!'
-                      onClick={() => {
-                        setAnchorEl(null)
-                        handleDelete()
-                      }}
+                      onClick={handleMenuDelete}
                     >
                       {t('button.delete')}
                     </MenuItem>
@@ -578,20 +641,9 @@ const EditProjectForm: React.FC<Props> = ({
         columns={userColumns}
         filtersConfig={searchUserFiltersConfig}
         onSearch={userPickerOnSearch}
-        onClose={() => setPickerOpen(false)}
-        onConfirm={(rows) => {
-          // merge new selections (avoid duplicates)
-          setSelectedUserIds((prev) => {
-            const existingIds = new Set(prev)
-            const merged = [...prev]
-            for (const r of rows) if (!existingIds.has(r.id)) merged.push(r.id)
-            return merged
-          })
-          setPickerOpen(false)
-        }}
-        isRowSelectable={(row) =>
-          (projectId ? createdBy : profile.id) !== row.id && !selectedUsers.some((u) => u.id === row.id)
-        }
+        onClose={handlePickerClose}
+        onConfirm={handlePickerConfirm}
+        isRowSelectable={isRowSelectable}
       />
     </>
   )

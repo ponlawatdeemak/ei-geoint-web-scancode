@@ -4,7 +4,7 @@ import { useImages } from '@/components/common/images/use-images'
 import { ImageStatus } from '@interfaces/config'
 import { useQuery } from '@tanstack/react-query'
 import { useProfileStore } from '@/hook/useProfileStore'
-import { Chip, IconButton, LinearProgress, Tooltip, Typography } from '@mui/material'
+import { IconButton, LinearProgress, Tooltip, Typography } from '@mui/material'
 import { Minimize, OpenInFull } from '@mui/icons-material'
 import classNames from 'classnames'
 

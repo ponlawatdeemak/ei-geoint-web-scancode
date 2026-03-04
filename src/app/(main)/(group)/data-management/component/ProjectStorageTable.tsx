@@ -91,28 +91,32 @@ const ProjectStorageTable = ({
     [t, handleOpenModal],
   )
 
+  let content = null
+
+  if (data.length === 0) {
+    if (!isLoading) {
+      content = <Empty message={t('table.noData')} className='py-10' />
+    }
+  } else {
+    content = (
+      <MuiTableHOC
+        columns={columns}
+        rows={data}
+        rowKey={(row) => row.id}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        totalRows={total}
+        onPageChange={onPageChange}
+        onRowsPerPageChange={onRowsPerPageChange}
+        sortState={sortState}
+        onSortChange={onSortChange}
+      />
+    )
+  }
+
   return (
     <>
-      <div className='rounded-lg bg-white'>
-        {data.length === 0 ? (
-          isLoading ? null : (
-            <Empty message={t('table.noData')} className='py-10' />
-          )
-        ) : (
-          <MuiTableHOC
-            columns={columns}
-            rows={data}
-            rowKey={(row) => row.id}
-            page={page}
-            rowsPerPage={rowsPerPage}
-            totalRows={total}
-            onPageChange={onPageChange}
-            onRowsPerPageChange={onRowsPerPageChange}
-            sortState={sortState}
-            onSortChange={onSortChange}
-          />
-        )}
-      </div>
+      <div className='rounded-lg bg-white'>{content}</div>
 
       <Dialog
         open={modalOpen}

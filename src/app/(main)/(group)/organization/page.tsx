@@ -8,7 +8,7 @@ import { useGlobalUI } from '@/providers/global-ui/GlobalUIContext'
 import service from '@/api'
 import SearchWrapper, { FilterFieldConfig } from '@/components/layout/SearchWrapper'
 import { MuiTableColumn } from '@/components/common/display/MuiTableHOC'
-import { SortType } from '@interfaces/config'
+import { SortType, Language } from '@interfaces/config'
 import { formatDateTime } from '@/utils/formatDate'
 import { Button, Chip, IconButton, Tooltip } from '@mui/material'
 import Link from 'next/link'
@@ -38,7 +38,7 @@ const OrganizationPage = () => {
       label: t('form.searchOrganization.column.name'),
       className: 'min-w-60',
       sortable: true,
-      render: (row) => (language === 'th' ? row.name : row.nameEn),
+      render: (row) => (language === Language.TH ? row.name : row.nameEn),
     },
     {
       id: 'subscriptions',
@@ -48,12 +48,12 @@ const OrganizationPage = () => {
         <div className='flex gap-2'>
           {(row.organizationSubscriptions as any[])
             .sort((a, b) =>
-              language === 'th'
+              language === Language.TH
                 ? a.subscription.name.localeCompare(b.subscription.name)
                 : a.subscription.nameEn.localeCompare(b.subscription.nameEn),
             )
-            .map(({ subscription }, idx) => (
-              <Chip key={idx} label={language === 'th' ? subscription.name : subscription.nameEn} size='small' />
+            .map(({ subscription }) => (
+              <Chip key={subscription.id} label={language === Language.TH ? subscription.name : subscription.nameEn} size='small' />
             ))}
         </div>
       ),

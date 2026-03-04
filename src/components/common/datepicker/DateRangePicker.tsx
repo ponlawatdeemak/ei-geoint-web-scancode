@@ -11,10 +11,26 @@ interface DateRangePickerProps {
 
   onStartDateChange: (value: Dayjs | null) => void
   onEndDateChange: (value: Dayjs | null) => void
-  minWidth?: number
   startLabel?: string
   className?: string
 }
+
+const CustomDateField = (props: React.ComponentProps<typeof DateField>) => (
+  <DateField
+    {...props}
+    format='D MMM YY'
+    size='small'
+    focused={false}
+    shouldRespectLeadingZeros
+    fullWidth
+    clearable
+    slotProps={{
+      textField: {
+        onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => e.preventDefault(),
+      },
+    }}
+  />
+)
 
 const DateRangePicker = ({
   startDay,
@@ -30,54 +46,24 @@ const DateRangePicker = ({
   return (
     <div className={`col-span-1 flex w-full flex-col items-center gap-2 sm:col-span-3 sm:flex-row ${className}`}>
       <DatePicker
+        label={startLabel}
         value={startDay}
         maxDate={endDay ?? undefined}
         disabled={disabled}
         onChange={onStartDateChange}
         slots={{
-          field: (params) => (
-            <DateField
-              {...params}
-              label={startLabel}
-              format='D MMM YY'
-              size='small'
-              focused={false}
-              shouldRespectLeadingZeros
-              fullWidth
-              clearable
-              slotProps={{
-                textField: {
-                  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => e.preventDefault(),
-                },
-              }}
-            />
-          ),
+          field: CustomDateField,
         }}
       />
       <span className='hidden text-(--color-text-secondary) text-sm sm:inline'>—</span>
       <DatePicker
+        label={t('filter.toDate')}
         value={endDay}
         minDate={startDay ?? undefined}
         disabled={disabled}
         onChange={onEndDateChange}
         slots={{
-          field: (params) => (
-            <DateField
-              {...params}
-              label={t('filter.toDate')}
-              format='D MMM YY'
-              size='small'
-              focused={false}
-              shouldRespectLeadingZeros
-              fullWidth
-              clearable
-              slotProps={{
-                textField: {
-                  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => e.preventDefault(),
-                },
-              }}
-            />
-          ),
+          field: CustomDateField,
         }}
       />
     </div>

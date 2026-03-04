@@ -7,7 +7,7 @@ import { useSettings } from '@/hook/useSettings'
 import { useProfileStore } from '@/hook/useProfileStore'
 import { useGlobalUI } from '@/providers/global-ui/GlobalUIContext'
 import service from '@/api'
-import { Roles, SortType, SearchTasksDataManagementDtoOut } from '@interfaces/index'
+import { SortType, SearchTasksDataManagementDtoOut } from '@interfaces/index'
 import { bytesToTB } from '@/utils/convert'
 import { formatDate } from '@/utils/formatDate'
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material'
@@ -37,10 +37,6 @@ const TaskStorageDialog = ({ open, onClose, projectId, name, organizationId }: T
     order: SortType.DESC,
   })
   const [currentToken, setCurrentToken] = useState<number | null>(null)
-
-  const isAdminOrSuperAdmin = useMemo(() => {
-    return profile && [Roles.superAdmin, Roles.admin].includes(profile.roleId)
-  }, [profile])
 
   const {
     data: tasksData,
@@ -116,7 +112,7 @@ const TaskStorageDialog = ({ open, onClose, projectId, name, organizationId }: T
         label: t('dataManagement.size'),
         align: 'right',
         sortable: true,
-        render: (row) => (row.total !== null ? bytesToTB(row.total) : '-'),
+        render: (row) => (row.total === null ? '-' : bytesToTB(row.total)),
       },
     ],
     [t, language],
@@ -156,28 +152,33 @@ const TaskStorageDialog = ({ open, onClose, projectId, name, organizationId }: T
     onClose()
   }
 
+  const renderContent = () => {
+    if ((tasksData?.data ?? []).length === 0) {
+      if (isPageLoading) return null
+      return <Empty message={t('table.noData')} className='h-full' />
+    }
+
+    return (
+      <MuiTableHOC
+        columns={columns}
+        rows={tasksData?.data ?? []}
+        rowKey={(row) => row.id}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        totalRows={tasksData?.total ?? 0}
+        onPageChange={handlePageChange}
+        onRowsPerPageChange={handleRowsPerPageChange}
+        sortState={sortState}
+        onSortChange={handleSortChange}
+      />
+    )
+  }
+
   return (
     <Dialog open={open} onClose={handleClose} maxWidth='xl' fullWidth>
       <DialogTitle>{name}</DialogTitle>
       <DialogContent className='h-[500px]'>
-        {(tasksData?.data ?? []).length === 0 ? (
-          isPageLoading ? null : (
-            <Empty message={t('table.noData')} className='h-full' />
-          )
-        ) : (
-          <MuiTableHOC
-            columns={columns}
-            rows={tasksData?.data ?? []}
-            rowKey={(row) => row.id}
-            page={page}
-            rowsPerPage={rowsPerPage}
-            totalRows={tasksData?.total ?? 0}
-            onPageChange={handlePageChange}
-            onRowsPerPageChange={handleRowsPerPageChange}
-            sortState={sortState}
-            onSortChange={handleSortChange}
-          />
-        )}
+        {renderContent()}
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} sx={{ color: '#185A9D' }}>

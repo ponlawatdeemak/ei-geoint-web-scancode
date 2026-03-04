@@ -1,4 +1,4 @@
-import { LinearProgressProps, Box, LinearProgress, Typography } from '@mui/material'
+import { Box, LinearProgress, Typography } from '@mui/material'
 import { memo, useMemo } from 'react'
 import { ImageUploadStep } from '../../images/images'
 import { useTranslation } from 'react-i18next'

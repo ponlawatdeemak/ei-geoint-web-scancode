@@ -2,10 +2,10 @@
 
 import Link from 'next/link'
 
-type ErrorPageProps = {
+type ErrorPageProps = Readonly<{
   error: Error & { digest?: string }
   reset: () => void
-}
+}>
 
 export default function ErrorPage({ error, reset }: ErrorPageProps) {
   const isDev = process.env.NODE_ENV !== 'production'

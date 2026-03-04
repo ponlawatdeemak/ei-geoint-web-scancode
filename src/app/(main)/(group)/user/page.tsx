@@ -7,9 +7,9 @@ import { useSettings } from '@/hook/useSettings'
 import { useGlobalUI } from '@/providers/global-ui/GlobalUIContext'
 import { useProfileStore } from '@/hook/useProfileStore'
 import service from '@/api'
-import SearchWrapper, { FilterFieldConfig } from '@/components/layout/SearchWrapper'
-import { MuiTableColumn } from '@/components/common/display/MuiTableHOC'
-import { SortType } from '@interfaces/config'
+import SearchWrapper, { type FilterFieldConfig } from '@/components/layout/SearchWrapper'
+import type { MuiTableColumn } from '@/components/common/display/MuiTableHOC'
+import { SortType, Language } from '@interfaces/config'
 import { formatDateTime } from '@/utils/formatDate'
 import { Roles } from '@interfaces/index'
 import { Button, Chip, IconButton, Tooltip } from '@mui/material'
@@ -59,7 +59,8 @@ const UserPage = () => {
       render: (row) => {
         let organizationName = ''
         if (row.organization) {
-          organizationName = language === 'th' ? row.organization.name : row.organization.nameEn
+          organizationName =
+            language === Language.TH ? row.organization.name : row.organization.nameEn
         }
         return organizationName
       },
@@ -70,7 +71,7 @@ const UserPage = () => {
       className: 'min-w-40',
       sortable: true,
       render: (row) => (
-        <Chip label={language === 'th' ? row.role.name : row.role.nameEn} color='primary' size='small' />
+        <Chip label={language === Language.TH ? row.role.name : row.role.nameEn} color='primary' size='small' />
       ),
     },
     {
@@ -79,14 +80,14 @@ const UserPage = () => {
       className: 'min-w-60',
       render: (row) => (
         <div className='flex gap-2'>
-          {(row.userSubscriptions as any[])
+          {[...(row.userSubscriptions as any[])]
             .sort((a, b) =>
-              language === 'th'
+              language === Language.TH
                 ? a.subscription.name.localeCompare(b.subscription.name)
                 : a.subscription.nameEn.localeCompare(b.subscription.nameEn),
             )
             .map(({ subscription }, idx) => (
-              <Chip key={idx} label={language === 'th' ? subscription.name : subscription.nameEn} size='small' />
+              <Chip key={subscription?.id || idx} label={language === Language.TH ? subscription.name : subscription.nameEn} size='small' />
             ))}
         </div>
       ),
@@ -131,7 +132,7 @@ const UserPage = () => {
 
         return (
           <>
-            <Tooltip title={!canEdit ? t('button.viewDetails') : t('button.edit')} arrow>
+            <Tooltip title={canEdit ? t('button.edit') : t('button.viewDetails')} arrow>
               <IconButton
                 onClick={(e) => {
                   e.stopPropagation()
@@ -140,7 +141,7 @@ const UserPage = () => {
                 color='primary'
                 size='small'
               >
-                {!canEdit ? <VisibilityIcon /> : <EditIcon />}
+                {canEdit ? <EditIcon /> : <VisibilityIcon />}
               </IconButton>
             </Tooltip>
             {canDelete && (
@@ -180,7 +181,7 @@ const UserPage = () => {
         label: 'form.searchUser.filter.organization',
         type: 'select',
         minWidth: 120,
-        options: async () => await service.organizations.getItem(),
+        options: async () => service.organizations.getItem(),
         onChange:
           profile.roleId <= 2
             ? async (value, filters, { setSelectOptions, setSelectLoading }) => {
@@ -192,7 +193,7 @@ const UserPage = () => {
                 }))
                 setSelectOptions((prev: any) => ({
                   ...prev,
-                  projectId: projectId,
+                  projectId,
                 }))
                 setSelectLoading((prev: any) => ({ ...prev, projectId: false }))
                 return { ...filters, projectId: '' }

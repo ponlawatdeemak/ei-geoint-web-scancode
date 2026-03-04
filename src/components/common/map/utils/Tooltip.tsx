@@ -16,7 +16,6 @@ export type DetectionInfo = {
   confidence: number | undefined
   area: number | undefined
   aoiName?: string | null
-  damage_level?: number | null
 }
 
 interface TooltipProps {
@@ -34,7 +33,7 @@ const Tooltip: React.FC<TooltipProps> = ({ hoverInfo, onClose }) => {
 
   return (
     <Paper
-      className={`absolute z-10 flex flex-col bg-white p-2 ${hoverInfo.damage_level ? 'min-w-xs' : 'min-w-3xs'}`}
+      className='absolute z-10 flex min-w-3xs flex-col bg-white p-2'
       style={{ left: hoverInfo.x, top: hoverInfo.y }}
     >
       {/* Close button positioned over the popup so main layout stays unchanged */}
@@ -54,14 +53,14 @@ const Tooltip: React.FC<TooltipProps> = ({ hoverInfo, onClose }) => {
             <span className='w-2/3 font-medium text-(--color-text-primary)'>{formatText(hoverInfo.modelName)}</span>
           </div> */}
 
-          {hoverInfo.aoiName && !hoverInfo.damage_level && (
+          {hoverInfo.aoiName && (
             <div className='flex'>
               <span className='w-1/3 text-(--color-text-secondary)'>{t('map.detection.aoiName')}:</span>
               <span className='w-2/3 font-medium text-(--color-text-primary)'>{hoverInfo.aoiName}</span>
             </div>
           )}
 
-          {typeof hoverInfo.confidence !== 'undefined' && !hoverInfo.damage_level && (
+          {typeof hoverInfo.confidence !== 'undefined' && (
             <div className='flex'>
               <span className='w-1/3 text-(--color-text-secondary)'>{t('map.detection.confidence')}:</span>
               <span className='w-2/3 font-medium text-(--color-text-primary)'>
@@ -70,21 +69,12 @@ const Tooltip: React.FC<TooltipProps> = ({ hoverInfo, onClose }) => {
             </div>
           )}
 
-          {typeof hoverInfo.area !== 'undefined' && !hoverInfo.damage_level && (
+          {typeof hoverInfo.area !== 'undefined' && (
             <div className='flex'>
               <span className='w-1/3 text-(--color-text-secondary)'>{t('map.detection.area')}:</span>
               <span className='w-2/3 font-medium text-(--color-text-primary)'>
                 {convertedArea.toLocaleString(undefined, LOCALE_STRING_OPTIONS)}{' '}
                 {t(areaUnits.find((u) => u.code === areaUnit)?.label || '')}
-              </span>
-            </div>
-          )}
-
-          {hoverInfo.damage_level && (
-            <div className='flex'>
-              <span className='w-1/3 text-(--color-text-secondary)'>{t('map.detection.damageLevel')}:</span>
-              <span className='w-2/3 font-medium text-(--color-text-primary)'>
-                {t(`tools.sarDamageLevel.${hoverInfo.damage_level - 1}`)}
               </span>
             </div>
           )}

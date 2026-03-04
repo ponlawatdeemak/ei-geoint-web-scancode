@@ -667,13 +667,6 @@
       "orgName": "Organization",
       "coordinateType": "Coordinate Type"
     },
-    "sarDamageLevel": [
-      "Slight Damage",
-      "Moderate Damage",
-      "Substantial Damage",
-      "Grievous Damage",
-      "Destroyed"
-    ],
     "weeklyChart": "Weekly Chart"
   },
   "map": {
@@ -692,8 +685,7 @@
       "model": "Analysis Type",
       "confidence": "Confidence",
       "area": "Area",
-      "aoiName": "AOI Name",
-      "damageLevel": "Damage Level"
+      "aoiName": "AOI Name"
     },
     "info": {
       "createdAt": "Created",

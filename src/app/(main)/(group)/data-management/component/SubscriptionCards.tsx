@@ -92,8 +92,6 @@ const SubscriptionCard = ({ subscription, language }: SubscriptionCardProps) => 
     return `${t('dataManagement.remaining')} ${duration}`
   }, [subscription.remainingDays, subscription.endAt, t])
 
-  const isExpired = subscription.remainingDays <= 0
-
   // คำนวณเปอร์เซ็นต์ความคืบหน้า (เวลาที่ผ่านไป)
   const progressPercent = useMemo(() => {
     const start = new Date(subscription.startAt).getTime()
