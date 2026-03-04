@@ -348,7 +348,7 @@ const EditProjectForm: React.FC<Props> = ({
   ])
 
   useEffect(() => {
-    void loadInitialData()
+    loadInitialData()
   }, [loadInitialData])
 
   const save = useCallback(

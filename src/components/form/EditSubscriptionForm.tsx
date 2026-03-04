@@ -109,7 +109,7 @@ const EditSubscriptionForm: React.FC<Props> = ({ subscriptionId }) => {
   })
 
   useEffect(() => {
-    void loadData()
+    loadData()
   }, [loadData])
 
   // Global helpers for top-level "select all"
@@ -144,7 +144,7 @@ const EditSubscriptionForm: React.FC<Props> = ({ subscriptionId }) => {
       content: t('form.subscriptionForm.confirmContent'),
       showCancel: true,
       onConfirm: () => {
-        void saveData(data as FormValues, selectedModelIds)
+        saveData(data as FormValues, selectedModelIds)
       },
     })
   }

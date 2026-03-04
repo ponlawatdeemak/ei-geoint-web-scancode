@@ -121,6 +121,28 @@ const styleHashes = [
   // LayerControls
   'sha256-fIOx+SVAiSkJNJOc75g+HDsZAzHGuyxeS9jI4wwWzvs=',
   'sha256-E0Zl8SMNoih9QQGYZvUNR7vqKoYXIxbNOXEsWMSqXMM=',
+  'sha256-fIOx+SVAiSkJNJOc75g+HDsZAzHGuyxeS9jI4wwWzvs=',
+  'sha256-kZMtULapeF+e/9MsffC6RMWZZSlErfTAA/+MXb+Dflc=',
+
+  // ProjectMapView/index
+  'sha256-BN5erOJ6k3+785pWcbfw2G4sAO8O0T8eWjtVuMXVLEo=',
+  'sha256-Qb5rkU7w4gRbyCKSALT62BnWY9mAV083/2Px8Au3bgU=',
+  'sha256-/wJmSePBiR4Sj69gCal+ywTKDr2hXVmtsVgo3Z7ufIc=',
+  'sha256-kr/gGNh1LTtrKwrCJZGhg0aCf9OIMWhrHauaQvhk24Y=',
+  'sha256-/wJmSePBiR4Sj69gCal+ywTKDr2hXVmtsVgo3Z7ufIc=',
+  'sha256-/SuqFFeExu5APsXnhK+eULeCSkiJbLWy7YTXKIFnQEQ=',
+  'sha256-ebHzl9LQajvcz3UGiFGniwzSnplk9aKt9nTI22jDhVI=',
+  'sha256-gXxjdiYSZwwhWXu6tDWrAfllm65l3vLpk8SeNrPJkYA=',
+  'sha256-RR5bZAbtprw9QaChJzw/vYL4UtHmk0xoZk+UDLjC43g=',
+
+  // useCreateMapThumbnail
+  'sha256-/wJmSePBiR4Sj69gCal+ywTKDr2hXVmtsVgo3Z7ufIc=',
+  'sha256-2v93LLymG/A1+HmPNvgwf6HqWiNfWp8lbEJwcHxTmWM=',
+  'sha256-yBwDm4Dez5qts5ou7DzISrPdFRRfZsHvTaAMELgXOHg=',
+
+  // Other
+  'sha256-E7FpU8dAxY9jiajAS6O9oRfQ5GzDP2CZQDwbqeFFtR0=',
+  'sha256-E0Zl8SMNoih9QQGYZvUNR7vqKoYXIxbNOXEsWMSqXMM=',
 ]
 
 // Debug: Log the matcher configuration
