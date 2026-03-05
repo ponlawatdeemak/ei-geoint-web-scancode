@@ -67,21 +67,21 @@ const initialFilters = {
   createdAtTo: '',
 }
 
-const ensurePinImage = (
+const ensurePinImage = async (
   map: maplibregl.Map,
   imageRef: React.MutableRefObject<HTMLImageElement | null>,
   loadedRef: React.MutableRefObject<boolean>,
 ): Promise<void> => {
-  if (map.hasImage('project-pin')) return Promise.resolve()
+  if (map.hasImage('project-pin')) return
   if (imageRef.current && loadedRef.current) {
     try {
       map.addImage('project-pin', imageRef.current)
-      return Promise.resolve()
+      return
     } catch {
       // fall through to load new image
     }
   }
-  return new Promise<void>((resolve, reject) => {
+  await new Promise<void>((resolve, reject) => {
     const img = document.createElement('img')
     img.crossOrigin = 'anonymous'
     img.onload = () => {

@@ -21,7 +21,7 @@ export const useMapStore = create<MapStore>()((set, get) => ({
   mapLibre: {},
   setMapLibre: (id, value) => set((state) => ({ ...state, mapLibre: { ...state.mapLibre, [id]: value } })),
 
-  basemap: BasemapType.GoogleSatellite,
+  basemap: BasemapType.CartoLight,
   setBasemap: (basemap) => set({ basemap }),
 
   styleDataHandlers: new Map(),

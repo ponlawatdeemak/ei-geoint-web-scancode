@@ -1,4 +1,4 @@
-import { api, apiAccessToken } from '@/api/core'
+import { api } from '@/api/core'
 import { APIService } from '@interfaces/dto/core'
 import {
   CreateItvLayerDtoIn,

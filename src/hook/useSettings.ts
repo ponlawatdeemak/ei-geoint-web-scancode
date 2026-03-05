@@ -117,12 +117,12 @@ export function useSettings() {
   // localStorage but i18n hasn't been updated yet.
   useEffect(() => {
     if (language && i18n.language !== language) {
-      // changeLanguage may return a promise or undefined. Wrap with
-      // Promise.resolve so we always have a Promise and can safely attach
-      // a .catch handler without conditional checks.
-      Promise.resolve(i18n.changeLanguage(language)).catch(() => {
-        /* ignore errors during initial sync */
-      })
+      const result = i18n.changeLanguage(language)
+      if (result && typeof (result as Promise<unknown>).catch === 'function') {
+        ;(result as Promise<unknown>).catch(() => {
+          /* ignore errors during initial sync */
+        })
+      }
     }
     // We only want this to run on mount or when stored language changes.
   }, [language, i18n])

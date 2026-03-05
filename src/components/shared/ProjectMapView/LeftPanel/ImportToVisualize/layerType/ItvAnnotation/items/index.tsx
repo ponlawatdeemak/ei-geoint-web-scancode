@@ -14,7 +14,7 @@ import { cropCanvasImage } from '@/utils/crop-image'
 import useResponsive from '@/hook/responsive'
 import Empty from '@/components/common/empty'
 
-const getSymbolUrlAsync = (sidc: string, annotationLabel: AnnotationLabelItem, size: number): Promise<string> => {
+const getSymbolUrlAsync = async (sidc: string, annotationLabel: AnnotationLabelItem, size: number): Promise<string> => {
   try {
     const cleanProperties = Object.fromEntries(
       Object.entries(annotationLabel).map(([key, value]) => [key, value ?? undefined]),
@@ -29,7 +29,7 @@ const getSymbolUrlAsync = (sidc: string, annotationLabel: AnnotationLabelItem, s
     canvas.height = height
     const ctx = canvas.getContext('2d')
 
-    if (!ctx) return Promise.resolve('')
+    if (!ctx) return ''
 
     // Draw SVG to canvas
     const svgString = sym.asSVG()
@@ -59,7 +59,7 @@ const getSymbolUrlAsync = (sidc: string, annotationLabel: AnnotationLabelItem, s
     })
   } catch (error) {
     console.error('Error generating symbol icon:', error)
-    return Promise.resolve('')
+    return ''
   }
 }
 

@@ -1,18 +1,19 @@
 import { useMediaQuery, Button } from '@mui/material'
-import { Dispatch, FC, SetStateAction, useCallback, useId, useMemo, useRef, useState } from 'react'
+import { Dispatch, FC, SetStateAction, useCallback, useId, useMemo, useRef } from 'react'
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'
 import theme from '@/styles/theme'
 import { nanoid } from 'nanoid'
-import { ItvFeatureProperties, ItvLayer } from '@interfaces/entities'
+import { ItvFeatureProperties } from '@interfaces/entities'
+import type { ItvLayer } from '@interfaces/entities'
 import { useGlobalUI } from '@/providers/global-ui/GlobalUIContext'
 import { useTranslation } from 'react-i18next'
 
-import { useVectorUploader } from '../hooks/useVectorUploader'
+import { useVectorUploader, VectorFeatureItem } from '../hooks/useVectorUploader'
 import * as turf from '@turf/turf'
 import { useProfileStore } from '@/hook/useProfileStore'
 import { Geometry } from 'geojson'
 
-const MAX_ITEM_COUNT = 100000
+const MAX_ITEM_COUNT = 100
 const MAX_FILE_SIZE = 5 // MB
 const accept = '.zip, .geojson, .kml, .kmz'
 const acceptType =
@@ -69,76 +70,86 @@ const VectorUploader: FC<Props> = ({ layerInfo, setLayerInfo, onUpdateItvLayers,
     [showAlert, t],
   )
 
+  const buildFeatureFromVectorItem = useCallback(
+    (vectorItem: VectorFeatureItem, layerId: string): ItvFeatureProperties | null => {
+      if (!vectorItem.geometry) return null
+      const temp = new ItvFeatureProperties()
+      temp.id = nanoid()
+      temp.itvLayerId = layerId
+      temp.geometry = {
+        type: vectorItem.geometry.type,
+        coordinates: vectorItem.geometry.coordinates,
+        bbox: turf.bbox(vectorItem.geometry),
+      } as Geometry
+      const geoType = vectorItem.geometry.type
+      if (geoType === 'LineString' || geoType === 'MultiLineString') {
+        temp.vectorLength = (vectorItem.metric || 0) / 1000000
+      } else if (geoType === 'Polygon' || geoType === 'MultiPolygon') {
+        temp.vectorArea = (vectorItem.metric || 0) / 1000000
+      }
+      temp.createdAt = new Date().toISOString()
+      temp.createdBy = profile?.id || null
+      return temp
+    },
+    [profile],
+  )
+
+  const processSingleFile = useCallback(
+    async (
+      file: File,
+      layerId: string,
+      accumulated: ItvFeatureProperties[],
+      newIdList: string[],
+    ): Promise<'ok' | 'limit' | 'invalid'> => {
+      const features = await handleFile(file)
+      if (currentItemCount + accumulated.length + features.length > MAX_ITEM_COUNT) {
+        showAlert({
+          status: 'warning',
+          title: t('itv.alert.uploadAlertTitle'),
+          content: t('itv.alert.maxItemCount', { count: MAX_ITEM_COUNT }),
+        })
+        return 'limit'
+      }
+      for (const vectorItem of features) {
+        const feat = buildFeatureFromVectorItem(vectorItem, layerId)
+        if (!feat) return 'invalid'
+        newIdList.push(feat.id)
+        accumulated.push(feat)
+      }
+      return 'ok'
+    },
+    [handleFile, currentItemCount, showAlert, t, buildFeatureFromVectorItem],
+  )
+
   const handleFileSelect = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = e.target.files
       if (layerInfo && files && files.length > 0) {
-        const isValid = validateFile(files)
-        if (!isValid) {
-          return
-        }
+        if (!validateFile(files)) return
 
         const tempFeature: ItvFeatureProperties[] = []
         const newIdList: string[] = []
+        let aborted = false
         for (const file of Array.from(files)) {
-          const features = await handleFile(file)
-          if (currentItemCount + features.length > MAX_ITEM_COUNT) {
-            showAlert({
-              status: 'warning',
-              title: t('itv.alert.uploadAlertTitle'),
-              content: t('itv.alert.maxItemCount', { count: MAX_ITEM_COUNT }),
-            })
-            break
-          }
-          for (const vectorItem of features) {
-            if (!vectorItem.geometry) return
-            const temp = new ItvFeatureProperties()
-            temp.id = nanoid()
-            newIdList.push(temp.id)
-            temp.itvLayerId = layerInfo.id
-            // Construct Geometry based on hook output
-            temp.geometry = {
-              type: vectorItem.geometry.type,
-              coordinates: vectorItem.geometry.coordinates,
-              bbox: turf.bbox(vectorItem.geometry),
-            } as Geometry
-            if (vectorItem.geometry.type === 'LineString' || vectorItem.geometry.type === 'MultiLineString') {
-              temp.vectorLength = (vectorItem.metric || 0) / 1000000
-            } else if (vectorItem.geometry.type === 'Polygon' || vectorItem.geometry.type === 'MultiPolygon') {
-              temp.vectorArea = (vectorItem.metric || 0) / 1000000
-            }
-            temp.createdAt = new Date().toISOString()
-            temp.createdBy = profile?.id || null
-            tempFeature.push(temp)
-          }
+          const result = await processSingleFile(file, layerInfo.id, tempFeature, newIdList)
+          if (result === 'invalid') return  // original: `return` — skip commit entirely
+          if (result === 'limit') { aborted = true; break }  // original: `break` — commit what was collected
         }
+        if (aborted && tempFeature.length === 0) return
 
         const newLayer = { ...layerInfo, features: [...(layerInfo?.features || []), ...tempFeature] }
         onUpdateItvLayers((prev) => {
-          const temp = [...prev]
-          const index = temp.findIndex((layer) => layer.id === layerInfo?.id)
-          if (index > -1) {
-            temp[index] = newLayer
-          }
-          return temp
+          const updated = [...prev]
+          const index = updated.findIndex((layer) => layer.id === layerInfo?.id)
+          if (index > -1) updated[index] = newLayer
+          return updated
         })
         setLayerInfo(newLayer)
         onUploadChange(newIdList)
       }
       e.target.value = ''
     },
-    [
-      validateFile,
-      layerInfo,
-      setLayerInfo,
-      onUpdateItvLayers,
-      handleFile,
-      currentItemCount,
-      showAlert,
-      t,
-      profile,
-      onUploadChange,
-    ],
+    [validateFile, layerInfo, setLayerInfo, onUpdateItvLayers, processSingleFile, onUploadChange],
   )
 
   return (

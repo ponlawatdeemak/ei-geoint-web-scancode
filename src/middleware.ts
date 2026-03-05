@@ -149,7 +149,7 @@ const styleHashes = [
   'sha256-9c/X1XEfklsEqhv2sbmcHfarB4B5ZqQRHzDj8zsJ6aI=',
   'sha256-utcjSNsrLvghdVmiTb32QyL/7B3zPveVVrlSZ0J4eXk=',
   'sha256-imowdJiKtCrejAuaW2IdKJS7NwN5zsFhwxrts+QTZuU=',
-  'sha256-fVU67Hs9AhjRiq8YSPGEeI0ViXUB8Jd8B5FsRjzZmPM='
+  'sha256-fVU67Hs9AhjRiq8YSPGEeI0ViXUB8Jd8B5FsRjzZmPM=',
 ]
 
 // Debug: Log the matcher configuration

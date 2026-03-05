@@ -85,9 +85,9 @@ export function MapView({
     [setBasemap],
   )
 
-  const ensurePinImage = useCallback((map: any) => {
-    if (map.hasImage('current-pin')) return Promise.resolve()
-    return new Promise<void>((resolve, reject) => {
+  const ensurePinImage = useCallback(async (map: any) => {
+    if (map.hasImage('current-pin')) return
+    await new Promise<void>((resolve, reject) => {
       const img = document.createElement('img')
       img.crossOrigin = 'anonymous'
       img.onload = () => {

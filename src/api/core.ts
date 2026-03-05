@@ -1,4 +1,4 @@
-import { APIConfigType, APIService, AppAPI, ErrorResponse, RetryQueueItem } from '@interfaces/dto/core'
+import { APIConfigType, APIService, AppAPI, ErrorResponse } from '@interfaces/dto/core'
 import axios, { AxiosRequestConfig } from 'axios'
 import service from './index'
 import { errorResponse } from '@interfaces/config'
@@ -19,7 +19,10 @@ const APIConfigs: { [key: string]: APIConfigType } = {
   },
 }
 
-export let apiAccessToken: string | null = null
+// export let apiAccessToken: string | null = null
+let _apiAccessToken: string | null = null
+export const getApiAccessToken = () => _apiAccessToken
+
 let apiRefreshToken: string | null = null
 let apiUserId: string | null = null
 // let isRefreshing = false
@@ -68,7 +71,7 @@ export const api: AppAPI = {
 
 export const refreshAccessToken = async () => {
   const res = await service.auth.refreshToken({
-    accessToken: apiAccessToken || '',
+    accessToken: _apiAccessToken || '',
     refreshToken: apiRefreshToken || '',
   })
 
@@ -87,8 +90,8 @@ instance.interceptors.response.use(
   },
   async (error) => {
     const errorData = error?.response?.data?.error || {}
-    if (error.response && error.response.status === 401) {
-      const originalRequest = error.config as any
+    if (error.response?.status === 401) {
+      const originalRequest = error.config
       if (!originalRequest?._retry) {
         originalRequest._retry = true
         const { accessToken } = await refreshAccessToken()
@@ -107,7 +110,7 @@ instance.interceptors.response.use(
           throw err
         })
       }
-    } else if (error.response && error.response.status === 403) {
+    } else if (error.response?.status === 403) {
       // ถ้า 403 → บังคับ logout
       forceLogout()
     }
@@ -117,7 +120,7 @@ instance.interceptors.response.use(
       status: errorData.status || error.status,
       details: errorData.details || null,
     }
-    return Promise.reject(err)
+    throw err
   },
 )
 
@@ -143,12 +146,12 @@ export function updateAccessToken({
 }) {
   if (accessToken) {
     instance.defaults.headers.common.authorization = `Bearer ${accessToken}`
-    apiAccessToken = accessToken
+    _apiAccessToken = accessToken
     if (refreshToken) apiRefreshToken = refreshToken
     if (userId) apiUserId = userId
   } else {
     instance.defaults.headers.common.authorization = null
-    apiAccessToken = null
+    _apiAccessToken = null
     apiRefreshToken = null
     apiUserId = null
   }

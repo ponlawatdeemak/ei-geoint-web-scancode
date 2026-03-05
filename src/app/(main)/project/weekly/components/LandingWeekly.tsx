@@ -1,6 +1,6 @@
 'use client'
 
-import React, { use, useEffect, useState, useCallback, type ReactNode } from 'react'
+import React, { useEffect, useState, useCallback, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import maplibregl, { LngLatBoundsLike } from 'maplibre-gl'
 import { useQuery } from '@tanstack/react-query'

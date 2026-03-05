@@ -9,7 +9,6 @@ import {
   GeoJsonLayerConfig,
   ItvLayerConfig,
   SARChangeDetectionKey,
-  SARBattleDamageKey,
   ItvTileLayerConfig,
   ItvVectorLayerConfig,
   ItvAnnotationLayerConfig,
@@ -228,27 +227,9 @@ const createSARPointLayer = (
         filter,
         layout: { visibility: visible ? 'visible' : 'none' },
         paint: {
-          'circle-color': [
-            'match',
-            ['get', 'damage_level'], 
-            1, '#ffebee',
-            2, '#ffcdd2',      
-            3, '#ef9a9a',       
-            4, '#e57373',        
-            5, '#ef5350',
-            fillColor 
-          ],
-          'circle-stroke-color': [
-            'match',
-            ['get', 'damage_level'], 
-            1, '#ffebee',
-            2, '#ffcdd2',      
-            3, '#ef9a9a',       
-            4, '#e57373',        
-            5, '#ef5350',
-            strokeColor 
-          ],
           'circle-radius': 5,
+          'circle-color': fillColor,
+          'circle-stroke-color': strokeColor,
           'circle-stroke-width': 1,
           'circle-opacity': 0.8,
         },
@@ -272,108 +253,6 @@ const createSARPointLayer = (
   }
 
   return { layerId: pointLayerId, handler }
-}
-
-const createSarPolygonLayers = (
-  map: maplibregl.Map,
-  cfg: VectorLayerConfig,
-  id: string,
-  sourceId: string,
-  filter: maplibregl.ExpressionSpecification,
-  visible: boolean,
-  fillColor: string,
-  strokeColor: string,
-  getClickInfo?: (lngLat: [number, number] | undefined, object: Record<string, unknown> | null) => void,
-): { layerIds: string[]; handler?: () => void } => {
-  const fillLayerId = `${id}-fill`
-  if (!map.getLayer(fillLayerId)) {
-    map.addLayer(
-      {
-        id: fillLayerId,
-        type: 'fill',
-        source: sourceId,
-        'source-layer': 'default',
-        minzoom: 10,
-        filter,
-        layout: { visibility: visible ? 'visible' : 'none' },
-        paint: {
-          'fill-color': [
-            'match',
-            ['get', 'damage_level'], 
-            1, '#f44336',      
-            2, '#e53935',       
-            3, '#d32f2f',        
-            4, '#c62828',
-            5, '#b71c1c',
-            fillColor 
-          ],
-          'fill-outline-color': [
-            'match',
-            ['get', 'damage_level'], 
-            1, '#f44336',      
-            2, '#e53935',       
-            3, '#d32f2f',        
-            4, '#c62828',
-            5, '#b71c1c',
-            strokeColor 
-          ],
-          'fill-opacity': 0.8,
-        },
-      },
-      layerIdConfig.customReferer,
-    )
-  } else {
-    // map.setFilter(fillLayerId, filter)
-  }
-
-  const lineLayerId = `${id}-line`
-  if (!map.getLayer(lineLayerId)) {
-    map.addLayer(
-      {
-        id: lineLayerId,
-        type: 'line',
-        source: sourceId,
-        'source-layer': 'default',
-        minzoom: 10,
-        filter,
-        layout: { visibility: visible ? 'visible' : 'none' },
-        paint: {
-          'line-color': [
-            'match',
-            ['get', 'damage_level'], 
-            1, '#f44336',      
-            2, '#e53935',       
-            3, '#d32f2f',        
-            4, '#c62828',
-            5, '#b71c1c',
-            strokeColor 
-          ],
-          'line-width': 1.2,
-        },
-      },
-      layerIdConfig.customReferer,
-    )
-  } else {
-    // map.setFilter(lineLayerId, filter)
-  }
-
-  let handler: (() => void) | undefined
-  if (getClickInfo) {
-    const clickHandler = (e: maplibregl.MapLayerMouseEvent) => {
-      const feature = e.features?.[0]
-      const props = feature ? { ...(feature.properties as Record<string, unknown>), type: cfg.type } : null
-      const lngLat: [number, number] | undefined = e.lngLat ? [e.lngLat.lng, e.lngLat.lat] : undefined
-      getClickInfo(lngLat, props)
-    }
-    map.on('click', fillLayerId, clickHandler)
-    map.on('click', lineLayerId, clickHandler)
-    handler = () => {
-      map.off('click', fillLayerId, clickHandler)
-      map.off('click', lineLayerId, clickHandler)
-    }
-  }
-
-  return { layerIds: [fillLayerId, lineLayerId], handler }
 }
 
 const createRegularVectorLayers = (
@@ -834,21 +713,7 @@ const createVectorLayers = (
   const lineColorArr = color_code ? hexToRGBAArray(color_code) : hexToRGBAArray(getColorByModelId(assetKey ?? ''))
   const fillColor = rgbaArrayToCss(baseColorArr, 'rgba(255,0,0,0.6)')
   const strokeColor = rgbaArrayToCss(lineColorArr, 'rgba(255,0,0,1)')
-  if ( assetKey === SARBattleDamageKey ) {
-    const { layerIds, handler } = createSarPolygonLayers(
-      map,
-      cfg,
-      id,
-      sourceId,
-      filter,
-      visible,
-      fillColor,
-      strokeColor,
-      getClickInfo,
-    )
-    createdLayers.push(...layerIds)
-    if (handler) removeHandlers.push(handler)
-  } else if (assetKey === SARChangeDetectionKey) {
+  if (assetKey === SARChangeDetectionKey) {
     const { layerId, handler } = createSARPointLayer(
       map,
       cfg,
@@ -892,74 +757,7 @@ const createVectorLayers = (
             minzoom: 10,
           })
         }
-        if (assetKey === SARBattleDamageKey) {
-          const fillLayerId = `${id}-fill`
-          if (!m.getLayer(fillLayerId)) {
-            m.addLayer(
-              {
-                id: fillLayerId,
-                type: 'fill',
-                source: sourceId,
-                'source-layer': 'default',
-                minzoom: 10,
-                filter,
-                layout: { visibility: 'visible' },
-                paint: {
-                  'fill-color': [
-                    'match',
-                    ['get', 'damage_level'], 
-                    1, '#f44336',      
-                    2, '#e53935',       
-                    3, '#d32f2f',        
-                    4, '#c62828',
-                    5, '#b71c1c',
-                    fillColor 
-                  ],
-                  'fill-outline-color': [
-                    'match',
-                    ['get', 'damage_level'], 
-                    1, '#f44336',      
-                    2, '#e53935',       
-                    3, '#d32f2f',        
-                    4, '#c62828',
-                    5, '#b71c1c',
-                    strokeColor 
-                  ],
-                  'fill-opacity': 0.8,
-                },
-              },
-              layerIdConfig.customReferer,
-            )
-          }
-          const lineLayerId = `${id}-line`
-          if (!m.getLayer(lineLayerId)) {
-            m.addLayer(
-              {
-                id: lineLayerId,
-                type: 'line',
-                source: sourceId,
-                'source-layer': 'default',
-                minzoom: 10,
-                filter,
-                layout: { visibility: 'visible' },
-                paint: {
-                  'line-color': [
-                    'match',
-                    ['get', 'damage_level'], 
-                    1, '#f44336',      
-                    2, '#e53935',       
-                    3, '#d32f2f',        
-                    4, '#c62828',
-                    5, '#b71c1c',
-                    strokeColor 
-                  ],
-                  'line-width': 1.2,
-                },
-              },
-              layerIdConfig.customReferer,
-            )
-          }
-        } else if (assetKey === SARChangeDetectionKey) {
+        if (assetKey === SARChangeDetectionKey) {
           const pointLayerId = `${id}-point`
           if (!m.getLayer(pointLayerId)) {
             m.addLayer(
@@ -972,27 +770,9 @@ const createVectorLayers = (
                 filter,
                 layout: { visibility: 'visible' },
                 paint: {
-                  'circle-color': [
-                    'match',
-                    ['get', 'damage_level'], 
-                    1, '#ffebee',
-                    2, '#ffcdd2',      
-                    3, '#ef9a9a',       
-                    4, '#e57373',        
-                    5, '#ef5350',
-                    fillColor
-                  ],
-                  'circle-stroke-color': [
-                    'match',
-                    ['get', 'damage_level'], 
-                    1, '#ffebee',
-                    2, '#ffcdd2',      
-                    3, '#ef9a9a',       
-                    4, '#e57373',        
-                    5, '#ef5350',
-                    strokeColor
-                  ],
                   'circle-radius': 5,
+                  'circle-color': fillColor,
+                  'circle-stroke-color': strokeColor,
                   'circle-stroke-width': 1,
                   'circle-opacity': 0.8,
                 },

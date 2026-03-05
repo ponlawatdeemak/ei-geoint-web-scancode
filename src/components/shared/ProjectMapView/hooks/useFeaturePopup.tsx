@@ -75,7 +75,6 @@ export function useFeaturePopup(params: {
       const displayModelName = buildDisplayModelName(data, modelAll, language)
       const confidenceNum = extractConfidenceNum(data)
       const areaValue = (data.area as number) ?? 0
-      const sarDamageLevel = (data.damage_level as number) ?? null
 
       const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 40 })
         .setLngLat(coord)
@@ -92,7 +91,6 @@ export function useFeaturePopup(params: {
         taskName: typeof task?.name === 'string' ? task.name : '',
         confidence: confidenceNum,
         area: areaValue,
-        damage_level: sarDamageLevel
       }
 
       root.render(
