@@ -91,13 +91,18 @@ const UserSelector: FC<Props> = ({ orgId, setLoading, value, onChange }) => {
     setSortState({ orderBy, order })
   }
 
+  const handleConfirm = useCallback(
+    (row: any) => {
+      onChange((prev) => prev.filter((x) => x !== row.id))
+    },
+    [onChange],
+  )
+
   const handleRemoveUser = (row: any) => {
     showAlert({
       status: 'confirm-delete',
       showCancel: true,
-      onConfirm: () => {
-        onChange((prev) => prev.filter((x) => x !== row.id))
-      },
+      onConfirm: () => handleConfirm(row),
     })
   }
 

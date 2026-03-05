@@ -143,6 +143,13 @@ const styleHashes = [
   // Other
   'sha256-E7FpU8dAxY9jiajAS6O9oRfQ5GzDP2CZQDwbqeFFtR0=',
   'sha256-E0Zl8SMNoih9QQGYZvUNR7vqKoYXIxbNOXEsWMSqXMM=',
+
+  // dognut chart
+  'sha256-AiG1arqmrvLVNfU2KdkGQAkX7kFY+F/CnipcaSdooXM=',
+  'sha256-9c/X1XEfklsEqhv2sbmcHfarB4B5ZqQRHzDj8zsJ6aI=',
+  'sha256-utcjSNsrLvghdVmiTb32QyL/7B3zPveVVrlSZ0J4eXk=',
+  'sha256-imowdJiKtCrejAuaW2IdKJS7NwN5zsFhwxrts+QTZuU=',
+  'sha256-fVU67Hs9AhjRiq8YSPGEeI0ViXUB8Jd8B5FsRjzZmPM='
 ]
 
 // Debug: Log the matcher configuration
@@ -192,7 +199,7 @@ export async function middleware(req: NextRequest) {
     `style-src-attr 'self' ${styleHashesString}`,
     `img-src 'self' blob: data: ${apiOrigin} ${mapApiOrigin} ${thaicomApiOrigin} https://tile.googleapis.com https://mt1.google.com https://tile.openstreetmap.org https://api.maptiler.com https://basemaps.cartocdn.com https://iris-ap-southeast-7-811478435729.s3.ap-southeast-7.amazonaws.com`,
     `font-src 'self' https://fonts.gstatic.com data:`,
-    `connect-src 'self' ${apiOrigin} ${mapApiOrigin} ${thaicomApiOrigin} ${wssUploadOrigin} https://tile.googleapis.com https://places.googleapis.com https://mt1.google.com https://api.maptiler.com https://tile.openstreetmap.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://tiles-a.basemaps.cartocdn.com https://tiles-b.basemaps.cartocdn.com https://tiles-c.basemaps.cartocdn.com https://tiles-d.basemaps.cartocdn.com https://iris-ap-southeast-7-811478435729.s3.ap-southeast-7.amazonaws.com${process.env.NODE_ENV === 'development' ? process.env.NEXTAUTH_URL : ''}`,
+    `connect-src 'self' ${apiOrigin} ${mapApiOrigin} ${thaicomApiOrigin} ${wssUploadOrigin} https://tile.googleapis.com https://places.googleapis.com https://mt1.google.com https://api.maptiler.com https://tile.openstreetmap.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://tiles-a.basemaps.cartocdn.com https://tiles-b.basemaps.cartocdn.com https://tiles-c.basemaps.cartocdn.com https://tiles-d.basemaps.cartocdn.com https://iris-ap-southeast-7-811478435729.s3.ap-southeast-7.amazonaws.com ${process.env.NODE_ENV === 'development' ? process.env.NEXTAUTH_URL : ''}`,
     `worker-src 'self' blob:`,
     `frame-src 'self'`,
     `base-uri 'self'`,

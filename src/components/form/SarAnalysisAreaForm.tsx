@@ -76,6 +76,418 @@ const MAX_AREA_SQM = 3_000_000 // 3 sq.km in square meters
 // Helper id
 const getId = () => nanoid()
 
+// ---------- pure helpers (outside component) ----------
+
+function areFeaturesEqual(base: FeatureItem[], next: FeatureItem[]): boolean {
+  if (base === next) return true
+  if (base.length !== next.length) return false
+  for (let i = 0; i < base.length; i++) {
+    const a = base[i]
+    const b = next[i]
+    if (a === b) continue
+    if (a.id !== b.id) return false
+    try {
+      if (JSON.stringify(a) !== JSON.stringify(b)) return false
+    } catch {
+      return false
+    }
+  }
+  return true
+}
+
+function makePointFeature(
+  coords: number[],
+  sourceType?: string,
+  sourcePayload?: any,
+): FeatureItem {
+  return {
+    id: getId(),
+    geomType: 'Point',
+    coords,
+    label: `${coords[1].toFixed(6)}, ${coords[0].toFixed(6)}`,
+    source: sourceType,
+    sourceData: sourcePayload,
+  }
+}
+
+function makeLineFeature(
+  coordsArr: number[][],
+  lengthUnit: string,
+  sourceType?: string,
+  sourcePayload?: any,
+): FeatureItem {
+  const len = turf.length(turf.lineString(coordsArr), { units: 'meters' })
+  return {
+    id: getId(),
+    geomType: 'LineString',
+    coords: coordsArr,
+    label: `${convertLength(len, lengthUnit).toLocaleString(undefined, LOCALE_STRING_OPTIONS)} ${lengthUnit}`,
+    metric: len,
+    source: sourceType,
+    sourceData: sourcePayload,
+  }
+}
+
+function makePolygonFeature(
+  coordsArr: number[][],
+  area: number,
+  areaUnit: string,
+  sourceType?: string,
+  sourcePayload?: any,
+): FeatureItem {
+  return {
+    id: getId(),
+    geomType: 'Polygon',
+    coords: coordsArr,
+    label: `${convertArea(area, areaUnit).toLocaleString(undefined, LOCALE_STRING_OPTIONS)} ${areaUnit}`,
+    metric: area,
+    source: sourceType,
+    sourceData: sourcePayload,
+  }
+}
+
+function parseKmlCoords(raw: string): [number, number][] {
+  return raw
+    .split(/\s+/)
+    .map((c) => c.split(',').map((s) => Number.parseFloat(s)))
+    .map((p) => [p[0], p[1]])
+}
+
+function collectGeometries(json: unknown): unknown[] {
+  const j = json as any
+  if (j?.type === 'FeatureCollection' && Array.isArray(j.features)) {
+    return j.features.map((f: any) => f.geometry)
+  }
+  if (j?.type === 'Feature' && j.geometry) return [j.geometry]
+  if (j?.type && j.coordinates) return [j]
+  return []
+}
+
+function processGeometry(
+  g: unknown,
+  areaUnit: string,
+  lengthUnit: string,
+  sourceType?: string,
+  sourcePayload?: any,
+): { item?: FeatureItem; excludedArea?: true } {
+  const gg = g as any
+  if (!gg?.type) return {}
+  if (gg.type === 'Point') {
+    return { item: makePointFeature(gg.coordinates as number[], sourceType, sourcePayload) }
+  }
+  if (gg.type === 'LineString') {
+    return { item: makeLineFeature(gg.coordinates, lengthUnit, sourceType, sourcePayload) }
+  }
+  if (gg.type === 'Polygon') {
+    const area = turf.area(turf.polygon(gg.coordinates))
+    if (area > MAX_AREA_SQM) return { excludedArea: true }
+    return { item: makePolygonFeature(gg.coordinates[0], area, areaUnit, sourceType, sourcePayload) }
+  }
+  return {}
+}
+
+/**
+ * Parse a single KML Placemark element into a FeatureItem (or exclusion marker).
+ * Returns `{ item }` when successfully parsed, `{ excludedArea: true }` when
+ * the polygon area exceeds the limit, or `{}` when no geometry was found.
+ */
+function parsePlacemark(
+  pm: Element,
+  areaUnit: string,
+  lengthUnit: string,
+  sourceType?: string,
+  sourcePayload?: any,
+): { item?: FeatureItem; excludedArea?: true } {
+  const p = pm.getElementsByTagName('Point')[0]
+  if (p) {
+    const rawCoords = p.getElementsByTagName('coordinates')[0]?.textContent?.trim()
+    if (!rawCoords) return {}
+    const [lon, lat] = rawCoords.split(',').map((s) => Number.parseFloat(s))
+    return { item: makePointFeature([lon, lat], sourceType, sourcePayload) }
+  }
+
+  const ls = pm.getElementsByTagName('LineString')[0]
+  if (ls) {
+    const rawCoords = ls.getElementsByTagName('coordinates')[0]?.textContent?.trim()
+    if (!rawCoords) return {}
+    return { item: makeLineFeature(parseKmlCoords(rawCoords), lengthUnit, sourceType, sourcePayload) }
+  }
+
+  const poly = pm.getElementsByTagName('Polygon')[0]
+  if (poly) {
+    const lr = poly.getElementsByTagName('LinearRing')[0]
+    const rawCoords = lr?.getElementsByTagName('coordinates')[0]?.textContent?.trim()
+    if (!rawCoords) return {}
+    const coordsArr = parseKmlCoords(rawCoords)
+    const area = turf.area(turf.polygon([coordsArr]))
+    if (area > MAX_AREA_SQM) return { excludedArea: true }
+    return { item: makePolygonFeature(coordsArr, area, areaUnit, sourceType, sourcePayload) }
+  }
+
+  return {}
+}
+
+/** Recompute the display label for a feature when the unit settings change. */
+function relabelFeature(f: FeatureItem, areaUnit: string, lengthUnit: string): FeatureItem {
+  if (f.geomType === 'Point') {
+    const c = f.coords as number[]
+    return { ...f, label: `${c[1].toFixed(6)}, ${c[0].toFixed(6)}` }
+  }
+  if (f.geomType === 'LineString') {
+    let len = f.metric ?? 0
+    if (!len) {
+      try {
+        len = turf.length(turf.lineString(f.coords as any), { units: 'meters' })
+      } catch {
+        len = 0
+      }
+    }
+    return {
+      ...f,
+      metric: len,
+      label: `${convertLength(len, lengthUnit).toLocaleString(undefined, LOCALE_STRING_OPTIONS)} ${lengthUnit}`,
+    }
+  }
+  if (f.geomType === 'Polygon') {
+    let area = f.metric ?? 0
+    if (!area) {
+      try {
+        const coords = f.coords as any
+        area = turf.area(turf.polygon([[...coords, coords[0]]]))
+      } catch {
+        area = 0
+      }
+    }
+    return {
+      ...f,
+      metric: area,
+      label: `${convertArea(area, areaUnit).toLocaleString(undefined, LOCALE_STRING_OPTIONS)} ${areaUnit}`,
+    }
+  }
+  return f
+}
+
+/**
+ * Returns a turf geometry suitable for bbox calculation, or null for Points
+ * (which are handled differently via easeTo).
+ */
+function getFeatureBboxGeo(feature: FeatureItem): ReturnType<typeof turf.lineString> | ReturnType<typeof turf.polygon> | null {
+  if (feature.geomType === 'LineString') {
+    return turf.lineString(feature.coords as number[][])
+  }
+  if (feature.geomType === 'Polygon') {
+    const coords = feature.coords as number[][]
+    return turf.polygon([[...coords, coords[0]]])
+  }
+  return null
+}
+
+// ---------------------------------------------------------------------------
+// Sub-components (declared outside to keep renderForm complexity low)
+// ---------------------------------------------------------------------------
+
+type CoordTabProps = {
+  coordSystem: string
+  setCoordSystem: (v: string) => void
+  xmin: string; xmax: string; ymin: string; ymax: string
+  setXmin: (v: string) => void; setXmax: (v: string) => void
+  setYmin: (v: string) => void; setYmax: (v: string) => void
+  mgrsMin: string; mgrsMax: string
+  setMgrsMin: (v: string) => void; setMgrsMax: (v: string) => void
+  loading?: boolean
+  remainingSlots: number
+  showNoRemainingSlotsError: () => void
+  handleAddExtent: () => void
+  t: (key: string) => string
+}
+
+function CoordTabContent({ coordSystem, setCoordSystem, xmin, xmax, ymin, ymax, setXmin, setXmax, setYmin, setYmax, mgrsMin, mgrsMax, setMgrsMin, setMgrsMax, loading, remainingSlots, showNoRemainingSlotsError, handleAddExtent, t }: CoordTabProps) {
+  const isUTM = coordSystem === 'UTM47N' || coordSystem === 'UTM48N'
+  const isAddDisabled = loading || (coordSystem === 'MGRS'
+    ? mgrsMin.trim() === '' || mgrsMax.trim() === ''
+    : xmin.trim() === '' || xmax.trim() === '' || ymin.trim() === '' || ymax.trim() === '')
+  return (
+    <div className='space-y-2'>
+      <div>
+        <InputLabel>{t('form.taskForm.sarAnalysisAreaForm.coordinateSystem')}</InputLabel>
+        <Select value={coordSystem} onChange={(e) => setCoordSystem(e.target.value)} size='small' disabled={loading}>
+          <MenuItem value='GCS'>GCS</MenuItem>
+          <MenuItem value='UTM47N'>WGS 1984 UTM Zone 47N</MenuItem>
+          <MenuItem value='UTM48N'>WGS 1984 UTM Zone 48N</MenuItem>
+          <MenuItem value='MGRS'>MGRS</MenuItem>
+        </Select>
+      </div>
+      {coordSystem === 'GCS' && (
+        <div className='grid grid-cols-2 gap-2'>
+          <div><InputLabel>{t('form.taskForm.sarAnalysisAreaForm.latitudeMin')}</InputLabel><TextField size='small' placeholder={t('form.taskForm.sarAnalysisAreaForm.latitudeMin')} value={ymin} type='number' onChange={(e) => setYmin(e.target.value)} disabled={loading} /></div>
+          <div><InputLabel>{t('form.taskForm.sarAnalysisAreaForm.longitudeMin')}</InputLabel><TextField size='small' placeholder={t('form.taskForm.sarAnalysisAreaForm.longitudeMin')} value={xmin} type='number' onChange={(e) => setXmin(e.target.value)} disabled={loading} /></div>
+          <div><InputLabel>{t('form.taskForm.sarAnalysisAreaForm.latitudeMax')}</InputLabel><TextField size='small' placeholder={t('form.taskForm.sarAnalysisAreaForm.latitudeMax')} value={ymax} type='number' onChange={(e) => setYmax(e.target.value)} disabled={loading} /></div>
+          <div><InputLabel>{t('form.taskForm.sarAnalysisAreaForm.longitudeMax')}</InputLabel><TextField size='small' placeholder={t('form.taskForm.sarAnalysisAreaForm.longitudeMax')} value={xmax} type='number' onChange={(e) => setXmax(e.target.value)} disabled={loading} /></div>
+        </div>
+      )}
+      {isUTM && (
+        <div className='grid grid-cols-2 gap-2'>
+          <div><InputLabel>{t('form.taskForm.sarAnalysisAreaForm.xMin')}</InputLabel><TextField size='small' placeholder={t('form.taskForm.sarAnalysisAreaForm.xMin')} value={xmin} type='number' onChange={(e) => setXmin(e.target.value)} disabled={loading} /></div>
+          <div><InputLabel>{t('form.taskForm.sarAnalysisAreaForm.yMin')}</InputLabel><TextField size='small' placeholder={t('form.taskForm.sarAnalysisAreaForm.yMin')} value={ymin} type='number' onChange={(e) => setYmin(e.target.value)} disabled={loading} /></div>
+          <div><InputLabel>{t('form.taskForm.sarAnalysisAreaForm.xMax')}</InputLabel><TextField size='small' placeholder={t('form.taskForm.sarAnalysisAreaForm.xMax')} value={xmax} type='number' onChange={(e) => setXmax(e.target.value)} disabled={loading} /></div>
+          <div><InputLabel>{t('form.taskForm.sarAnalysisAreaForm.yMax')}</InputLabel><TextField size='small' placeholder={t('form.taskForm.sarAnalysisAreaForm.yMax')} value={ymax} type='number' onChange={(e) => setYmax(e.target.value)} disabled={loading} /></div>
+        </div>
+      )}
+      {coordSystem === 'MGRS' && (
+        <div>
+          <InputLabel>{t('form.taskForm.sarAnalysisAreaForm.mgrsMin')}</InputLabel>
+          <TextField placeholder={t('form.taskForm.sarAnalysisAreaForm.mgrsMin')} size='small' value={mgrsMin} onChange={(e) => setMgrsMin(e.target.value)} disabled={loading} fullWidth />
+          <InputLabel className='mt-2'>{t('form.taskForm.sarAnalysisAreaForm.mgrsMax')}</InputLabel>
+          <TextField placeholder={t('form.taskForm.sarAnalysisAreaForm.mgrsMax')} size='small' value={mgrsMax} onChange={(e) => setMgrsMax(e.target.value)} disabled={loading} fullWidth />
+        </div>
+      )}
+      <div className='mt-4 flex justify-center'>
+        <Button variant='contained' onClick={remainingSlots === 0 ? showNoRemainingSlotsError : handleAddExtent} startIcon={<AddIcon />} disabled={isAddDisabled}>
+          {t('button.add')}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+type DrawTabProps = {
+  drawingMode: string
+  remainingSlots: number
+  showNoRemainingSlotsError: () => void
+  cancelDraw: () => void
+  startDraw: (mode: 'point' | 'polygon') => void
+  loading?: boolean
+  t: (key: string) => string
+}
+
+function DrawTabContent({ drawingMode, remainingSlots, showNoRemainingSlotsError, cancelDraw, startDraw, loading, t }: DrawTabProps) {
+  const pointClick = remainingSlots === 0 ? showNoRemainingSlotsError : drawingMode === 'point' ? cancelDraw : () => startDraw('point')
+  const polygonClick = remainingSlots === 0 ? showNoRemainingSlotsError : drawingMode === 'polygon' ? cancelDraw : () => startDraw('polygon')
+  return (
+    <div className='flex gap-2'>
+      <Button className='flex-1' variant={drawingMode === 'point' ? 'contained' : 'outlined'} startIcon={<LocationPinIcon />} onClick={pointClick} disabled={loading}>
+        {t('form.taskForm.sarAnalysisAreaForm.drawPoint')}
+      </Button>
+      <Button className='flex-1' variant={drawingMode === 'polygon' ? 'contained' : 'outlined'} startIcon={<PolygonIcon />} onClick={polygonClick} disabled={loading}>
+        {t('form.taskForm.sarAnalysisAreaForm.drawArea')}
+      </Button>
+    </div>
+  )
+}
+
+type FeatureListItemProps = {
+  feature: FeatureItem
+  viewOnly?: boolean
+  loading?: boolean
+  onZoom: (f: FeatureItem) => void
+  onRemove: (f: FeatureItem) => void
+}
+
+function FeatureListItem({ feature: f, viewOnly, loading, onZoom, onRemove }: FeatureListItemProps) {
+  return (
+    <Tooltip key={f.id} title={f.label} arrow>
+      <button
+        className='flex cursor-pointer items-center rounded-xs bg-(--color-background-default) px-2 py-0.5 hover:bg-(--color-background-dark) hover:text-white'
+        type='button'
+        onClick={() => onZoom(f)}
+      >
+        <div className='flex items-center'>
+          {f.geomType === 'Point' && <LocationPinIcon />}
+          {f.geomType === 'LineString' && <PolylineIcon />}
+          {f.geomType === 'Polygon' && <PolygonIcon />}
+        </div>
+        <div className='mx-2 flex-1 truncate text-left text-sm'>{f.label}</div>
+        {!viewOnly && (
+          <IconButton size='small' color='error' onClick={(e) => { e.stopPropagation(); onRemove(f) }} disabled={loading}>
+            <DeleteIcon fontSize='small' />
+          </IconButton>
+        )}
+      </button>
+    </Tooltip>
+  )
+}
+
+type ImageLayerToggleProps = {
+  image: GetResultImageDtoOut
+  visible: boolean
+  onVisibilityChange: (checked: boolean) => void
+  onZoom: () => void
+  className?: string
+}
+
+function ImageLayerToggle({ image, visible, onVisibilityChange, onZoom, className = '' }: ImageLayerToggleProps) {
+  return (
+    <Tooltip title={image.image.name} arrow>
+      <button
+        className={`flex w-full cursor-pointer items-center overflow-hidden bg-(--color-background-default) hover:bg-(--color-background-dark) hover:text-white ${className}`}
+        type='button'
+        onClick={onZoom}
+      >
+        <Checkbox
+          checked={visible}
+          onChange={(e) => { e.stopPropagation(); onVisibilityChange(e.target.checked) }}
+          size='small'
+          onClick={(e) => e.stopPropagation()}
+        />
+        <BorderAllIcon fontSize='small' />
+        <div className='mx-1 truncate text-sm'>{image.image.name}</div>
+      </button>
+    </Tooltip>
+  )
+}
+
+const SAR_PIN_ICON = 'sar-pin-icon'
+const SAR_PIN_SVG_DATA_URI = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(pinSvg)
+
+/**
+ * Load the pin SVG into a MapLibre map instance as an icon, using a cache
+ * stored in the provided refs. Idempotent — safe to call multiple times.
+ */
+function loadOrAddPinIcon(
+  mapInstance: any,
+  loadedRef: React.MutableRefObject<boolean>,
+  imgRef: React.MutableRefObject<HTMLImageElement | null>,
+  onLoaded?: (img: HTMLImageElement) => void,
+): void {
+  const addSafe = (img: HTMLImageElement) => {
+    try {
+      if (typeof mapInstance.hasImage !== 'function' || !mapInstance.hasImage(SAR_PIN_ICON)) {
+        mapInstance.addImage(SAR_PIN_ICON, img)
+      }
+    } catch {}
+    onLoaded?.(img)
+  }
+  if (!loadedRef.current && !imgRef.current) {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      imgRef.current = img
+      loadedRef.current = true
+      addSafe(img)
+    }
+    img.onerror = () => {}
+    img.src = SAR_PIN_SVG_DATA_URI
+    return
+  }
+  if (loadedRef.current && imgRef.current) {
+    addSafe(imgRef.current)
+  }
+}
+
+/**
+ * Runs an updater against prev state, notifies parent, and returns next.
+ * Extracted to break deep nesting inside updateFeaturesInternal.
+ */
+function applyFeaturesUpdate(
+  prev: FeatureItem[],
+  updater: (p: FeatureItem[]) => FeatureItem[],
+  onFeaturesChange?: (items: FeatureItem[]) => void,
+): FeatureItem[] {
+  const next = updater(prev)
+  try { onFeaturesChange?.(next) } catch {}
+  return next
+}
+
 const SarAnalysisAreaForm: React.FC<Props> = ({
   imageBefore,
   imageAfter,
@@ -123,37 +535,11 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
       if (isControlled) {
         const base = featuresProp ?? []
         const next = updater(base)
-        // Avoid notifying parent if nothing meaningful changed (prevent re-render loops)
-        const isEqual = (() => {
-          if (base === next) return true
-          if (base.length !== next.length) return false
-          for (let i = 0; i < base.length; i++) {
-            const a = base[i]
-            const b = next[i]
-            if (a === b) continue
-            // fallback: compare ids and JSON representation
-            if (a.id !== b.id) return false
-            try {
-              if (JSON.stringify(a) !== JSON.stringify(b)) return false
-            } catch {
-              return false
-            }
-          }
-          return true
-        })()
-        if (!isEqual) {
-          try {
-            onFeaturesChange?.(next)
-          } catch {}
+        if (!areFeaturesEqual(base, next)) {
+          try { onFeaturesChange?.(next) } catch {}
         }
       } else {
-        setFeaturesState((prev) => {
-          const next = updater(prev)
-          try {
-            onFeaturesChange?.(next)
-          } catch {}
-          return next
-        })
+        setFeaturesState((prev) => applyFeaturesUpdate(prev, updater, onFeaturesChange))
       }
     },
     [isControlled, featuresProp, onFeaturesChange],
@@ -200,94 +586,79 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
     })
 
   // --- File parsing ---
+  const handleGeoJsonFile = async (file: File) => {
+    try {
+      const text = await file.text()
+      const json = JSON.parse(text)
+      const { items, excludedByArea } = extractGeoJSONFeatures(json, 'import', { fileName: file.name })
+      addExtractedFeatures(items, { excludedByArea })
+    } catch {
+      showImportError()
+    }
+  }
+
+  const handleKmlFile = async (file: File) => {
+    try {
+      const text = await file.text()
+      const { items, excludedByArea } = parseKml(text, 'import', { fileName: file.name })
+      addExtractedFeatures(items, { excludedByArea })
+    } catch {
+      showImportError()
+    }
+  }
+
+  const handleKmzFile = async (file: File) => {
+    try {
+      const arrayBuffer = await file.arrayBuffer()
+      const jszipMod = await import('jszip')
+      const JSZip = jszipMod.default || jszipMod
+      const zip = await JSZip.loadAsync(arrayBuffer)
+      const kmlName = Object.keys(zip.files).find((n) => n.toLowerCase().endsWith('.kml'))
+      if (!kmlName) { showImportError(); return }
+      const fileObj = zip.file(kmlName)
+      if (!fileObj) { showImportError(); return }
+      const kmlText = await fileObj.async('string')
+      const { items, excludedByArea } = parseKml(kmlText, 'import', { fileName: file.name })
+      addExtractedFeatures(items, { excludedByArea })
+    } catch {
+      showImportError()
+    }
+  }
+
+  const handleZipShapeFile = async (file: File) => {
+    try {
+      const arrayBuffer = await file.arrayBuffer()
+      const shpjsMod = await import('shpjs')
+      const shp = shpjsMod.default || shpjsMod
+      const geojson = await shp(arrayBuffer)
+      const { items, excludedByArea } = extractGeoJSONFeatures(geojson, 'import', { fileName: file.name })
+      addExtractedFeatures(items, { excludedByArea })
+    } catch {
+      showImportError()
+    }
+  }
+
   const handleFile = async (file?: File) => {
     if (!file) {
-      try {
-        if (fileInputRef.current) fileInputRef.current.value = ''
-      } catch {}
+      try { if (fileInputRef.current) fileInputRef.current.value = '' } catch {}
       return
     }
-
     try {
-      if (file.size > MAX_FILE_SIZE) {
-        showImportError()
-        return
-      }
+      if (file.size > MAX_FILE_SIZE) { showImportError(); return }
       const name = file.name.toLowerCase()
       if (name.endsWith('.geojson') || name.endsWith('.json')) {
-        try {
-          const text = await file.text()
-          const json = JSON.parse(text)
-          const { items, excludedByArea } = extractGeoJSONFeatures(json, 'import', { fileName: file.name })
-          addExtractedFeatures(items, { excludedByArea })
-        } catch {
-          showImportError()
-        }
-        return
+        await handleGeoJsonFile(file)
+      } else if (name.endsWith('.kml')) {
+        await handleKmlFile(file)
+      } else if (name.endsWith('.kmz')) {
+        await handleKmzFile(file)
+      } else if (name.endsWith('.zip')) {
+        await handleZipShapeFile(file)
+      } else {
+        showImportError()
       }
-
-      if (name.endsWith('.kml')) {
-        try {
-          const text = await file.text()
-          const { items, excludedByArea } = parseKml(text, 'import', {
-            fileName: file.name,
-          })
-          addExtractedFeatures(items, { excludedByArea })
-        } catch {
-          showImportError()
-        }
-        return
-      }
-
-      // KMZ (zipped KML)
-      if (name.endsWith('.kmz')) {
-        try {
-          const arrayBuffer = await file.arrayBuffer()
-          const jszipMod = await import('jszip')
-          const JSZip = jszipMod.default || jszipMod
-          const zip = await JSZip.loadAsync(arrayBuffer)
-          // find first .kml file
-          const kmlName = Object.keys(zip.files).find((n) => n.toLowerCase().endsWith('.kml'))
-          if (!kmlName) {
-            showImportError()
-            return
-          }
-          const fileObj = zip.file(kmlName)
-          if (!fileObj) {
-            showImportError()
-            return
-          }
-          const kmlText = await fileObj.async('string')
-          const { items, excludedByArea } = parseKml(kmlText, 'import', {
-            fileName: file.name,
-          })
-          addExtractedFeatures(items, { excludedByArea })
-        } catch {
-          showImportError()
-        }
-        return
-      }
-
-      // Shapefile ZIP (.zip)
-      if (name.endsWith('.zip')) {
-        try {
-          const arrayBuffer = await file.arrayBuffer()
-          const shpjsMod = await import('shpjs')
-          const shp = shpjsMod.default || shpjsMod
-          // shpjs accepts ArrayBuffer and returns GeoJSON
-          const geojson = await shp(arrayBuffer)
-          const { items, excludedByArea } = extractGeoJSONFeatures(geojson, 'import', { fileName: file.name })
-          addExtractedFeatures(items, { excludedByArea })
-        } catch {
-          showImportError()
-        }
-        return
-      }
-      showImportError()
     } finally {
-      try {
-        if (fileInputRef.current) fileInputRef.current.value = ''
-      } catch {}
+      try { if (fileInputRef.current) fileInputRef.current.value = '' } catch {}
     }
   }
 
@@ -298,61 +669,10 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
   ): { items: FeatureItem[]; excludedByArea: number } => {
     const list: FeatureItem[] = []
     let excludedByArea = 0
-    const geoms: unknown[] = []
-    const j = json as any
-    if (j?.type === 'FeatureCollection' && Array.isArray(j.features)) {
-      for (const f of j.features) {
-        geoms.push(f.geometry)
-      }
-    } else if (j?.type === 'Feature' && j.geometry) {
-      geoms.push(j.geometry)
-    } else if (j?.type && j.coordinates) {
-      geoms.push(j)
-    }
-
-    for (const g of geoms) {
-      if (!g || !(g as any).type) continue
-      // Only accept Point, LineString, Polygon
-      const gg = g as any
-      if (gg.type === 'Point') {
-        const c = gg.coordinates as number[]
-        list.push({
-          id: getId(),
-          geomType: 'Point',
-          coords: c,
-          label: `${c[1].toFixed(6)}, ${c[0].toFixed(6)}`,
-          source: sourceType,
-          sourceData: sourcePayload,
-        })
-      } else if (gg.type === 'LineString') {
-        const len = turf.length(turf.lineString(gg.coordinates), {
-          units: 'meters',
-        })
-        list.push({
-          id: getId(),
-          geomType: 'LineString',
-          coords: gg.coordinates,
-          label: `${convertLength(len, lengthUnit).toLocaleString(undefined, LOCALE_STRING_OPTIONS)} ${lengthUnit}`,
-          metric: len,
-          source: sourceType,
-          sourceData: sourcePayload,
-        })
-      } else if (gg.type === 'Polygon') {
-        const area = turf.area(turf.polygon(gg.coordinates))
-        if (area > MAX_AREA_SQM) {
-          excludedByArea += 1
-        } else {
-          list.push({
-            id: getId(),
-            geomType: 'Polygon',
-            coords: gg.coordinates[0],
-            label: `${convertArea(area, areaUnit).toLocaleString(undefined, LOCALE_STRING_OPTIONS)} ${areaUnit}`,
-            metric: area,
-            source: sourceType,
-            sourceData: sourcePayload,
-          })
-        }
-      }
+    for (const g of collectGeometries(json)) {
+      const { item, excludedArea } = processGeometry(g, areaUnit, lengthUnit, sourceType, sourcePayload)
+      if (excludedArea) { excludedByArea += 1 }
+      else if (item) { list.push(item) }
       if (list.length >= remainingSlots) break
     }
     return { items: list, excludedByArea }
@@ -369,69 +689,15 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
     const placemarks = Array.from(doc.getElementsByTagName('Placemark'))
     const out: FeatureItem[] = []
     let excludedByArea = 0
+
     for (const pm of placemarks) {
-      // Point
-      const p = pm.getElementsByTagName('Point')[0]
-      if (p) {
-        const coords = p.getElementsByTagName('coordinates')[0]?.textContent?.trim()
-        if (coords) {
-          const [lon, lat] = coords.split(',').map((s) => Number.parseFloat(s))
-          out.push({
-            id: getId(),
-            geomType: 'Point',
-            coords: [lon, lat],
-            label: `${lat.toFixed(6)}, ${lon.toFixed(6)}`,
-            source: sourceType,
-            sourceData: sourcePayload,
-          })
-        }
-        if (out.length >= remainingSlots) break
+      const { item, excludedArea } = parsePlacemark(pm, areaUnit, lengthUnit, sourceType, sourcePayload)
+      if (excludedArea) {
+        excludedByArea += 1
+      } else if (item) {
+        out.push(item)
       }
-      const ls = pm.getElementsByTagName('LineString')[0]
-      if (ls) {
-        const coords = ls.getElementsByTagName('coordinates')[0]?.textContent?.trim()
-        if (coords) {
-          const parts = coords.split(/\s+/).map((c) => c.split(',').map((s) => Number.parseFloat(s)))
-          const coordsArr = parts.map((p) => [p[0], p[1]])
-          const len = turf.length(turf.lineString(coordsArr), {
-            units: 'meters',
-          })
-          out.push({
-            id: getId(),
-            geomType: 'LineString',
-            coords: coordsArr,
-            label: `${convertLength(len, lengthUnit).toLocaleString(undefined, LOCALE_STRING_OPTIONS)} ${lengthUnit}`,
-            metric: len,
-            source: sourceType,
-            sourceData: sourcePayload,
-          })
-        }
-        if (out.length >= remainingSlots) break
-      }
-      const poly = pm.getElementsByTagName('Polygon')[0]
-      if (poly) {
-        const lr = poly.getElementsByTagName('LinearRing')[0]
-        const coords = lr?.getElementsByTagName('coordinates')[0]?.textContent?.trim()
-        if (coords) {
-          const parts = coords.split(/\s+/).map((c) => c.split(',').map((s) => Number.parseFloat(s)))
-          const coordsArr = parts.map((p) => [p[0], p[1]])
-          const area = turf.area(turf.polygon([coordsArr]))
-          if (area > MAX_AREA_SQM) {
-            excludedByArea += 1
-          } else {
-            out.push({
-              id: getId(),
-              geomType: 'Polygon',
-              coords: coordsArr,
-              label: `${convertArea(area, areaUnit).toLocaleString(undefined, LOCALE_STRING_OPTIONS)} ${areaUnit}`,
-              metric: area,
-              source: sourceType,
-              sourceData: sourcePayload,
-            })
-          }
-        }
-        if (out.length >= remainingSlots) break
-      }
+      if (out.length >= remainingSlots) break
     }
     return { items: out, excludedByArea }
   }
@@ -453,144 +719,82 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
   }
 
   // --- Extent add handler ---
-  const handleAddExtent = () => {
-    // Only support GCS numeric xmin/xmax/ymin/ymax for now and UTM similar; MGRS as free text
-    if (coordSystem === 'MGRS') {
-      if (!mgrsMin || !mgrsMax) return
-      try {
-        // Convert MGRS grid refs to lon/lat points (returned as [lon, lat])
-        const pA = mgrs.toPoint(mgrsMin.trim()) as [number, number]
-        const pB = mgrs.toPoint(mgrsMax.trim()) as [number, number]
+  const showMaxAreaAlert = () =>
+    showAlert({
+      status: 'warning',
+      title: t('form.taskForm.sarAnalysisAreaForm.cannotAddAnalysisArea'),
+      content: t('form.taskForm.sarAnalysisAreaForm.maxAreaInfo'),
+    })
 
-        // Build axis-aligned rectangle from the two points
-        const minLon = Math.min(pA[0], pB[0])
-        const maxLon = Math.max(pA[0], pB[0])
-        const minLat = Math.min(pA[1], pB[1])
-        const maxLat = Math.max(pA[1], pB[1])
+  const addExtentPolygon = (coords: [number, number][], area: number, sourceData: Record<string, unknown>) => {
+    updateFeaturesInternal((prev) =>
+      prev.length < MAX_FEATURES
+        ? [...prev, makePolygonFeature(coords, area, areaUnit, 'extent', sourceData)]
+        : prev,
+    )
+    const bbox = turf.bbox(turf.polygon([coords]))
+    map?.fitBounds(bbox as LngLatBoundsLike, fitBoundsOptions)
+  }
 
-        const coords: [number, number][] = [
-          [minLon, minLat],
-          [maxLon, minLat],
-          [maxLon, maxLat],
-          [minLon, maxLat],
-          [minLon, minLat],
-        ]
-        const polygon = turf.polygon([coords])
-        const area = turf.area(polygon)
-        const id = getId()
-        if (area > MAX_AREA_SQM) {
-          showAlert({
-            status: 'warning',
-            title: t('form.taskForm.sarAnalysisAreaForm.cannotAddAnalysisArea'),
-            content: t('form.taskForm.sarAnalysisAreaForm.maxAreaInfo'),
-          })
-        } else {
-          updateFeaturesInternal((prev) =>
-            prev.length < MAX_FEATURES
-              ? [
-                  ...prev,
-                  {
-                    id,
-                    geomType: 'Polygon',
-                    coords,
-                    label: `${convertArea(area, areaUnit).toLocaleString(undefined, LOCALE_STRING_OPTIONS)} ${areaUnit}`,
-                    metric: area,
-                    source: 'extent',
-                    sourceData: {
-                      coordinateTypeId: 4,
-                      mgrsMin,
-                      mgrsMax,
-                    },
-                  },
-                ]
-              : prev,
-          )
-          const bbox = turf.bbox(polygon)
-          map?.fitBounds(bbox as LngLatBoundsLike, fitBoundsOptions)
-        }
-      } catch {}
+  const handleAddExtentMGRS = () => {
+    if (!mgrsMin || !mgrsMax) return
+    try {
+      const pA = mgrs.toPoint(mgrsMin.trim()) as [number, number]
+      const pB = mgrs.toPoint(mgrsMax.trim()) as [number, number]
+      const coords: [number, number][] = [
+        [Math.min(pA[0], pB[0]), Math.min(pA[1], pB[1])],
+        [Math.max(pA[0], pB[0]), Math.min(pA[1], pB[1])],
+        [Math.max(pA[0], pB[0]), Math.max(pA[1], pB[1])],
+        [Math.min(pA[0], pB[0]), Math.max(pA[1], pB[1])],
+        [Math.min(pA[0], pB[0]), Math.min(pA[1], pB[1])],
+      ]
+      const area = turf.area(turf.polygon([coords]))
+      if (area > MAX_AREA_SQM) {
+        showMaxAreaAlert()
+      } else {
+        addExtentPolygon(coords, area, { coordinateTypeId: 4, mgrsMin, mgrsMax })
+      }
+    } catch {}
+    setMgrsMin('')
+    setMgrsMax('')
+  }
 
-      setMgrsMin('')
-      setMgrsMax('')
-      return
-    }
-    const xn = Number(xmin)
-    const xx = Number(xmax)
-    const yn = Number(ymin)
-    const yx = Number(ymax)
-    if (Number.isNaN(xn) || Number.isNaN(xx) || Number.isNaN(yn) || Number.isNaN(yx)) return
-
-    // If UTM zones are selected, interpret values as eastings/northings and convert to WGS84 lon/lat
-    let coords: [number, number][] = []
-    let coordinateTypeId = 1 // GCS by default
-    let zoneId: number | null = null
+  const resolveNumericExtentCoords = (
+    xn: number, xx: number, yn: number, yx: number,
+  ): { coords: [number, number][]; coordinateTypeId: number; zoneId: number | null } => {
     if (coordSystem === 'UTM47N' || coordSystem === 'UTM48N') {
-      coordinateTypeId = coordSystem === 'UTM47N' ? 2 : 3
-      zoneId = coordSystem === 'UTM47N' ? 1 : 2
+      const coordinateTypeId = coordSystem === 'UTM47N' ? 2 : 3
+      const zoneId = coordSystem === 'UTM47N' ? 1 : 2
       const zone = coordSystem === 'UTM47N' ? 47 : 48
       const utmDef = `+proj=utm +zone=${zone} +datum=WGS84 +units=m +no_defs`
-      const cornersUTM: [number, number][] = [
-        [xn, yn],
-        [xx, yn],
-        [xx, yx],
-        [xn, yx],
-        [xn, yn],
-      ]
-      coords = cornersUTM.map(([e, n]) => {
-        // proj4 returns [lon, lat]
-        const p = proj4(utmDef, 'WGS84', [e, n]) as [number, number]
-        return [p[0], p[1]]
-      })
-    } else {
-      // Create square polygon from extent (use [lng,lat])
-      coords = [
-        [xn, yn],
-        [xx, yn],
-        [xx, yx],
-        [xn, yx],
-        [xn, yn],
-      ]
-    }
-    const polygon = turf.polygon([coords])
-    const area = turf.area(polygon)
-    const id = getId()
-    if (area > MAX_AREA_SQM) {
-      showAlert({
-        status: 'warning',
-        title: t('form.taskForm.sarAnalysisAreaForm.cannotAddAnalysisArea'),
-        content: t('form.taskForm.sarAnalysisAreaForm.maxAreaInfo'),
-      })
-    } else {
-      updateFeaturesInternal((prev) =>
-        prev.length < MAX_FEATURES
-          ? [
-              ...prev,
-              {
-                id,
-                geomType: 'Polygon',
-                coords,
-                label: `${convertArea(area, areaUnit).toLocaleString(undefined, LOCALE_STRING_OPTIONS)} ${areaUnit}`,
-                metric: area,
-                source: 'extent',
-                sourceData: {
-                  coordinateTypeId,
-                  zoneId,
-                  xMin: xn,
-                  xMax: xx,
-                  yMin: yn,
-                  yMax: yx,
-                },
-              },
-            ]
-          : prev,
+      const coords = ([[xn, yn], [xx, yn], [xx, yx], [xn, yx], [xn, yn]] as [number, number][]).map(
+        ([e, n]) => proj4(utmDef, 'WGS84', [e, n]) as [number, number],
       )
-      const bbox = turf.bbox(polygon)
-      map?.fitBounds(bbox as LngLatBoundsLike, fitBoundsOptions)
+      return { coords, coordinateTypeId, zoneId }
     }
-    setXmin('')
-    setXmax('')
-    setYmin('')
-    setYmax('')
+    return {
+      coords: [[xn, yn], [xx, yn], [xx, yx], [xn, yx], [xn, yn]],
+      coordinateTypeId: 1,
+      zoneId: null,
+    }
+  }
+
+  const handleAddExtent = () => {
+    if (coordSystem === 'MGRS') {
+      handleAddExtentMGRS()
+      return
+    }
+    const xn = Number(xmin), xx = Number(xmax), yn = Number(ymin), yx = Number(ymax)
+    if (Number.isNaN(xn) || Number.isNaN(xx) || Number.isNaN(yn) || Number.isNaN(yx)) return
+
+    const { coords, coordinateTypeId, zoneId } = resolveNumericExtentCoords(xn, xx, yn, yx)
+    const area = turf.area(turf.polygon([coords]))
+    if (area > MAX_AREA_SQM) {
+      showMaxAreaAlert()
+    } else {
+      addExtentPolygon(coords, area, { coordinateTypeId, zoneId, xMin: xn, xMax: xx, yMin: yn, yMax: yx })
+    }
+    setXmin(''); setXmax(''); setYmin(''); setYmax('')
   }
 
   // --- Draw handlers (map integration deferred) ---
@@ -603,29 +807,22 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
 
   const cancelDraw = () => setDrawingMode('none')
 
-  const finishDrawing = useCallback(() => {
-    if (drawingMode === 'point' && currentPoints.length === 1) {
-      const c = currentPoints[0]
+  const finishDrawPoint = useCallback(
+    (point: [number, number]) => {
       const id = getId()
-      const label = `${c[1].toFixed(6)}, ${c[0].toFixed(6)}`
+      const label = `${point[1].toFixed(6)}, ${point[0].toFixed(6)}`
       updateFeaturesInternal((prev) =>
         prev.length < MAX_FEATURES
-          ? [
-              ...prev,
-              {
-                id,
-                geomType: 'Point',
-                coords: c,
-                label,
-                source: 'draw',
-                sourceData: { mode: 'point' },
-              },
-            ]
+          ? [...prev, { id, geomType: 'Point', coords: point, label, source: 'draw', sourceData: { mode: 'point' } }]
           : prev,
       )
-    }
-    if (drawingMode === 'polygon' && currentPoints.length > 2) {
-      const coords = [...currentPoints, currentPoints[0]]
+    },
+    [updateFeaturesInternal],
+  )
+
+  const finishDrawPolygon = useCallback(
+    (points: [number, number][]) => {
+      const coords = [...points, points[0]]
       const area = turf.area(turf.polygon([coords]))
       if (area > MAX_AREA_SQM) {
         showAlert({
@@ -633,26 +830,25 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
           title: t('form.taskForm.sarAnalysisAreaForm.cannotAddAnalysisArea'),
           content: t('form.taskForm.sarAnalysisAreaForm.maxAreaInfo'),
         })
-      } else {
-        const id = getId()
-        const label = `${convertArea(area, areaUnit).toLocaleString(undefined, LOCALE_STRING_OPTIONS)} ${areaUnit}`
-        updateFeaturesInternal((prev) =>
-          prev.length < MAX_FEATURES
-            ? [
-                ...prev,
-                {
-                  id,
-                  geomType: 'Polygon',
-                  coords: currentPoints,
-                  label,
-                  metric: area,
-                  source: 'draw',
-                  sourceData: { mode: 'polygon' },
-                },
-              ]
-            : prev,
-        )
+        return
       }
+      const id = getId()
+      const label = `${convertArea(area, areaUnit).toLocaleString(undefined, LOCALE_STRING_OPTIONS)} ${areaUnit}`
+      updateFeaturesInternal((prev) =>
+        prev.length < MAX_FEATURES
+          ? [...prev, { id, geomType: 'Polygon', coords: points, label, metric: area, source: 'draw', sourceData: { mode: 'polygon' } }]
+          : prev,
+      )
+    },
+    [areaUnit, showAlert, t, updateFeaturesInternal],
+  )
+
+  const finishDrawing = useCallback(() => {
+    if (drawingMode === 'point' && currentPoints.length === 1) {
+      finishDrawPoint(currentPoints[0])
+    }
+    if (drawingMode === 'polygon' && currentPoints.length > 2) {
+      finishDrawPolygon(currentPoints)
     }
     drawingStateRef.current.mouseLngLat = null
     drawingStateRef.current.points = []
@@ -660,7 +856,7 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
     setMouseLngLat(null)
     setDrawingMode('none')
     currentFeatureId.current = null
-  }, [drawingMode, currentPoints, areaUnit, showAlert, t])
+  }, [drawingMode, currentPoints, finishDrawPoint, finishDrawPolygon])
 
   // Map preview layer ids
   const CURRENT_POLYGON_ID = 'sar-area-current-polygon'
@@ -702,34 +898,7 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
 
   const addPreviewPointLayer = useCallback(
     (mapInstance: any, coord: [number, number]) => {
-      // Use a symbol layer with a pin icon created from the embedded `pinSvg` string.
-      const ICON_NAME = 'sar-pin-icon'
-      try {
-        // Load image once and cache it
-        if (!pinImageLoadedRef.current && !pinImageRef.current) {
-          const svgText = pinSvg
-          const img = new Image()
-          img.crossOrigin = 'anonymous'
-          img.onload = () => {
-            pinImageRef.current = img
-            pinImageLoadedRef.current = true
-            try {
-              if (typeof mapInstance.hasImage !== 'function' || !mapInstance.hasImage(ICON_NAME)) {
-                mapInstance.addImage(ICON_NAME, img)
-              }
-            } catch {}
-          }
-          img.onerror = () => {}
-          img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText)
-        } else if (pinImageLoadedRef.current && pinImageRef.current) {
-          try {
-            if (typeof mapInstance.hasImage !== 'function' || !mapInstance.hasImage(ICON_NAME)) {
-              mapInstance.addImage(ICON_NAME, pinImageRef.current)
-            }
-          } catch {}
-        }
-      } catch {}
-
+      try { loadOrAddPinIcon(mapInstance, pinImageLoadedRef, pinImageRef) } catch {}
       if (mapInstance.getSource(CURRENT_POINT_ID)) {
         mapInstance.getSource(CURRENT_POINT_ID).setData({
           type: 'Feature',
@@ -738,19 +907,15 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
       } else {
         mapInstance.addSource(CURRENT_POINT_ID, {
           type: 'geojson',
-          data: {
-            type: 'Feature',
-            geometry: { type: 'Point', coordinates: coord },
-          },
+          data: { type: 'Feature', geometry: { type: 'Point', coordinates: coord } },
         })
-        // symbol icon layer (will render once image is available)
         mapInstance.addLayer(
           {
             id: CURRENT_POINT_ID,
             type: 'symbol',
             source: CURRENT_POINT_ID,
             layout: {
-              'icon-image': ICON_NAME,
+              'icon-image': SAR_PIN_ICON,
               'icon-size': is2K ? 1.6 : 0.8,
               'icon-anchor': 'bottom',
               'icon-allow-overlap': true,
@@ -832,193 +997,130 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
     if (mapInstance.getSource(CURRENT_VERTICES_ID)) mapInstance.removeSource(CURRENT_VERTICES_ID)
   }, [])
 
+  // --- Style-data restore helpers (useCallback so they stay stable and don't nest inside useEffect) ---
+
+  const ensureRasterLayer = useCallback(
+    (sourceId: string, layerId: string, tileUrl: string) => {
+      try {
+        if (!map?.getSource(sourceId)) {
+          map?.addSource(sourceId, { type: 'raster', tiles: [tileUrl], tileSize: 256 })
+        }
+        if (!map?.getLayer(layerId)) {
+          map?.addLayer(
+            { id: layerId, type: 'raster', source: sourceId, paint: { 'raster-opacity': 1 } },
+            layerIdConfig.customReferer,
+          )
+        }
+      } catch {}
+    },
+    [map],
+  )
+
+  const restoreRasterTiles = useCallback(() => {
+    if (!map) return
+    const { before, after } = rasterSourcesRef.current
+    if (before) {
+      ensureRasterLayer(IMAGE_BEFORE_SOURCE, IMAGE_BEFORE_LAYER, before)
+      if (map.getLayer(IMAGE_BEFORE_LAYER)) {
+        map.setLayoutProperty(IMAGE_BEFORE_LAYER, 'visibility', beforeVisible ? 'visible' : 'none')
+      }
+    }
+    if (after) {
+      ensureRasterLayer(IMAGE_AFTER_SOURCE, IMAGE_AFTER_LAYER, after)
+      if (map.getLayer(IMAGE_AFTER_LAYER)) {
+        map.setLayoutProperty(IMAGE_AFTER_LAYER, 'visibility', afterVisible ? 'visible' : 'none')
+      }
+    }
+  }, [map, beforeVisible, afterVisible, ensureRasterLayer])
+
+  const restorePreviewLayers = useCallback(() => {
+    if (!map || drawingMode === 'none') return
+    const previewCoords = drawingStateRef.current.points
+    const mouse = drawingStateRef.current.mouseLngLat
+    if (drawingMode === 'polygon') {
+      const allCoords = mouse ? [...previewCoords, mouse] : [...previewCoords]
+      if (allCoords.length > 0) addPreviewVerticesLayer(map, allCoords)
+      if (allCoords.length > 1) addPreviewLineLayer(map, allCoords)
+      if (allCoords.length > 2) addPreviewPolygonLayer(map, allCoords)
+    }
+    if (drawingMode === 'point' && mouse) addPreviewPointLayer(map, mouse)
+  }, [map, drawingMode, addPreviewVerticesLayer, addPreviewLineLayer, addPreviewPolygonLayer, addPreviewPointLayer])
+
+  const restorePointFeature = useCallback(
+    (feature: FeatureItem) => {
+      if (!map) return
+      const pointId = `sar-area-point-${feature.id}`
+      if (map.getSource(pointId)) return
+      map.addSource(pointId, {
+        type: 'geojson',
+        data: { type: 'Feature', geometry: { type: 'Point', coordinates: feature.coords as any }, properties: {} },
+      })
+      try { loadOrAddPinIcon(map, pinImageLoadedRef, pinImageRef) } catch {}
+      const iconLayerId = `${pointId}-icon`
+      if (!map.getLayer(iconLayerId)) {
+        map.addLayer(
+          { id: iconLayerId, type: 'symbol', source: pointId, layout: { 'icon-image': SAR_PIN_ICON, 'icon-size': is2K ? 1.6 : 0.8, 'icon-anchor': 'bottom', 'icon-allow-overlap': true } },
+          layerIdConfig.customReferer,
+        )
+      }
+    },
+    [map, is2K],
+  )
+
+  const restoreLineFeature = useCallback(
+    (feature: FeatureItem) => {
+      if (!map) return
+      const lineId = `sar-area-line-${feature.id}`
+      if (map.getSource(lineId)) return
+      map.addSource(lineId, {
+        type: 'geojson',
+        data: { type: 'Feature', geometry: { type: 'LineString', coordinates: feature.coords as any }, properties: {} },
+      })
+      map.addLayer(
+        { id: lineId, type: 'line', source: lineId, paint: { 'line-color': '#0E94FA', 'line-width': 2 } },
+        layerIdConfig.customReferer,
+      )
+    },
+    [map],
+  )
+
+  const restorePolygonFeature = useCallback(
+    (feature: FeatureItem) => {
+      if (!map) return
+      const polygonId = `sar-area-polygon-${feature.id}`
+      if (map.getSource(polygonId)) return
+      const polyCoords = feature.coords as number[][]
+      map.addSource(polygonId, {
+        type: 'geojson',
+        data: { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[...polyCoords, polyCoords[0]]] }, properties: {} },
+      })
+      map.addLayer(
+        { id: `${polygonId}-fill`, type: 'fill', source: polygonId, paint: { 'fill-color': '#0E94FA', 'fill-opacity': 0.3 } },
+        layerIdConfig.customReferer,
+      )
+      map.addLayer(
+        { id: `${polygonId}-outline`, type: 'line', source: polygonId, paint: { 'line-color': '#0E94FA', 'line-width': 2 } },
+        layerIdConfig.customReferer,
+      )
+    },
+    [map],
+  )
+
   // Register style-data handler to restore raster and feature layers after basemap change
   useEffect(() => {
     if (!map) return
-
     const SAR_HANDLER_ID = 'sar-analysis-area-form-handler'
     const registerHandler = useMapStore.getState().registerStyleDataHandler
     const unregisterHandler = useMapStore.getState().unregisterStyleDataHandler
 
     const handleStyleData = () => {
-      // Restore raster layers
-      const ensureRaster = (sourceId: string, layerId: string, tileUrl?: string) => {
-        if (!tileUrl) return
-        try {
-          if (!map.getSource(sourceId)) {
-            map.addSource(sourceId, {
-              type: 'raster',
-              tiles: [tileUrl],
-              tileSize: 256,
-            })
-          }
-          if (!map.getLayer(layerId)) {
-            map.addLayer(
-              {
-                id: layerId,
-                type: 'raster',
-                source: sourceId,
-                paint: { 'raster-opacity': 1 },
-              },
-              layerIdConfig.customReferer,
-            )
-          }
-        } catch {}
-      }
-
-      // Restore raster tiles
-      if (rasterSourcesRef.current.before) {
-        ensureRaster(IMAGE_BEFORE_SOURCE, IMAGE_BEFORE_LAYER, rasterSourcesRef.current.before)
-        if (map.getLayer(IMAGE_BEFORE_LAYER)) {
-          map.setLayoutProperty(IMAGE_BEFORE_LAYER, 'visibility', beforeVisible ? 'visible' : 'none')
-        }
-      }
-      if (rasterSourcesRef.current.after) {
-        ensureRaster(IMAGE_AFTER_SOURCE, IMAGE_AFTER_LAYER, rasterSourcesRef.current.after)
-        if (map.getLayer(IMAGE_AFTER_LAYER)) {
-          map.setLayoutProperty(IMAGE_AFTER_LAYER, 'visibility', afterVisible ? 'visible' : 'none')
-        }
-      }
-
-      // Restore preview layers if drawing
-      if (drawingMode !== 'none') {
-        const previewCoords = drawingStateRef.current.points
-        const mouseLngLat = drawingStateRef.current.mouseLngLat
-
-        if (drawingMode === 'polygon') {
-          let allCoords = [...previewCoords]
-          if (mouseLngLat) allCoords = [...allCoords, mouseLngLat]
-
-          if (allCoords.length > 0) {
-            addPreviewVerticesLayer(map, allCoords)
-          }
-          if (allCoords.length > 1) {
-            addPreviewLineLayer(map, allCoords)
-          }
-          if (allCoords.length > 2) {
-            addPreviewPolygonLayer(map, allCoords)
-          }
-        }
-        if (drawingMode === 'point' && mouseLngLat) {
-          addPreviewPointLayer(map, mouseLngLat)
-        }
-      }
-
-      // Restore finished features
+      restoreRasterTiles()
+      restorePreviewLayers()
       featuresDataRef.current.forEach((feature) => {
         try {
-          if (feature.geomType === 'Point') {
-            const pointId = `sar-area-point-${feature.id}`
-            if (!map.getSource(pointId)) {
-              map.addSource(pointId, {
-                type: 'geojson',
-                data: {
-                  type: 'Feature',
-                  geometry: {
-                    type: 'Point',
-                    coordinates: feature.coords as any,
-                  },
-                  properties: {},
-                },
-              })
-
-              const ICON_NAME = 'sar-pin-icon'
-              if (pinImageLoadedRef.current && pinImageRef.current) {
-                try {
-                  if (!map.hasImage(ICON_NAME)) {
-                    map.addImage(ICON_NAME, pinImageRef.current)
-                  }
-                } catch {}
-              }
-
-              const iconLayerId = `${pointId}-icon`
-              if (!map.getLayer(iconLayerId)) {
-                map.addLayer(
-                  {
-                    id: iconLayerId,
-                    type: 'symbol',
-                    source: pointId,
-                    layout: {
-                      'icon-image': ICON_NAME,
-                      'icon-size': is2K ? 1.6 : 0.8,
-                      'icon-anchor': 'bottom',
-                      'icon-allow-overlap': true,
-                    },
-                  },
-                  layerIdConfig.customReferer,
-                )
-              }
-            }
-          }
-          if (feature.geomType === 'LineString') {
-            const lineId = `sar-area-line-${feature.id}`
-            if (!map.getSource(lineId)) {
-              map.addSource(lineId, {
-                type: 'geojson',
-                data: {
-                  type: 'Feature',
-                  geometry: {
-                    type: 'LineString',
-                    coordinates: feature.coords as any,
-                  },
-                  properties: {},
-                },
-              })
-              map.addLayer(
-                {
-                  id: lineId,
-                  type: 'line',
-                  source: lineId,
-                  paint: {
-                    'line-color': '#0E94FA',
-                    'line-width': 2,
-                  },
-                },
-                layerIdConfig.customReferer,
-              )
-            }
-          }
-          if (feature.geomType === 'Polygon') {
-            const polygonId = `sar-area-polygon-${feature.id}`
-            if (!map.getSource(polygonId)) {
-              const polyCoords = feature.coords as number[][]
-              map.addSource(polygonId, {
-                type: 'geojson',
-                data: {
-                  type: 'Feature',
-                  geometry: {
-                    type: 'Polygon',
-                    coordinates: [[...polyCoords, polyCoords[0]]],
-                  },
-                  properties: {},
-                },
-              })
-              map.addLayer(
-                {
-                  id: `${polygonId}-fill`,
-                  type: 'fill',
-                  source: polygonId,
-                  paint: {
-                    'fill-color': '#0E94FA',
-                    'fill-opacity': 0.3,
-                  },
-                },
-                layerIdConfig.customReferer,
-              )
-              map.addLayer(
-                {
-                  id: `${polygonId}-outline`,
-                  type: 'line',
-                  source: polygonId,
-                  paint: {
-                    'line-color': '#0E94FA',
-                    'line-width': 2,
-                  },
-                },
-                layerIdConfig.customReferer,
-              )
-            }
-          }
+          if (feature.geomType === 'Point') restorePointFeature(feature)
+          if (feature.geomType === 'LineString') restoreLineFeature(feature)
+          if (feature.geomType === 'Polygon') restorePolygonFeature(feature)
         } catch {}
       })
     }
@@ -1027,14 +1129,11 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
     return () => unregisterHandler(map, SAR_HANDLER_ID)
   }, [
     map,
-    drawingMode,
-    beforeVisible,
-    afterVisible,
-    addPreviewPolygonLayer,
-    addPreviewPointLayer,
-    addPreviewLineLayer,
-    addPreviewVerticesLayer,
-    is2K,
+    restoreRasterTiles,
+    restorePreviewLayers,
+    restorePointFeature,
+    restoreLineFeature,
+    restorePolygonFeature,
   ])
 
   const zoomToImage = useCallback(
@@ -1064,56 +1163,50 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
     [map],
   )
 
-  // Manage raster tile layers for imageBefore/imageAfter: keep sources/layers present and toggle visibility
-  useEffect(() => {
-    if (!map) return
-
-    const ensureRaster = (sourceId: string, layerId: string, tileUrl?: string) => {
-      if (!tileUrl) return
+  const ensureRasterTile = useCallback(
+    (sourceId: string, layerId: string, tileUrl: string) => {
       try {
-        if (!map.getSource(sourceId)) {
-          map.addSource(sourceId, {
-            type: 'raster',
-            tiles: [tileUrl],
-            tileSize: 256,
-          })
+        if (!map?.getSource(sourceId)) {
+          map?.addSource(sourceId, { type: 'raster', tiles: [tileUrl], tileSize: 256 })
         }
-        if (!map.getLayer(layerId)) {
-          map.addLayer(
-            {
-              id: layerId,
-              type: 'raster',
-              source: sourceId,
-              paint: { 'raster-opacity': 1 },
-            },
+        if (!map?.getLayer(layerId)) {
+          map?.addLayer(
+            { id: layerId, type: 'raster', source: sourceId, paint: { 'raster-opacity': 1 } },
             layerIdConfig.customReferer,
           )
-          if (tileUrl === imageBefore.tileUrl) {
-            zoomToImage(imageBefore)
-          }
+          if (tileUrl === imageBefore.tileUrl) zoomToImage(imageBefore)
         }
       } catch {}
-    }
+    },
+    [map, imageBefore, zoomToImage],
+  )
 
-    const setVisibility = (layerId: string, visible: boolean) => {
+  const setLayerVisibility = useCallback(
+    (layerId: string, visible: boolean) => {
       try {
-        if (map.getLayer(layerId)) {
+        if (map?.getLayer(layerId)) {
           map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none')
         }
       } catch {}
-    }
+    },
+    [map],
+  )
+
+  // Manage raster tile layers for imageBefore/imageAfter: keep sources/layers present and toggle visibility
+  useEffect(() => {
+    if (!map) return
 
     // Store raster URLs in refs for basemap restoration
     if (imageBefore.tileUrl) rasterSourcesRef.current.before = imageBefore.tileUrl
     if (imageAfter.tileUrl) rasterSourcesRef.current.after = imageAfter.tileUrl
 
     // Ensure sources/layers exist when tileUrl present
-    if (imageBefore.tileUrl) ensureRaster(IMAGE_BEFORE_SOURCE, IMAGE_BEFORE_LAYER, imageBefore.tileUrl)
-    if (imageAfter.tileUrl) ensureRaster(IMAGE_AFTER_SOURCE, IMAGE_AFTER_LAYER, imageAfter.tileUrl)
+    if (imageBefore.tileUrl) ensureRasterTile(IMAGE_BEFORE_SOURCE, IMAGE_BEFORE_LAYER, imageBefore.tileUrl)
+    if (imageAfter.tileUrl) ensureRasterTile(IMAGE_AFTER_SOURCE, IMAGE_AFTER_LAYER, imageAfter.tileUrl)
 
     // Toggle visibility
-    setVisibility(IMAGE_BEFORE_LAYER, !!(beforeVisible && imageBefore.tileUrl))
-    setVisibility(IMAGE_AFTER_LAYER, !!(afterVisible && imageAfter.tileUrl))
+    setLayerVisibility(IMAGE_BEFORE_LAYER, !!(beforeVisible && imageBefore.tileUrl))
+    setLayerVisibility(IMAGE_AFTER_LAYER, !!(afterVisible && imageAfter.tileUrl))
 
     // Cleanup: remove sources/layers only if tileUrl absent on unmount
     return () => {
@@ -1130,82 +1223,79 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
         }
       } catch {}
     }
-  }, [map, beforeVisible, afterVisible, imageBefore, imageAfter, zoomToImage])
+  }, [map, beforeVisible, afterVisible, imageBefore, imageAfter, ensureRasterTile, setLayerVisibility])
 
-  // Attach map event handlers for drawing
-  useEffect(() => {
-    if (!map) return
-    const handleMapClick = (e: any) => {
+  const handlePointClick = useCallback(
+    (lnglat: [number, number]) => {
+      finishDrawPoint(lnglat)
+      drawingStateRef.current.mouseLngLat = null
+      drawingStateRef.current.points = []
+      setMouseLngLat(null)
+      setCurrentPoints([])
+      setDrawingMode('none')
+      currentFeatureId.current = null
+    },
+    [finishDrawPoint],
+  )
+
+  const handlePolygonClick = useCallback((lnglat: [number, number]) => {
+    setCurrentPoints((prev) => {
+      const next = [...prev, lnglat]
+      drawingStateRef.current.points = next
+      return next
+    })
+  }, [])
+
+  const handleMapClick = useCallback(
+    (e: any) => {
       if (drawingMode === 'none') return
       const lnglat: [number, number] = [e.lngLat.lng, e.lngLat.lat]
-      if (drawingMode === 'point') {
-        // directly create point feature here to avoid stale state in finishDrawing
-        const id = getId()
-        const label = `${lnglat[1].toFixed(6)}, ${lnglat[0].toFixed(6)}`
-        updateFeaturesInternal((prev) =>
-          prev.length < MAX_FEATURES
-            ? [
-                ...prev,
-                {
-                  id,
-                  geomType: 'Point',
-                  coords: lnglat,
-                  label,
-                  source: 'draw',
-                  sourceData: { mode: 'point' },
-                },
-              ]
-            : prev,
-        )
-        drawingStateRef.current.mouseLngLat = null
-        drawingStateRef.current.points = []
-        setMouseLngLat(null)
-        setCurrentPoints([])
-        setDrawingMode('none')
-        currentFeatureId.current = null
-        return
-      }
-      // polygon mode
-      setCurrentPoints((prev) => {
-        const next = [...prev, lnglat]
-        drawingStateRef.current.points = next
-        return next
-      })
-    }
+      if (drawingMode === 'point') handlePointClick(lnglat)
+      else handlePolygonClick(lnglat)
+    },
+    [drawingMode, handlePointClick, handlePolygonClick],
+  )
 
-    const handleMapDblClick = (e: any) => {
+  const handleMapDblClick = useCallback(
+    (e: any) => {
       if (drawingMode !== 'polygon') return
       e.preventDefault()
       finishDrawing()
-    }
+    },
+    [drawingMode, finishDrawing],
+  )
 
-    const handleMapMouseMove = (e: any) => {
+  const updatePolygonPreview = useCallback(
+    (previewCoords: [number, number][]) => {
+      if (previewCoords.length > 0) addPreviewVerticesLayer(map, previewCoords)
+      if (previewCoords.length > 1) addPreviewLineLayer(map, previewCoords)
+      if (previewCoords.length > 2) addPreviewPolygonLayer(map, previewCoords)
+    },
+    [map, addPreviewVerticesLayer, addPreviewLineLayer, addPreviewPolygonLayer],
+  )
+
+  const handleMapMouseMove = useCallback(
+    (e: any) => {
       if (drawingMode === 'none') return
       const newMouseLngLat: [number, number] = [e.lngLat.lng, e.lngLat.lat]
       setMouseLngLat(newMouseLngLat)
       drawingStateRef.current.mouseLngLat = newMouseLngLat
 
-      let previewCoords = [...drawingStateRef.current.points]
-      if (drawingStateRef.current.mouseLngLat) previewCoords = [...previewCoords, drawingStateRef.current.mouseLngLat]
-      if (drawingMode === 'polygon') {
-        // always show vertex markers so the user sees feedback on first/second clicks
-        if (previewCoords.length > 0) {
-          addPreviewVerticesLayer(map, previewCoords)
-        }
-        // show connecting line when at least two points
-        if (previewCoords.length > 1) {
-          addPreviewLineLayer(map, previewCoords)
-        }
-        // show filled polygon when more than 2
-        if (previewCoords.length > 2) {
-          addPreviewPolygonLayer(map, previewCoords)
-        }
-      }
+      const previewCoords = drawingStateRef.current.mouseLngLat
+        ? [...drawingStateRef.current.points, drawingStateRef.current.mouseLngLat]
+        : [...drawingStateRef.current.points]
+
+      if (drawingMode === 'polygon') updatePolygonPreview(previewCoords)
       if (drawingMode === 'point' && drawingStateRef.current.mouseLngLat) {
         addPreviewPointLayer(map, drawingStateRef.current.mouseLngLat)
       }
-    }
+    },
+    [drawingMode, updatePolygonPreview, addPreviewPointLayer, map],
+  )
 
+  // Attach map event handlers for drawing
+  useEffect(() => {
+    if (!map) return
     map.on('click', handleMapClick)
     map.on('dblclick', handleMapDblClick)
     map.on('mousemove', handleMapMouseMove)
@@ -1214,16 +1304,7 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
       map.off('dblclick', handleMapDblClick)
       map.off('mousemove', handleMapMouseMove)
     }
-  }, [
-    map,
-    drawingMode,
-    finishDrawing,
-    updateFeaturesInternal,
-    addPreviewPolygonLayer,
-    addPreviewPointLayer,
-    addPreviewLineLayer,
-    addPreviewVerticesLayer,
-  ])
+  }, [map, handleMapClick, handleMapDblClick, handleMapMouseMove])
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: -- Drawing mode change: remove preview layers
   useEffect(() => {
@@ -1236,179 +1317,96 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
     }
   }, [map, removePreviewLayers, drawingMode])
 
-  // Draw finished features onto the map
+
+  const addPinIconLayer = useCallback(
+    (mapInstance: any, pointId: string, img: HTMLImageElement) => {
+      try { if (typeof mapInstance.hasImage !== 'function' || !mapInstance.hasImage(SAR_PIN_ICON)) mapInstance.addImage(SAR_PIN_ICON, img) } catch {}
+      const iconLayerId = `${pointId}-icon`
+      if (!mapInstance.getLayer(iconLayerId)) {
+        mapInstance.addLayer(
+          { id: iconLayerId, type: 'symbol', source: pointId, layout: { 'icon-image': SAR_PIN_ICON, 'icon-size': is2K ? 1.6 : 0.8, 'icon-anchor': 'bottom', 'icon-allow-overlap': true } },
+          layerIdConfig.customReferer,
+        )
+      }
+    },
+    [is2K],
+  )
+
+  const drawPointFeature = useCallback(
+    (mapInstance: any, feature: FeatureItem) => {
+      const pointId = `sar-area-point-${feature.id}`
+      mapInstance.addSource(pointId, {
+        type: 'geojson',
+        data: { type: 'Feature', geometry: { type: 'Point', coordinates: feature.coords as any }, properties: {} },
+      })
+      try {
+        loadOrAddPinIcon(mapInstance, pinImageLoadedRef, pinImageRef, (img) => {
+          try { addPinIconLayer(mapInstance, pointId, img) } catch {}
+        })
+      } catch {}
+    },
+    [addPinIconLayer],
+  )
+
+  const drawLineFeature = useCallback((mapInstance: any, feature: FeatureItem) => {
+    const lineId = `sar-area-line-${feature.id}`
+    mapInstance.addSource(lineId, {
+      type: 'geojson',
+      data: { type: 'Feature', geometry: { type: 'LineString', coordinates: feature.coords as any }, properties: {} },
+    })
+    mapInstance.addLayer(
+      { id: lineId, type: 'line', source: lineId, paint: { 'line-color': '#0E94FA', 'line-width': 2 } },
+      layerIdConfig.customReferer,
+    )
+  }, [])
+
+  const drawPolygonFeature = useCallback((mapInstance: any, feature: FeatureItem) => {
+    const polygonId = `sar-area-polygon-${feature.id}`
+    const polyCoords = feature.coords as number[][]
+    mapInstance.addSource(polygonId, {
+      type: 'geojson',
+      data: { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[...polyCoords, polyCoords[0]]] }, properties: {} },
+    })
+    mapInstance.addLayer(
+      { id: `${polygonId}-fill`, type: 'fill', source: polygonId, paint: { 'fill-color': '#0E94FA', 'fill-opacity': 0.3 } },
+      layerIdConfig.customReferer,
+    )
+    mapInstance.addLayer(
+      { id: `${polygonId}-outline`, type: 'line', source: polygonId, paint: { 'line-color': '#0E94FA', 'line-width': 2 } },
+      layerIdConfig.customReferer,
+    )
+  }, [])
+
   useEffect(() => {
     if (!map) return
-
-    // Store features in ref for basemap restoration
     featuresDataRef.current = features
 
-    // remove existing sar-area layers/sources
     try {
       map.getStyle().layers?.forEach((layer: any) => {
-        if (layer.id.startsWith('sar-area-') && map.getLayer(layer.id)) {
-          map.removeLayer(layer.id)
-        }
+        if (layer.id.startsWith('sar-area-') && map.getLayer(layer.id)) map.removeLayer(layer.id)
       })
     } catch {}
     try {
       Object.keys(map.getStyle().sources || {}).forEach((sourceId) => {
-        if (sourceId.startsWith('sar-area-') && map.getSource(sourceId)) {
-          map.removeSource(sourceId)
-        }
+        if (sourceId.startsWith('sar-area-') && map.getSource(sourceId)) map.removeSource(sourceId)
       })
     } catch {}
 
-    // add features
     features.forEach((feature) => {
-      if (feature.geomType === 'Point') {
-        const pointId = `sar-area-point-${feature.id}`
-        map.addSource(pointId, {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            geometry: { type: 'Point', coordinates: feature.coords as any },
-            properties: {},
-          },
-        })
-
-        // create an Image from the embedded `pinSvg` and add it to the map, then add a symbol layer
-        try {
-          const ICON_NAME = 'sar-pin-icon'
-          // Load image once and cache it
-          if (!pinImageLoadedRef.current && !pinImageRef.current) {
-            const svgText = pinSvg
-            const img = new Image()
-            img.crossOrigin = 'anonymous'
-            img.onload = () => {
-              pinImageRef.current = img
-              pinImageLoadedRef.current = true
-              try {
-                if (typeof map.hasImage !== 'function' || !map.hasImage(ICON_NAME)) {
-                  map.addImage(ICON_NAME, img)
-                }
-              } catch {}
-              const iconLayerId = `${pointId}-icon`
-              if (!map.getLayer(iconLayerId)) {
-                map.addLayer(
-                  {
-                    id: iconLayerId,
-                    type: 'symbol',
-                    source: pointId,
-                    layout: {
-                      'icon-image': ICON_NAME,
-                      'icon-size': is2K ? 1.6 : 0.8,
-                      'icon-anchor': 'bottom',
-                      'icon-allow-overlap': true,
-                    },
-                  },
-                  layerIdConfig.customReferer,
-                )
-              }
-            }
-            img.onerror = () => {}
-            img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText)
-          } else if (pinImageLoadedRef.current && pinImageRef.current) {
-            try {
-              if (typeof map.hasImage !== 'function' || !map.hasImage(ICON_NAME)) {
-                map.addImage(ICON_NAME, pinImageRef.current)
-              }
-            } catch {}
-            const iconLayerId = `${pointId}-icon`
-            if (!map.getLayer(iconLayerId)) {
-              map.addLayer(
-                {
-                  id: iconLayerId,
-                  type: 'symbol',
-                  source: pointId,
-                  layout: {
-                    'icon-image': ICON_NAME,
-                    'icon-size': is2K ? 1.6 : 0.8,
-                    'icon-anchor': 'bottom',
-                    'icon-allow-overlap': true,
-                  },
-                },
-                layerIdConfig.customReferer,
-              )
-            }
-          }
-        } catch {}
-      }
-      if (feature.geomType === 'LineString') {
-        const lineId = `sar-area-line-${feature.id}`
-        map.addSource(lineId, {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            geometry: {
-              type: 'LineString',
-              coordinates: feature.coords as any,
-            },
-            properties: {},
-          },
-        })
-        map.addLayer(
-          {
-            id: lineId,
-            type: 'line',
-            source: lineId,
-            paint: {
-              'line-color': '#0E94FA',
-              'line-width': 2,
-            },
-          },
-          layerIdConfig.customReferer,
-        )
-      }
-      if (feature.geomType === 'Polygon') {
-        const polygonId = `sar-area-polygon-${feature.id}`
-        const polyCoords = feature.coords as number[][]
-        map.addSource(polygonId, {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            geometry: {
-              type: 'Polygon',
-              coordinates: [[...polyCoords, polyCoords[0]]],
-            },
-            properties: {},
-          },
-        })
-        map.addLayer(
-          {
-            id: `${polygonId}-fill`,
-            type: 'fill',
-            source: polygonId,
-            paint: {
-              'fill-color': '#0E94FA',
-              'fill-opacity': 0.3,
-            },
-          },
-          layerIdConfig.customReferer,
-        )
-        map.addLayer(
-          {
-            id: `${polygonId}-outline`,
-            type: 'line',
-            source: polygonId,
-            paint: {
-              'line-color': '#0E94FA',
-              'line-width': 2,
-            },
-          },
-          layerIdConfig.customReferer,
-        )
-      }
+      if (feature.geomType === 'Point') drawPointFeature(map, feature)
+      if (feature.geomType === 'LineString') drawLineFeature(map, feature)
+      if (feature.geomType === 'Polygon') drawPolygonFeature(map, feature)
     })
-  }, [map, features, is2K])
+  }, [map, features, is2K, drawPointFeature, drawLineFeature, drawPolygonFeature])
 
   // --- Delete ---
+  const removeFeature = useCallback(
+    (item: FeatureItem) => updateFeaturesInternal((prev) => prev.filter((f) => f.id !== item.id)),
+    [updateFeaturesInternal],
+  )
+
   const confirmRemove = (item: FeatureItem) => {
-    showAlert({
-      status: 'confirm-delete',
-      showCancel: true,
-      onConfirm: () => updateFeaturesInternal((prev) => prev.filter((f) => f.id !== item.id)),
-    })
+    showAlert({ status: 'confirm-delete', showCancel: true, onConfirm: () => removeFeature(item) })
   }
 
   const zoomToFeature = useCallback(
@@ -1420,23 +1418,10 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
           map.easeTo({ center: [c[0], c[1]], zoom: 14 })
           return
         }
-
-        let geo: any
-        if (feature.geomType === 'LineString') {
-          geo = turf.lineString(feature.coords as number[][])
-        } else if (feature.geomType === 'Polygon') {
-          const coords = feature.coords as number[][]
-          geo = turf.polygon([[...coords, coords[0]]])
-        }
+        const geo = getFeatureBboxGeo(feature)
         if (!geo) return
-        const b = turf.bbox(geo) // [minX, minY, maxX, maxY]
-        map.fitBounds(
-          [
-            [b[0], b[1]],
-            [b[2], b[3]],
-          ],
-          fitBoundsOptions,
-        )
+        const b = turf.bbox(geo)
+        map.fitBounds([[b[0], b[1]], [b[2], b[3]]], fitBoundsOptions)
         setShowFormDialog(false)
       } catch {}
     },
@@ -1447,50 +1432,7 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
   // biome-ignore lint/correctness/useExhaustiveDependencies: only update on unit changes
   useEffect(() => {
     if (!features || features.length === 0) return
-    updateFeaturesInternal((prev) =>
-      prev.map((f) => {
-        if (f.geomType === 'Point') {
-          const c = f.coords as number[]
-          return { ...f, label: `${c[1].toFixed(6)}, ${c[0].toFixed(6)}` }
-        }
-        if (f.geomType === 'LineString') {
-          let len = f.metric ?? 0
-          if (!len || len === 0) {
-            try {
-              len = turf.length(turf.lineString(f.coords as any), {
-                units: 'meters',
-              })
-            } catch {
-              len = 0
-            }
-          }
-          const converted = convertLength(len, lengthUnit)
-          return {
-            ...f,
-            metric: len,
-            label: `${converted.toLocaleString(undefined, LOCALE_STRING_OPTIONS)} ${lengthUnit}`,
-          }
-        }
-        if (f.geomType === 'Polygon') {
-          let area = f.metric ?? 0
-          if (!area || area === 0) {
-            try {
-              const coords = f.coords as any
-              area = turf.area(turf.polygon([[...coords, coords[0]]]))
-            } catch {
-              area = 0
-            }
-          }
-          const converted = convertArea(area, areaUnit)
-          return {
-            ...f,
-            metric: area,
-            label: `${converted.toLocaleString(undefined, LOCALE_STRING_OPTIONS)} ${areaUnit}`,
-          }
-        }
-        return f
-      }),
-    )
+    updateFeaturesInternal((prev) => prev.map((f) => relabelFeature(f, areaUnit, lengthUnit)))
   }, [areaUnit, lengthUnit, updateFeaturesInternal])
 
   const renderForm = () => (
@@ -1509,224 +1451,41 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
             {tab === 0 && (
               <div>
                 <div className='rounded-lg border border-primary border-dashed p-6 text-center'>
-                  <input
-                    id={fileInputId}
-                    ref={fileInputRef}
-                    type='file'
-                    accept='.zip,.geojson,.json,.kml,.kmz'
-                    onChange={(e) => handleFile(e.target.files?.[0])}
-                    style={{ display: 'none' }}
-                  />
+                  <input id={fileInputId} ref={fileInputRef} type='file' accept='.zip,.geojson,.json,.kml,.kmz' onChange={(e) => handleFile(e.target.files?.[0])} style={{ display: 'none' }} />
                   <label htmlFor={fileInputId}>
                     <Button
                       variant='contained'
                       startIcon={<CloudUploadIcon />}
                       component='span'
-                      onClick={
-                        remainingSlots === 0
-                          ? (e) => {
-                              e.preventDefault()
-                              showNoRemainingSlotsError()
-                            }
-                          : undefined
-                      }
+                      onClick={remainingSlots === 0 ? (e) => { e.preventDefault(); showNoRemainingSlotsError() } : undefined}
                       disabled={loading}
                     >
                       {t('form.taskForm.sarAnalysisAreaForm.chooseFile')}
                     </Button>
                   </label>
-                  <div className='mt-2 text-(--color-text-secondary) text-sm'>
-                    {t('form.taskForm.sarAnalysisAreaForm.uploadHint')}
-                  </div>
+                  <div className='mt-2 text-(--color-text-secondary) text-sm'>{t('form.taskForm.sarAnalysisAreaForm.uploadHint')}</div>
                 </div>
               </div>
             )}
-
             {tab === 1 && (
-              <div className='space-y-2'>
-                <div>
-                  <InputLabel>{t('form.taskForm.sarAnalysisAreaForm.coordinateSystem')}</InputLabel>
-                  <Select
-                    value={coordSystem}
-                    onChange={(e) => setCoordSystem(e.target.value)}
-                    size='small'
-                    disabled={loading}
-                  >
-                    <MenuItem value='GCS'>GCS</MenuItem>
-                    <MenuItem value='UTM47N'>WGS 1984 UTM Zone 47N</MenuItem>
-                    <MenuItem value='UTM48N'>WGS 1984 UTM Zone 48N</MenuItem>
-                    <MenuItem value='MGRS'>MGRS</MenuItem>
-                  </Select>
-                </div>
-                {coordSystem === 'GCS' && (
-                  <div className='grid grid-cols-2 gap-2'>
-                    <div>
-                      <InputLabel>{t('form.taskForm.sarAnalysisAreaForm.latitudeMin')}</InputLabel>
-                      <TextField
-                        size='small'
-                        placeholder={t('form.taskForm.sarAnalysisAreaForm.latitudeMin')}
-                        value={ymin}
-                        type='number'
-                        onChange={(e) => setYmin(e.target.value)}
-                        disabled={loading}
-                      />
-                    </div>
-                    <div>
-                      <InputLabel>{t('form.taskForm.sarAnalysisAreaForm.longitudeMin')}</InputLabel>
-                      <TextField
-                        size='small'
-                        placeholder={t('form.taskForm.sarAnalysisAreaForm.longitudeMin')}
-                        value={xmin}
-                        type='number'
-                        onChange={(e) => setXmin(e.target.value)}
-                        disabled={loading}
-                      />
-                    </div>
-                    <div>
-                      <InputLabel>{t('form.taskForm.sarAnalysisAreaForm.latitudeMax')}</InputLabel>
-                      <TextField
-                        size='small'
-                        placeholder={t('form.taskForm.sarAnalysisAreaForm.latitudeMax')}
-                        value={ymax}
-                        type='number'
-                        onChange={(e) => setYmax(e.target.value)}
-                        disabled={loading}
-                      />
-                    </div>
-                    <div>
-                      <InputLabel>{t('form.taskForm.sarAnalysisAreaForm.longitudeMax')}</InputLabel>
-                      <TextField
-                        size='small'
-                        placeholder={t('form.taskForm.sarAnalysisAreaForm.longitudeMax')}
-                        value={xmax}
-                        type='number'
-                        onChange={(e) => setXmax(e.target.value)}
-                        disabled={loading}
-                      />
-                    </div>
-                  </div>
-                )}
-                {(coordSystem === 'UTM47N' || coordSystem === 'UTM48N') && (
-                  <div className='grid grid-cols-2 gap-2'>
-                    <div>
-                      <InputLabel>{t('form.taskForm.sarAnalysisAreaForm.xMin')}</InputLabel>
-                      <TextField
-                        size='small'
-                        placeholder={t('form.taskForm.sarAnalysisAreaForm.xMin')}
-                        value={xmin}
-                        type='number'
-                        onChange={(e) => setXmin(e.target.value)}
-                        disabled={loading}
-                      />
-                    </div>
-                    <div>
-                      <InputLabel>{t('form.taskForm.sarAnalysisAreaForm.yMin')}</InputLabel>
-                      <TextField
-                        size='small'
-                        placeholder={t('form.taskForm.sarAnalysisAreaForm.yMin')}
-                        value={ymin}
-                        type='number'
-                        onChange={(e) => setYmin(e.target.value)}
-                        disabled={loading}
-                      />
-                    </div>
-                    <div>
-                      <InputLabel>{t('form.taskForm.sarAnalysisAreaForm.xMax')}</InputLabel>
-                      <TextField
-                        size='small'
-                        placeholder={t('form.taskForm.sarAnalysisAreaForm.xMax')}
-                        value={xmax}
-                        type='number'
-                        onChange={(e) => setXmax(e.target.value)}
-                        disabled={loading}
-                      />
-                    </div>
-                    <div>
-                      <InputLabel>{t('form.taskForm.sarAnalysisAreaForm.yMax')}</InputLabel>
-                      <TextField
-                        size='small'
-                        placeholder={t('form.taskForm.sarAnalysisAreaForm.yMax')}
-                        value={ymax}
-                        type='number'
-                        onChange={(e) => setYmax(e.target.value)}
-                        disabled={loading}
-                      />
-                    </div>
-                  </div>
-                )}
-                {coordSystem === 'MGRS' && (
-                  <div>
-                    <InputLabel>{t('form.taskForm.sarAnalysisAreaForm.mgrsMin')}</InputLabel>
-                    <TextField
-                      placeholder={t('form.taskForm.sarAnalysisAreaForm.mgrsMin')}
-                      size='small'
-                      value={mgrsMin}
-                      onChange={(e) => setMgrsMin(e.target.value)}
-                      disabled={loading}
-                      fullWidth
-                    />
-                    <InputLabel className='mt-2'>{t('form.taskForm.sarAnalysisAreaForm.mgrsMax')}</InputLabel>
-                    <TextField
-                      placeholder={t('form.taskForm.sarAnalysisAreaForm.mgrsMax')}
-                      size='small'
-                      value={mgrsMax}
-                      onChange={(e) => setMgrsMax(e.target.value)}
-                      disabled={loading}
-                      fullWidth
-                    />
-                  </div>
-                )}
-                <div className='mt-4 flex justify-center'>
-                  <Button
-                    variant='contained'
-                    onClick={remainingSlots === 0 ? showNoRemainingSlotsError : handleAddExtent}
-                    startIcon={<AddIcon />}
-                    disabled={
-                      loading ||
-                      (coordSystem === 'MGRS'
-                        ? mgrsMin.trim() === '' || mgrsMax.trim() === ''
-                        : xmin.trim() === '' || xmax.trim() === '' || ymin.trim() === '' || ymax.trim() === '')
-                    }
-                  >
-                    {t('button.add')}
-                  </Button>
-                </div>
-              </div>
+              <CoordTabContent
+                coordSystem={coordSystem} setCoordSystem={(v) => setCoordSystem(v as 'GCS' | 'UTM47N' | 'UTM48N' | 'MGRS')}
+                xmin={xmin} xmax={xmax} ymin={ymin} ymax={ymax}
+                setXmin={setXmin} setXmax={setXmax} setYmin={setYmin} setYmax={setYmax}
+                mgrsMin={mgrsMin} mgrsMax={mgrsMax} setMgrsMin={setMgrsMin} setMgrsMax={setMgrsMax}
+                loading={loading} remainingSlots={remainingSlots}
+                showNoRemainingSlotsError={showNoRemainingSlotsError}
+                handleAddExtent={handleAddExtent}
+                t={t}
+              />
             )}
-
             {tab === 2 && (
-              <div className='flex gap-2'>
-                <Button
-                  className='flex-1'
-                  variant={drawingMode === 'point' ? 'contained' : 'outlined'}
-                  startIcon={<LocationPinIcon />}
-                  onClick={
-                    remainingSlots === 0
-                      ? showNoRemainingSlotsError
-                      : drawingMode === 'point'
-                        ? cancelDraw
-                        : () => startDraw('point')
-                  }
-                  disabled={loading}
-                >
-                  {t('form.taskForm.sarAnalysisAreaForm.drawPoint')}
-                </Button>
-                <Button
-                  className='flex-1'
-                  variant={drawingMode === 'polygon' ? 'contained' : 'outlined'}
-                  startIcon={<PolygonIcon />}
-                  onClick={
-                    remainingSlots === 0
-                      ? showNoRemainingSlotsError
-                      : drawingMode === 'polygon'
-                        ? cancelDraw
-                        : () => startDraw('polygon')
-                  }
-                  disabled={loading}
-                >
-                  {t('form.taskForm.sarAnalysisAreaForm.drawArea')}
-                </Button>
-              </div>
+              <DrawTabContent
+                drawingMode={drawingMode} remainingSlots={remainingSlots}
+                showNoRemainingSlotsError={showNoRemainingSlotsError}
+                cancelDraw={cancelDraw} startDraw={startDraw}
+                loading={loading} t={t}
+              />
             )}
           </div>
         </>
@@ -1736,33 +1495,14 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
       </div>
       <div className='flex flex-col gap-0.5 border-(--color-background-default) border-x p-3'>
         {features.map((f) => (
-          <Tooltip key={f.id} title={f.label} arrow>
-            <button
-              className='flex cursor-pointer items-center rounded-xs bg-(--color-background-default) px-2 py-0.5 hover:bg-(--color-background-dark) hover:text-white'
-              type='button'
-              onClick={() => zoomToFeature(f)}
-            >
-              <div className='flex items-center'>
-                {f.geomType === 'Point' && <LocationPinIcon />}
-                {f.geomType === 'LineString' && <PolylineIcon />}
-                {f.geomType === 'Polygon' && <PolygonIcon />}
-              </div>
-              <div className='mx-2 flex-1 truncate text-left text-sm'>{f.label}</div>
-              {!viewOnly && (
-                <IconButton
-                  size='small'
-                  color='error'
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    confirmRemove(f)
-                  }}
-                  disabled={loading}
-                >
-                  <DeleteIcon fontSize='small' />
-                </IconButton>
-              )}
-            </button>
-          </Tooltip>
+          <FeatureListItem
+            key={f.id}
+            feature={f}
+            viewOnly={viewOnly}
+            loading={loading}
+            onZoom={zoomToFeature}
+            onRemove={confirmRemove}
+          />
         ))}
         {features.length === 0 && (
           <div className='m-auto flex flex-col items-center text-(--color-action-disabled)'>
@@ -1771,44 +1511,19 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
           </div>
         )}
       </div>
-      <Tooltip title={imageBefore.image.name} arrow>
-        <button
-          className='flex w-full cursor-pointer items-center overflow-hidden bg-(--color-background-default) hover:bg-(--color-background-dark) hover:text-white'
-          type='button'
-          onClick={() => zoomToImage(imageBefore)}
-        >
-          <Checkbox
-            checked={beforeVisible}
-            onChange={(e) => {
-              e.stopPropagation()
-              setBeforeVisible(e.target.checked)
-            }}
-            size='small'
-            onClick={(e) => e.stopPropagation()}
-          />
-          <BorderAllIcon fontSize='small' />
-          <div className='mx-1 truncate text-sm'>{imageBefore.image.name}</div>
-        </button>
-      </Tooltip>
-      <Tooltip title={imageAfter.image.name} arrow>
-        <button
-          className='mt-0.5 flex w-full cursor-pointer items-center overflow-hidden bg-(--color-background-default) hover:bg-(--color-background-dark) hover:text-white'
-          type='button'
-          onClick={() => zoomToImage(imageAfter)}
-        >
-          <Checkbox
-            checked={afterVisible}
-            onChange={(e) => {
-              e.stopPropagation()
-              setAfterVisible(e.target.checked)
-            }}
-            size='small'
-            onClick={(e) => e.stopPropagation()}
-          />
-          <BorderAllIcon fontSize='small' />
-          <div className='mx-1 truncate text-sm'>{imageAfter.image.name}</div>
-        </button>
-      </Tooltip>
+      <ImageLayerToggle
+        image={imageBefore}
+        visible={beforeVisible}
+        onVisibilityChange={setBeforeVisible}
+        onZoom={() => zoomToImage(imageBefore)}
+      />
+      <ImageLayerToggle
+        image={imageAfter}
+        visible={afterVisible}
+        onVisibilityChange={setAfterVisible}
+        onZoom={() => zoomToImage(imageAfter)}
+        className='mt-0.5'
+      />
     </div>
   )
 

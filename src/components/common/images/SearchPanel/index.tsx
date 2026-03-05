@@ -41,6 +41,55 @@ const SearchPrefix = {
   NAME: 'name:',
 } as const
 
+// ---------- pure helpers (no hooks) ----------
+
+function matchesPrefix(lower: string, prefix: string) {
+  return lower.startsWith(prefix)
+}
+
+function hasValueAfterPrefix(lower: string, prefix: string) {
+  return lower.startsWith(prefix) && lower.length > prefix.length
+}
+
+function resolveServiceId(
+  typeValue: string,
+  services: GetLookupDtoOut[],
+): { serviceId?: string; fallbackKeyword?: string } {
+  if (typeValue === 'optical') return { serviceId: String(ServiceConfig.optical) }
+  if (typeValue === 'sar') return { serviceId: String(ServiceConfig.sar) }
+
+  const matched = services.find((s) => {
+    return (
+      (s.name || '').toLowerCase() === typeValue ||
+      (s.nameEn || '').toLowerCase() === typeValue
+    )
+  })
+  return matched ? { serviceId: String(matched.id) } : { fallbackKeyword: typeValue }
+}
+
+function parseKeywordAndService(
+  rawInput: string,
+  services: GetLookupDtoOut[],
+): { keyword: string; tag: string; serviceId?: string } {
+  const lower = rawInput.toLowerCase()
+
+  if (matchesPrefix(lower, SearchPrefix.NAME)) {
+    return { keyword: rawInput.substring(SearchPrefix.NAME.length).trim(), tag: '' }
+  }
+
+  if (matchesPrefix(lower, SearchPrefix.TAG)) {
+    return { keyword: '', tag: rawInput.substring(SearchPrefix.TAG.length).trim() }
+  }
+
+  if (matchesPrefix(lower, SearchPrefix.TYPE)) {
+    const typeValue = rawInput.substring(SearchPrefix.TYPE.length).trim().toLowerCase()
+    const { serviceId, fallbackKeyword } = resolveServiceId(typeValue, services)
+    return { keyword: fallbackKeyword ?? '', tag: '', serviceId }
+  }
+
+  return { keyword: rawInput, tag: '' }
+}
+
 const SearchPanel = ({ onChange, loading = false, children }: SearchPanelProps) => {
   const { t } = useTranslation('common')
   const [searchValue, setSearchValue] = useState<{
@@ -93,51 +142,17 @@ const SearchPanel = ({ onChange, loading = false, children }: SearchPanelProps) 
       const rawInput = (values.keyword || '').trim()
       const startAt = values.startAt?.toDate()
       const endAt = values.endAt?.toDate()
-
-      let keyword = ''
-      let tag = (values.tag || '').trim()
-      let serviceId: string | undefined
+      const basTag = (values.tag || '').trim()
 
       if (!rawInput) {
-        return {
-          keyword: '',
-          tag,
-          startAt,
-          endAt,
-        }
+        return { keyword: '', tag: basTag, startAt, endAt }
       }
 
-      if (rawInput.toLowerCase().startsWith(SearchPrefix.NAME)) {
-        keyword = rawInput.substring(SearchPrefix.NAME.length).trim()
-      } else if (rawInput.toLowerCase().startsWith(SearchPrefix.TAG)) {
-        tag = rawInput.substring(SearchPrefix.TAG.length).trim()
-      } else if (rawInput.toLowerCase().startsWith(SearchPrefix.TYPE)) {
-        const typeValue = rawInput.substring(SearchPrefix.TYPE.length).trim().toLowerCase()
-
-        // Prioritize known config types to ensure ID consistency with STAC
-        if (typeValue === 'optical') {
-          serviceId = String(ServiceConfig.optical)
-        } else if (typeValue === 'sar') {
-          serviceId = String(ServiceConfig.sar)
-        } else {
-          const matchedService = services.find((s) => {
-            const isMatchTh = (s.name || '').toLowerCase() === typeValue
-            const isMatchEn = (s.nameEn || '').toLowerCase() === typeValue
-            return isMatchTh || isMatchEn
-          })
-          if (matchedService) {
-            serviceId = String(matchedService.id)
-          } else {
-            keyword = rawInput.substring(SearchPrefix.TYPE.length).trim()
-          }
-        }
-      } else {
-        keyword = rawInput
-      }
+      const { keyword, tag, serviceId } = parseKeywordAndService(rawInput, services)
 
       return {
         keyword,
-        tag,
+        tag: tag || basTag,
         startAt,
         endAt,
         serviceId,
@@ -172,22 +187,40 @@ const SearchPanel = ({ onChange, loading = false, children }: SearchPanelProps) 
     ] as OptionType[]
   }, [t])
 
+  const resolveOptionsForInput = useCallback(
+    (lowerInput: string) => {
+      if (matchesPrefix(lowerInput, SearchPrefix.TYPE)) {
+        if (!servicesFetched.current) fetchServices()
+        setOptions(getServiceOptions())
+      } else {
+        setOptions([])
+      }
+    },
+    [fetchServices, getServiceOptions],
+  )
+
+  const shouldTriggerSearch = useCallback(
+    (lowerInput: string) =>
+      hasValueAfterPrefix(lowerInput, SearchPrefix.TYPE) ||
+      hasValueAfterPrefix(lowerInput, SearchPrefix.TAG) ||
+      hasValueAfterPrefix(lowerInput, SearchPrefix.NAME) ||
+      (!matchesPrefix(lowerInput, SearchPrefix.TYPE) &&
+        !matchesPrefix(lowerInput, SearchPrefix.TAG) &&
+        !matchesPrefix(lowerInput, SearchPrefix.NAME)),
+    [],
+  )
+
   const handleInputChange = useCallback(
     (event: any, newInputValue: string, reason: string) => {
-      if (reason === 'selectOption') {
-        return
-      }
+      if (reason === 'selectOption') return
 
       if (reason === 'reset') {
         const lowerNew = newInputValue.toLowerCase().trim()
-        const hasContentAfterPrefix =
-          (lowerNew.startsWith(SearchPrefix.TAG) && lowerNew.length > SearchPrefix.TAG.length) ||
-          (lowerNew.startsWith(SearchPrefix.NAME) && lowerNew.length > SearchPrefix.NAME.length) ||
-          (lowerNew.startsWith(SearchPrefix.TYPE) && lowerNew.length > SearchPrefix.TYPE.length)
-
-        if (!hasContentAfterPrefix) {
-          return
-        }
+        const hasContent =
+          hasValueAfterPrefix(lowerNew, SearchPrefix.TAG) ||
+          hasValueAfterPrefix(lowerNew, SearchPrefix.NAME) ||
+          hasValueAfterPrefix(lowerNew, SearchPrefix.TYPE)
+        if (!hasContent) return
       }
 
       if (reason === 'clear') {
@@ -209,46 +242,25 @@ const SearchPanel = ({ onChange, loading = false, children }: SearchPanelProps) 
       }
 
       setInputValue(newInputValue)
-      if (newInputValue) {
-        setOpen(true)
-      }
-      const lowerInput = newInputValue.toLowerCase().trim()
+      if (newInputValue) setOpen(true)
 
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current)
-      }
+      const lowerInput = newInputValue.toLowerCase().trim()
+      if (debounceRef.current) clearTimeout(debounceRef.current)
 
       if (!lowerInput) {
         setOptions(defaultOption)
         return
       }
 
-      if (lowerInput.startsWith(SearchPrefix.TYPE)) {
-        if (!servicesFetched.current) {
-          fetchServices()
-        }
-        setOptions(getServiceOptions())
-      } else if (lowerInput.startsWith(SearchPrefix.TAG)) {
-        setOptions([])
-      } else {
-        setOptions([])
-      }
+      resolveOptionsForInput(lowerInput)
 
-      const hasTypeValue = lowerInput.startsWith(SearchPrefix.TYPE) && lowerInput.length > SearchPrefix.TYPE.length
-      const hasTagValue = lowerInput.startsWith(SearchPrefix.TAG) && lowerInput.length > SearchPrefix.TAG.length
-      const hasNameValue = lowerInput.startsWith(SearchPrefix.NAME) && lowerInput.length > SearchPrefix.NAME.length
-      const isPlainSearch =
-        !lowerInput.startsWith(SearchPrefix.TYPE) &&
-        !lowerInput.startsWith(SearchPrefix.TAG) &&
-        !lowerInput.startsWith(SearchPrefix.NAME)
-
-      if (hasTypeValue || hasTagValue || hasNameValue || isPlainSearch) {
+      if (shouldTriggerSearch(lowerInput)) {
         debounceRef.current = setTimeout(() => {
           onChange(processSearchValues({ ...searchValue, keyword: newInputValue }))
         }, 1000)
       }
     },
-    [fetchServices, getServiceOptions, onChange, processSearchValues, searchValue, defaultOption, inputValue],
+    [resolveOptionsForInput, shouldTriggerSearch, onChange, processSearchValues, searchValue, defaultOption, inputValue],
   )
 
   const filterOptions = useCallback((options: OptionType[], params: any) => {
@@ -287,53 +299,66 @@ const SearchPanel = ({ onChange, loading = false, children }: SearchPanelProps) 
     return typeof option === 'string' ? option : option.label
   }, [])
 
+  const clearDebounce = useCallback(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current)
+      debounceRef.current = null
+    }
+  }, [])
+
+  const getServicesAsOptions = useCallback(
+    (): OptionType[] =>
+      services
+        .filter((s) => s.id !== ServiceConfig.weekly)
+        .map((s) => ({ label: s.name, value: s.name, type: 'service' }) as OptionType),
+    [services],
+  )
+
+  const handleInstructionOption = useCallback(
+    (option: OptionType) => {
+      clearDebounce()
+      const finalVal = option.value || ''
+      setInputValue(finalVal)
+
+      if (finalVal === SearchPrefix.NAME) {
+        setOpen(false)
+        return
+      }
+
+      setOptions(finalVal === SearchPrefix.TYPE ? getServicesAsOptions() : [])
+      shouldKeepOpen.current = true
+      setOpen(true)
+    },
+    [clearDebounce, getServicesAsOptions],
+  )
+
+  const handleServiceOrTagOption = useCallback(
+    (option: OptionType) => {
+      clearDebounce()
+      const prefix = option.type === 'service' ? SearchPrefix.TYPE : SearchPrefix.TAG
+      const finalVal = `${prefix}${option.value}`
+      setInputValue(finalVal)
+      onChange(processSearchValues({ ...searchValue, keyword: finalVal }))
+      setOpen(false)
+    },
+    [clearDebounce, onChange, processSearchValues, searchValue],
+  )
+
   const handleAutocompleteChange = useCallback(
     (event: any, newValue: string | OptionType | null) => {
       if (typeof newValue === 'string') {
-        // Free text entered
         setInputValue(newValue)
-      } else if (newValue && typeof newValue !== 'string') {
-        if (newValue.type === 'instruction') {
-          if (debounceRef.current) {
-            clearTimeout(debounceRef.current)
-            debounceRef.current = null
-          }
-          const finalVal = newValue.value || ''
-          setInputValue(finalVal)
+        return
+      }
+      if (!newValue) return
 
-          if (finalVal === SearchPrefix.NAME) {
-            setOpen(false)
-            return
-          } else if (finalVal === SearchPrefix.TYPE) {
-            const relevantServices: OptionType[] = services
-              .filter((s) => s.id !== ServiceConfig.weekly)
-              .map((s) => ({ label: s.name, value: s.name, type: 'service' }) as OptionType)
-            setOptions(relevantServices)
-          } else if (finalVal === SearchPrefix.TAG) {
-            setOptions([])
-          }
-
-          shouldKeepOpen.current = true
-          setOpen(true)
-        } else if (newValue.type === 'service') {
-          // Clear any pending debounce to prevent old search from firing
-          if (debounceRef.current) {
-            clearTimeout(debounceRef.current)
-            debounceRef.current = null
-          }
-          const finalVal = `${SearchPrefix.TYPE}${newValue.value}`
-          setInputValue(finalVal)
-          onChange(processSearchValues({ ...searchValue, keyword: finalVal }))
-          setOpen(false)
-        } else if (newValue.type === 'tag') {
-          const finalVal = `${SearchPrefix.TAG}${newValue.value}`
-          setInputValue(finalVal)
-          onChange(processSearchValues({ ...searchValue, keyword: finalVal }))
-          setOpen(false)
-        }
+      if (newValue.type === 'instruction') {
+        handleInstructionOption(newValue)
+      } else if (newValue.type === 'service' || newValue.type === 'tag') {
+        handleServiceOrTagOption(newValue)
       }
     },
-    [services, onChange, processSearchValues, searchValue],
+    [handleInstructionOption, handleServiceOrTagOption],
   )
 
   const handleStartDateChange = useCallback(

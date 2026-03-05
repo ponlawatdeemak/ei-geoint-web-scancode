@@ -289,7 +289,17 @@ const SingleDonutChart: React.FC<{
                       (item.dataset as unknown as { labels: string[] }).labels?.[item.dataIndex] || ''
                     const value = (item.raw as number).toLocaleString(undefined, LOCALE_STRING_OPTIONS)
                     const color = (item.dataset.backgroundColor as string[])?.[item.dataIndex] || '#000'
-                    el.innerHTML = `<div class="mb-0.5 flex items-start"><span class="mt-0.5 mr-1.5 inline-block h-2.5 w-2.5 min-w-[10px] shrink-0 rounded-sm border border-white" style="background:${color}"></span><span class="break-words">${segmentLabel}</span></div><div class="pl-4">${value} ${t('map.items')}</div>`
+                    el.innerHTML = `
+                      <div class="mb-0.5 flex items-start">
+                        <span class="tooltip-color-box mt-0.5 mr-1.5 inline-block h-2.5 w-2.5 min-w-[10px] shrink-0 rounded-sm border border-white"></span>
+                        <span class="break-words">${segmentLabel}</span>
+                      </div>
+                      <div class="pl-4">${value} ${t('map.items')}</div>
+                    `
+                    const colorBox = el.querySelector('.tooltip-color-box') as HTMLElement
+                    if (colorBox) {
+                      colorBox.style.backgroundColor = color
+                    }
                   }
 
                   const position = chart.canvas.getBoundingClientRect()

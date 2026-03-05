@@ -12,7 +12,7 @@ import * as turf from '@turf/turf'
 import { useProfileStore } from '@/hook/useProfileStore'
 import { Geometry } from 'geojson'
 
-const MAX_ITEM_COUNT = 100
+const MAX_ITEM_COUNT = 100000
 const MAX_FILE_SIZE = 5 // MB
 const accept = '.zip, .geojson, .kml, .kmz'
 const acceptType =
