@@ -95,11 +95,7 @@ function areFeaturesEqual(base: FeatureItem[], next: FeatureItem[]): boolean {
   return true
 }
 
-function makePointFeature(
-  coords: number[],
-  sourceType?: string,
-  sourcePayload?: any,
-): FeatureItem {
+function makePointFeature(coords: number[], sourceType?: string, sourcePayload?: any): FeatureItem {
   return {
     id: getId(),
     geomType: 'Point',
@@ -271,7 +267,9 @@ function relabelFeature(f: FeatureItem, areaUnit: string, lengthUnit: string): F
  * Returns a turf geometry suitable for bbox calculation, or null for Points
  * (which are handled differently via easeTo).
  */
-function getFeatureBboxGeo(feature: FeatureItem): ReturnType<typeof turf.lineString> | ReturnType<typeof turf.polygon> | null {
+function getFeatureBboxGeo(
+  feature: FeatureItem,
+): ReturnType<typeof turf.lineString> | ReturnType<typeof turf.polygon> | null {
   if (feature.geomType === 'LineString') {
     return turf.lineString(feature.coords as number[][])
   }
@@ -289,11 +287,18 @@ function getFeatureBboxGeo(feature: FeatureItem): ReturnType<typeof turf.lineStr
 type CoordTabProps = {
   coordSystem: string
   setCoordSystem: (v: string) => void
-  xmin: string; xmax: string; ymin: string; ymax: string
-  setXmin: (v: string) => void; setXmax: (v: string) => void
-  setYmin: (v: string) => void; setYmax: (v: string) => void
-  mgrsMin: string; mgrsMax: string
-  setMgrsMin: (v: string) => void; setMgrsMax: (v: string) => void
+  xmin: string
+  xmax: string
+  ymin: string
+  ymax: string
+  setXmin: (v: string) => void
+  setXmax: (v: string) => void
+  setYmin: (v: string) => void
+  setYmax: (v: string) => void
+  mgrsMin: string
+  mgrsMax: string
+  setMgrsMin: (v: string) => void
+  setMgrsMax: (v: string) => void
   loading?: boolean
   remainingSlots: number
   showNoRemainingSlotsError: () => void
@@ -301,11 +306,33 @@ type CoordTabProps = {
   t: (key: string) => string
 }
 
-function CoordTabContent({ coordSystem, setCoordSystem, xmin, xmax, ymin, ymax, setXmin, setXmax, setYmin, setYmax, mgrsMin, mgrsMax, setMgrsMin, setMgrsMax, loading, remainingSlots, showNoRemainingSlotsError, handleAddExtent, t }: CoordTabProps) {
+function CoordTabContent({
+  coordSystem,
+  setCoordSystem,
+  xmin,
+  xmax,
+  ymin,
+  ymax,
+  setXmin,
+  setXmax,
+  setYmin,
+  setYmax,
+  mgrsMin,
+  mgrsMax,
+  setMgrsMin,
+  setMgrsMax,
+  loading,
+  remainingSlots,
+  showNoRemainingSlotsError,
+  handleAddExtent,
+  t,
+}: CoordTabProps) {
   const isUTM = coordSystem === 'UTM47N' || coordSystem === 'UTM48N'
-  const isAddDisabled = loading || (coordSystem === 'MGRS'
-    ? mgrsMin.trim() === '' || mgrsMax.trim() === ''
-    : xmin.trim() === '' || xmax.trim() === '' || ymin.trim() === '' || ymax.trim() === '')
+  const isAddDisabled =
+    loading ||
+    (coordSystem === 'MGRS'
+      ? mgrsMin.trim() === '' || mgrsMax.trim() === ''
+      : xmin.trim() === '' || xmax.trim() === '' || ymin.trim() === '' || ymax.trim() === '')
   return (
     <div className='space-y-2'>
       <div>
@@ -319,30 +346,129 @@ function CoordTabContent({ coordSystem, setCoordSystem, xmin, xmax, ymin, ymax, 
       </div>
       {coordSystem === 'GCS' && (
         <div className='grid grid-cols-2 gap-2'>
-          <div><InputLabel>{t('form.taskForm.sarAnalysisAreaForm.latitudeMin')}</InputLabel><TextField size='small' placeholder={t('form.taskForm.sarAnalysisAreaForm.latitudeMin')} value={ymin} type='number' onChange={(e) => setYmin(e.target.value)} disabled={loading} /></div>
-          <div><InputLabel>{t('form.taskForm.sarAnalysisAreaForm.longitudeMin')}</InputLabel><TextField size='small' placeholder={t('form.taskForm.sarAnalysisAreaForm.longitudeMin')} value={xmin} type='number' onChange={(e) => setXmin(e.target.value)} disabled={loading} /></div>
-          <div><InputLabel>{t('form.taskForm.sarAnalysisAreaForm.latitudeMax')}</InputLabel><TextField size='small' placeholder={t('form.taskForm.sarAnalysisAreaForm.latitudeMax')} value={ymax} type='number' onChange={(e) => setYmax(e.target.value)} disabled={loading} /></div>
-          <div><InputLabel>{t('form.taskForm.sarAnalysisAreaForm.longitudeMax')}</InputLabel><TextField size='small' placeholder={t('form.taskForm.sarAnalysisAreaForm.longitudeMax')} value={xmax} type='number' onChange={(e) => setXmax(e.target.value)} disabled={loading} /></div>
+          <div>
+            <InputLabel>{t('form.taskForm.sarAnalysisAreaForm.latitudeMin')}</InputLabel>
+            <TextField
+              size='small'
+              placeholder={t('form.taskForm.sarAnalysisAreaForm.latitudeMin')}
+              value={ymin}
+              type='number'
+              onChange={(e) => setYmin(e.target.value)}
+              disabled={loading}
+            />
+          </div>
+          <div>
+            <InputLabel>{t('form.taskForm.sarAnalysisAreaForm.longitudeMin')}</InputLabel>
+            <TextField
+              size='small'
+              placeholder={t('form.taskForm.sarAnalysisAreaForm.longitudeMin')}
+              value={xmin}
+              type='number'
+              onChange={(e) => setXmin(e.target.value)}
+              disabled={loading}
+            />
+          </div>
+          <div>
+            <InputLabel>{t('form.taskForm.sarAnalysisAreaForm.latitudeMax')}</InputLabel>
+            <TextField
+              size='small'
+              placeholder={t('form.taskForm.sarAnalysisAreaForm.latitudeMax')}
+              value={ymax}
+              type='number'
+              onChange={(e) => setYmax(e.target.value)}
+              disabled={loading}
+            />
+          </div>
+          <div>
+            <InputLabel>{t('form.taskForm.sarAnalysisAreaForm.longitudeMax')}</InputLabel>
+            <TextField
+              size='small'
+              placeholder={t('form.taskForm.sarAnalysisAreaForm.longitudeMax')}
+              value={xmax}
+              type='number'
+              onChange={(e) => setXmax(e.target.value)}
+              disabled={loading}
+            />
+          </div>
         </div>
       )}
       {isUTM && (
         <div className='grid grid-cols-2 gap-2'>
-          <div><InputLabel>{t('form.taskForm.sarAnalysisAreaForm.xMin')}</InputLabel><TextField size='small' placeholder={t('form.taskForm.sarAnalysisAreaForm.xMin')} value={xmin} type='number' onChange={(e) => setXmin(e.target.value)} disabled={loading} /></div>
-          <div><InputLabel>{t('form.taskForm.sarAnalysisAreaForm.yMin')}</InputLabel><TextField size='small' placeholder={t('form.taskForm.sarAnalysisAreaForm.yMin')} value={ymin} type='number' onChange={(e) => setYmin(e.target.value)} disabled={loading} /></div>
-          <div><InputLabel>{t('form.taskForm.sarAnalysisAreaForm.xMax')}</InputLabel><TextField size='small' placeholder={t('form.taskForm.sarAnalysisAreaForm.xMax')} value={xmax} type='number' onChange={(e) => setXmax(e.target.value)} disabled={loading} /></div>
-          <div><InputLabel>{t('form.taskForm.sarAnalysisAreaForm.yMax')}</InputLabel><TextField size='small' placeholder={t('form.taskForm.sarAnalysisAreaForm.yMax')} value={ymax} type='number' onChange={(e) => setYmax(e.target.value)} disabled={loading} /></div>
+          <div>
+            <InputLabel>{t('form.taskForm.sarAnalysisAreaForm.xMin')}</InputLabel>
+            <TextField
+              size='small'
+              placeholder={t('form.taskForm.sarAnalysisAreaForm.xMin')}
+              value={xmin}
+              type='number'
+              onChange={(e) => setXmin(e.target.value)}
+              disabled={loading}
+            />
+          </div>
+          <div>
+            <InputLabel>{t('form.taskForm.sarAnalysisAreaForm.yMin')}</InputLabel>
+            <TextField
+              size='small'
+              placeholder={t('form.taskForm.sarAnalysisAreaForm.yMin')}
+              value={ymin}
+              type='number'
+              onChange={(e) => setYmin(e.target.value)}
+              disabled={loading}
+            />
+          </div>
+          <div>
+            <InputLabel>{t('form.taskForm.sarAnalysisAreaForm.xMax')}</InputLabel>
+            <TextField
+              size='small'
+              placeholder={t('form.taskForm.sarAnalysisAreaForm.xMax')}
+              value={xmax}
+              type='number'
+              onChange={(e) => setXmax(e.target.value)}
+              disabled={loading}
+            />
+          </div>
+          <div>
+            <InputLabel>{t('form.taskForm.sarAnalysisAreaForm.yMax')}</InputLabel>
+            <TextField
+              size='small'
+              placeholder={t('form.taskForm.sarAnalysisAreaForm.yMax')}
+              value={ymax}
+              type='number'
+              onChange={(e) => setYmax(e.target.value)}
+              disabled={loading}
+            />
+          </div>
         </div>
       )}
       {coordSystem === 'MGRS' && (
         <div>
           <InputLabel>{t('form.taskForm.sarAnalysisAreaForm.mgrsMin')}</InputLabel>
-          <TextField placeholder={t('form.taskForm.sarAnalysisAreaForm.mgrsMin')} size='small' value={mgrsMin} onChange={(e) => setMgrsMin(e.target.value)} disabled={loading} fullWidth />
+          <TextField
+            placeholder={t('form.taskForm.sarAnalysisAreaForm.mgrsMin')}
+            size='small'
+            value={mgrsMin}
+            onChange={(e) => setMgrsMin(e.target.value)}
+            disabled={loading}
+            fullWidth
+          />
           <InputLabel className='mt-2'>{t('form.taskForm.sarAnalysisAreaForm.mgrsMax')}</InputLabel>
-          <TextField placeholder={t('form.taskForm.sarAnalysisAreaForm.mgrsMax')} size='small' value={mgrsMax} onChange={(e) => setMgrsMax(e.target.value)} disabled={loading} fullWidth />
+          <TextField
+            placeholder={t('form.taskForm.sarAnalysisAreaForm.mgrsMax')}
+            size='small'
+            value={mgrsMax}
+            onChange={(e) => setMgrsMax(e.target.value)}
+            disabled={loading}
+            fullWidth
+          />
         </div>
       )}
       <div className='mt-4 flex justify-center'>
-        <Button variant='contained' onClick={remainingSlots === 0 ? showNoRemainingSlotsError : handleAddExtent} startIcon={<AddIcon />} disabled={isAddDisabled}>
+        <Button
+          variant='contained'
+          onClick={remainingSlots === 0 ? showNoRemainingSlotsError : handleAddExtent}
+          startIcon={<AddIcon />}
+          disabled={isAddDisabled}
+        >
           {t('button.add')}
         </Button>
       </div>
@@ -360,15 +486,41 @@ type DrawTabProps = {
   t: (key: string) => string
 }
 
-function DrawTabContent({ drawingMode, remainingSlots, showNoRemainingSlotsError, cancelDraw, startDraw, loading, t }: DrawTabProps) {
-  const pointClick = remainingSlots === 0 ? showNoRemainingSlotsError : drawingMode === 'point' ? cancelDraw : () => startDraw('point')
-  const polygonClick = remainingSlots === 0 ? showNoRemainingSlotsError : drawingMode === 'polygon' ? cancelDraw : () => startDraw('polygon')
+function DrawTabContent({
+  drawingMode,
+  remainingSlots,
+  showNoRemainingSlotsError,
+  cancelDraw,
+  startDraw,
+  loading,
+  t,
+}: DrawTabProps) {
+  const pointClick =
+    remainingSlots === 0 ? showNoRemainingSlotsError : drawingMode === 'point' ? cancelDraw : () => startDraw('point')
+  const polygonClick =
+    remainingSlots === 0
+      ? showNoRemainingSlotsError
+      : drawingMode === 'polygon'
+        ? cancelDraw
+        : () => startDraw('polygon')
   return (
     <div className='flex gap-2'>
-      <Button className='flex-1' variant={drawingMode === 'point' ? 'contained' : 'outlined'} startIcon={<LocationPinIcon />} onClick={pointClick} disabled={loading}>
+      <Button
+        className='flex-1'
+        variant={drawingMode === 'point' ? 'contained' : 'outlined'}
+        startIcon={<LocationPinIcon />}
+        onClick={pointClick}
+        disabled={loading}
+      >
         {t('form.taskForm.sarAnalysisAreaForm.drawPoint')}
       </Button>
-      <Button className='flex-1' variant={drawingMode === 'polygon' ? 'contained' : 'outlined'} startIcon={<PolygonIcon />} onClick={polygonClick} disabled={loading}>
+      <Button
+        className='flex-1'
+        variant={drawingMode === 'polygon' ? 'contained' : 'outlined'}
+        startIcon={<PolygonIcon />}
+        onClick={polygonClick}
+        disabled={loading}
+      >
         {t('form.taskForm.sarAnalysisAreaForm.drawArea')}
       </Button>
     </div>
@@ -398,7 +550,15 @@ function FeatureListItem({ feature: f, viewOnly, loading, onZoom, onRemove }: Fe
         </div>
         <div className='mx-2 flex-1 truncate text-left text-sm'>{f.label}</div>
         {!viewOnly && (
-          <IconButton size='small' color='error' onClick={(e) => { e.stopPropagation(); onRemove(f) }} disabled={loading}>
+          <IconButton
+            size='small'
+            color='error'
+            onClick={(e) => {
+              e.stopPropagation()
+              onRemove(f)
+            }}
+            disabled={loading}
+          >
             <DeleteIcon fontSize='small' />
           </IconButton>
         )}
@@ -425,7 +585,10 @@ function ImageLayerToggle({ image, visible, onVisibilityChange, onZoom, classNam
       >
         <Checkbox
           checked={visible}
-          onChange={(e) => { e.stopPropagation(); onVisibilityChange(e.target.checked) }}
+          onChange={(e) => {
+            e.stopPropagation()
+            onVisibilityChange(e.target.checked)
+          }}
           size='small'
           onClick={(e) => e.stopPropagation()}
         />
@@ -484,7 +647,9 @@ function applyFeaturesUpdate(
   onFeaturesChange?: (items: FeatureItem[]) => void,
 ): FeatureItem[] {
   const next = updater(prev)
-  try { onFeaturesChange?.(next) } catch {}
+  try {
+    onFeaturesChange?.(next)
+  } catch {}
   return next
 }
 
@@ -536,7 +701,9 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
         const base = featuresProp ?? []
         const next = updater(base)
         if (!areFeaturesEqual(base, next)) {
-          try { onFeaturesChange?.(next) } catch {}
+          try {
+            onFeaturesChange?.(next)
+          } catch {}
         }
       } else {
         setFeaturesState((prev) => applyFeaturesUpdate(prev, updater, onFeaturesChange))
@@ -614,9 +781,15 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
       const JSZip = jszipMod.default || jszipMod
       const zip = await JSZip.loadAsync(arrayBuffer)
       const kmlName = Object.keys(zip.files).find((n) => n.toLowerCase().endsWith('.kml'))
-      if (!kmlName) { showImportError(); return }
+      if (!kmlName) {
+        showImportError()
+        return
+      }
       const fileObj = zip.file(kmlName)
-      if (!fileObj) { showImportError(); return }
+      if (!fileObj) {
+        showImportError()
+        return
+      }
       const kmlText = await fileObj.async('string')
       const { items, excludedByArea } = parseKml(kmlText, 'import', { fileName: file.name })
       addExtractedFeatures(items, { excludedByArea })
@@ -640,11 +813,16 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
 
   const handleFile = async (file?: File) => {
     if (!file) {
-      try { if (fileInputRef.current) fileInputRef.current.value = '' } catch {}
+      try {
+        if (fileInputRef.current) fileInputRef.current.value = ''
+      } catch {}
       return
     }
     try {
-      if (file.size > MAX_FILE_SIZE) { showImportError(); return }
+      if (file.size > MAX_FILE_SIZE) {
+        showImportError()
+        return
+      }
       const name = file.name.toLowerCase()
       if (name.endsWith('.geojson') || name.endsWith('.json')) {
         await handleGeoJsonFile(file)
@@ -658,7 +836,9 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
         showImportError()
       }
     } finally {
-      try { if (fileInputRef.current) fileInputRef.current.value = '' } catch {}
+      try {
+        if (fileInputRef.current) fileInputRef.current.value = ''
+      } catch {}
     }
   }
 
@@ -671,8 +851,11 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
     let excludedByArea = 0
     for (const g of collectGeometries(json)) {
       const { item, excludedArea } = processGeometry(g, areaUnit, lengthUnit, sourceType, sourcePayload)
-      if (excludedArea) { excludedByArea += 1 }
-      else if (item) { list.push(item) }
+      if (excludedArea) {
+        excludedByArea += 1
+      } else if (item) {
+        list.push(item)
+      }
       if (list.length >= remainingSlots) break
     }
     return { items: list, excludedByArea }
@@ -728,9 +911,7 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
 
   const addExtentPolygon = (coords: [number, number][], area: number, sourceData: Record<string, unknown>) => {
     updateFeaturesInternal((prev) =>
-      prev.length < MAX_FEATURES
-        ? [...prev, makePolygonFeature(coords, area, areaUnit, 'extent', sourceData)]
-        : prev,
+      prev.length < MAX_FEATURES ? [...prev, makePolygonFeature(coords, area, areaUnit, 'extent', sourceData)] : prev,
     )
     const bbox = turf.bbox(turf.polygon([coords]))
     map?.fitBounds(bbox as LngLatBoundsLike, fitBoundsOptions)
@@ -760,20 +941,35 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
   }
 
   const resolveNumericExtentCoords = (
-    xn: number, xx: number, yn: number, yx: number,
+    xn: number,
+    xx: number,
+    yn: number,
+    yx: number,
   ): { coords: [number, number][]; coordinateTypeId: number; zoneId: number | null } => {
     if (coordSystem === 'UTM47N' || coordSystem === 'UTM48N') {
       const coordinateTypeId = coordSystem === 'UTM47N' ? 2 : 3
       const zoneId = coordSystem === 'UTM47N' ? 1 : 2
       const zone = coordSystem === 'UTM47N' ? 47 : 48
       const utmDef = `+proj=utm +zone=${zone} +datum=WGS84 +units=m +no_defs`
-      const coords = ([[xn, yn], [xx, yn], [xx, yx], [xn, yx], [xn, yn]] as [number, number][]).map(
-        ([e, n]) => proj4(utmDef, 'WGS84', [e, n]) as [number, number],
-      )
+      const coords = (
+        [
+          [xn, yn],
+          [xx, yn],
+          [xx, yx],
+          [xn, yx],
+          [xn, yn],
+        ] as [number, number][]
+      ).map(([e, n]) => proj4(utmDef, 'WGS84', [e, n]) as [number, number])
       return { coords, coordinateTypeId, zoneId }
     }
     return {
-      coords: [[xn, yn], [xx, yn], [xx, yx], [xn, yx], [xn, yn]],
+      coords: [
+        [xn, yn],
+        [xx, yn],
+        [xx, yx],
+        [xn, yx],
+        [xn, yn],
+      ],
       coordinateTypeId: 1,
       zoneId: null,
     }
@@ -784,7 +980,10 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
       handleAddExtentMGRS()
       return
     }
-    const xn = Number(xmin), xx = Number(xmax), yn = Number(ymin), yx = Number(ymax)
+    const xn = Number(xmin),
+      xx = Number(xmax),
+      yn = Number(ymin),
+      yx = Number(ymax)
     if (Number.isNaN(xn) || Number.isNaN(xx) || Number.isNaN(yn) || Number.isNaN(yx)) return
 
     const { coords, coordinateTypeId, zoneId } = resolveNumericExtentCoords(xn, xx, yn, yx)
@@ -794,7 +993,10 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
     } else {
       addExtentPolygon(coords, area, { coordinateTypeId, zoneId, xMin: xn, xMax: xx, yMin: yn, yMax: yx })
     }
-    setXmin(''); setXmax(''); setYmin(''); setYmax('')
+    setXmin('')
+    setXmax('')
+    setYmin('')
+    setYmax('')
   }
 
   // --- Draw handlers (map integration deferred) ---
@@ -836,7 +1038,18 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
       const label = `${convertArea(area, areaUnit).toLocaleString(undefined, LOCALE_STRING_OPTIONS)} ${areaUnit}`
       updateFeaturesInternal((prev) =>
         prev.length < MAX_FEATURES
-          ? [...prev, { id, geomType: 'Polygon', coords: points, label, metric: area, source: 'draw', sourceData: { mode: 'polygon' } }]
+          ? [
+              ...prev,
+              {
+                id,
+                geomType: 'Polygon',
+                coords: points,
+                label,
+                metric: area,
+                source: 'draw',
+                sourceData: { mode: 'polygon' },
+              },
+            ]
           : prev,
       )
     },
@@ -898,7 +1111,9 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
 
   const addPreviewPointLayer = useCallback(
     (mapInstance: any, coord: [number, number]) => {
-      try { loadOrAddPinIcon(mapInstance, pinImageLoadedRef, pinImageRef) } catch {}
+      try {
+        loadOrAddPinIcon(mapInstance, pinImageLoadedRef, pinImageRef)
+      } catch {}
       if (mapInstance.getSource(CURRENT_POINT_ID)) {
         mapInstance.getSource(CURRENT_POINT_ID).setData({
           type: 'Feature',
@@ -1055,11 +1270,23 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
         type: 'geojson',
         data: { type: 'Feature', geometry: { type: 'Point', coordinates: feature.coords as any }, properties: {} },
       })
-      try { loadOrAddPinIcon(map, pinImageLoadedRef, pinImageRef) } catch {}
+      try {
+        loadOrAddPinIcon(map, pinImageLoadedRef, pinImageRef)
+      } catch {}
       const iconLayerId = `${pointId}-icon`
       if (!map.getLayer(iconLayerId)) {
         map.addLayer(
-          { id: iconLayerId, type: 'symbol', source: pointId, layout: { 'icon-image': SAR_PIN_ICON, 'icon-size': is2K ? 1.6 : 0.8, 'icon-anchor': 'bottom', 'icon-allow-overlap': true } },
+          {
+            id: iconLayerId,
+            type: 'symbol',
+            source: pointId,
+            layout: {
+              'icon-image': SAR_PIN_ICON,
+              'icon-size': is2K ? 1.6 : 0.8,
+              'icon-anchor': 'bottom',
+              'icon-allow-overlap': true,
+            },
+          },
           layerIdConfig.customReferer,
         )
       }
@@ -1092,14 +1319,28 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
       const polyCoords = feature.coords as number[][]
       map.addSource(polygonId, {
         type: 'geojson',
-        data: { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[...polyCoords, polyCoords[0]]] }, properties: {} },
+        data: {
+          type: 'Feature',
+          geometry: { type: 'Polygon', coordinates: [[...polyCoords, polyCoords[0]]] },
+          properties: {},
+        },
       })
       map.addLayer(
-        { id: `${polygonId}-fill`, type: 'fill', source: polygonId, paint: { 'fill-color': '#0E94FA', 'fill-opacity': 0.3 } },
+        {
+          id: `${polygonId}-fill`,
+          type: 'fill',
+          source: polygonId,
+          paint: { 'fill-color': '#0E94FA', 'fill-opacity': 0.3 },
+        },
         layerIdConfig.customReferer,
       )
       map.addLayer(
-        { id: `${polygonId}-outline`, type: 'line', source: polygonId, paint: { 'line-color': '#0E94FA', 'line-width': 2 } },
+        {
+          id: `${polygonId}-outline`,
+          type: 'line',
+          source: polygonId,
+          paint: { 'line-color': '#0E94FA', 'line-width': 2 },
+        },
         layerIdConfig.customReferer,
       )
     },
@@ -1127,14 +1368,7 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
 
     registerHandler(map, SAR_HANDLER_ID, handleStyleData)
     return () => unregisterHandler(map, SAR_HANDLER_ID)
-  }, [
-    map,
-    restoreRasterTiles,
-    restorePreviewLayers,
-    restorePointFeature,
-    restoreLineFeature,
-    restorePolygonFeature,
-  ])
+  }, [map, restoreRasterTiles, restorePreviewLayers, restorePointFeature, restoreLineFeature, restorePolygonFeature])
 
   const zoomToImage = useCallback(
     (img: GetResultImageDtoOut | undefined) => {
@@ -1317,14 +1551,26 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
     }
   }, [map, removePreviewLayers, drawingMode])
 
-
   const addPinIconLayer = useCallback(
     (mapInstance: any, pointId: string, img: HTMLImageElement) => {
-      try { if (typeof mapInstance.hasImage !== 'function' || !mapInstance.hasImage(SAR_PIN_ICON)) mapInstance.addImage(SAR_PIN_ICON, img) } catch {}
+      try {
+        if (typeof mapInstance.hasImage !== 'function' || !mapInstance.hasImage(SAR_PIN_ICON))
+          mapInstance.addImage(SAR_PIN_ICON, img)
+      } catch {}
       const iconLayerId = `${pointId}-icon`
       if (!mapInstance.getLayer(iconLayerId)) {
         mapInstance.addLayer(
-          { id: iconLayerId, type: 'symbol', source: pointId, layout: { 'icon-image': SAR_PIN_ICON, 'icon-size': is2K ? 1.6 : 0.8, 'icon-anchor': 'bottom', 'icon-allow-overlap': true } },
+          {
+            id: iconLayerId,
+            type: 'symbol',
+            source: pointId,
+            layout: {
+              'icon-image': SAR_PIN_ICON,
+              'icon-size': is2K ? 1.6 : 0.8,
+              'icon-anchor': 'bottom',
+              'icon-allow-overlap': true,
+            },
+          },
           layerIdConfig.customReferer,
         )
       }
@@ -1341,7 +1587,9 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
       })
       try {
         loadOrAddPinIcon(mapInstance, pinImageLoadedRef, pinImageRef, (img) => {
-          try { addPinIconLayer(mapInstance, pointId, img) } catch {}
+          try {
+            addPinIconLayer(mapInstance, pointId, img)
+          } catch {}
         })
       } catch {}
     },
@@ -1365,14 +1613,28 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
     const polyCoords = feature.coords as number[][]
     mapInstance.addSource(polygonId, {
       type: 'geojson',
-      data: { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[...polyCoords, polyCoords[0]]] }, properties: {} },
+      data: {
+        type: 'Feature',
+        geometry: { type: 'Polygon', coordinates: [[...polyCoords, polyCoords[0]]] },
+        properties: {},
+      },
     })
     mapInstance.addLayer(
-      { id: `${polygonId}-fill`, type: 'fill', source: polygonId, paint: { 'fill-color': '#0E94FA', 'fill-opacity': 0.3 } },
+      {
+        id: `${polygonId}-fill`,
+        type: 'fill',
+        source: polygonId,
+        paint: { 'fill-color': '#0E94FA', 'fill-opacity': 0.3 },
+      },
       layerIdConfig.customReferer,
     )
     mapInstance.addLayer(
-      { id: `${polygonId}-outline`, type: 'line', source: polygonId, paint: { 'line-color': '#0E94FA', 'line-width': 2 } },
+      {
+        id: `${polygonId}-outline`,
+        type: 'line',
+        source: polygonId,
+        paint: { 'line-color': '#0E94FA', 'line-width': 2 },
+      },
       layerIdConfig.customReferer,
     )
   }, [])
@@ -1421,7 +1683,13 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
         const geo = getFeatureBboxGeo(feature)
         if (!geo) return
         const b = turf.bbox(geo)
-        map.fitBounds([[b[0], b[1]], [b[2], b[3]]], fitBoundsOptions)
+        map.fitBounds(
+          [
+            [b[0], b[1]],
+            [b[2], b[3]],
+          ],
+          fitBoundsOptions,
+        )
         setShowFormDialog(false)
       } catch {}
     },
@@ -1451,29 +1719,56 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
             {tab === 0 && (
               <div>
                 <div className='rounded-lg border border-primary border-dashed p-6 text-center'>
-                  <input id={fileInputId} ref={fileInputRef} type='file' accept='.zip,.geojson,.json,.kml,.kmz' onChange={(e) => handleFile(e.target.files?.[0])} style={{ display: 'none' }} />
+                  <input
+                    id={fileInputId}
+                    ref={fileInputRef}
+                    type='file'
+                    accept='.zip,.geojson,.json,.kml,.kmz'
+                    onChange={(e) => handleFile(e.target.files?.[0])}
+                    style={{ display: 'none' }}
+                  />
                   <label htmlFor={fileInputId}>
                     <Button
                       variant='contained'
                       startIcon={<CloudUploadIcon />}
                       component='span'
-                      onClick={remainingSlots === 0 ? (e) => { e.preventDefault(); showNoRemainingSlotsError() } : undefined}
+                      onClick={
+                        remainingSlots === 0
+                          ? (e) => {
+                              e.preventDefault()
+                              showNoRemainingSlotsError()
+                            }
+                          : undefined
+                      }
                       disabled={loading}
                     >
                       {t('form.taskForm.sarAnalysisAreaForm.chooseFile')}
                     </Button>
                   </label>
-                  <div className='mt-2 text-(--color-text-secondary) text-sm'>{t('form.taskForm.sarAnalysisAreaForm.uploadHint')}</div>
+                  <div className='mt-2 text-(--color-text-secondary) text-sm'>
+                    {t('form.taskForm.sarAnalysisAreaForm.uploadHint')}
+                  </div>
                 </div>
               </div>
             )}
             {tab === 1 && (
               <CoordTabContent
-                coordSystem={coordSystem} setCoordSystem={(v) => setCoordSystem(v as 'GCS' | 'UTM47N' | 'UTM48N' | 'MGRS')}
-                xmin={xmin} xmax={xmax} ymin={ymin} ymax={ymax}
-                setXmin={setXmin} setXmax={setXmax} setYmin={setYmin} setYmax={setYmax}
-                mgrsMin={mgrsMin} mgrsMax={mgrsMax} setMgrsMin={setMgrsMin} setMgrsMax={setMgrsMax}
-                loading={loading} remainingSlots={remainingSlots}
+                coordSystem={coordSystem}
+                setCoordSystem={(v) => setCoordSystem(v as 'GCS' | 'UTM47N' | 'UTM48N' | 'MGRS')}
+                xmin={xmin}
+                xmax={xmax}
+                ymin={ymin}
+                ymax={ymax}
+                setXmin={setXmin}
+                setXmax={setXmax}
+                setYmin={setYmin}
+                setYmax={setYmax}
+                mgrsMin={mgrsMin}
+                mgrsMax={mgrsMax}
+                setMgrsMin={setMgrsMin}
+                setMgrsMax={setMgrsMax}
+                loading={loading}
+                remainingSlots={remainingSlots}
                 showNoRemainingSlotsError={showNoRemainingSlotsError}
                 handleAddExtent={handleAddExtent}
                 t={t}
@@ -1481,10 +1776,13 @@ const SarAnalysisAreaForm: React.FC<Props> = ({
             )}
             {tab === 2 && (
               <DrawTabContent
-                drawingMode={drawingMode} remainingSlots={remainingSlots}
+                drawingMode={drawingMode}
+                remainingSlots={remainingSlots}
                 showNoRemainingSlotsError={showNoRemainingSlotsError}
-                cancelDraw={cancelDraw} startDraw={startDraw}
-                loading={loading} t={t}
+                cancelDraw={cancelDraw}
+                startDraw={startDraw}
+                loading={loading}
+                t={t}
               />
             )}
           </div>

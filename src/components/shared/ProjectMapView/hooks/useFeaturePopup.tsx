@@ -92,7 +92,7 @@ export function useFeaturePopup(params: {
         taskName: typeof task?.name === 'string' ? task.name : '',
         confidence: confidenceNum,
         area: areaValue,
-        damage_level: sarDamageLevel
+        damage_level: sarDamageLevel,
       }
 
       root.render(

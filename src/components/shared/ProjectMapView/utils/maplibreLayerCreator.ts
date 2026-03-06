@@ -53,14 +53,12 @@ const safeAddImage = (m: maplibregl.Map, name: string, img: HTMLImageElement | I
     }
   } catch (e) {
     // Ignore duplicate-image error (race condition / concurrent adds can throw)
-    try {
-      const msg = String(e)
-      if (!/already exists/i.test(msg)) {
-        // only warn for unexpected errors
-        // eslint-disable-next-line no-console
-        console.warn('addImage failed for', name, e)
-      }
-    } catch (_) {}
+    const msg = String(e)
+    if (!/already exists/i.test(msg)) {
+      // only warn for unexpected errors
+      // eslint-disable-next-line no-console
+      console.warn('addImage failed for', name, e)
+    }
   }
 }
 
@@ -138,7 +136,11 @@ const createTileLayers = (
   const layerId = cfg.id
 
   const visibility = visible ? 'visible' : 'none'
-  if (!map.getLayer(layerId)) {
+  if (map.getLayer(layerId)) {
+    map.setLayoutProperty(layerId, 'visibility', visibility)
+    // even if the layer already existed, record it so callers can update visibility
+    createdLayers.push(layerId)
+  } else {
     map.addLayer(
       {
         id: layerId,
@@ -150,10 +152,6 @@ const createTileLayers = (
       },
       layerIdConfig.customReferer,
     )
-    createdLayers.push(layerId)
-  } else {
-    map.setLayoutProperty(layerId, 'visibility', visibility)
-    // even if the layer already existed, record it so callers can update visibility
     createdLayers.push(layerId)
   }
 
@@ -230,23 +228,33 @@ const createSARPointLayer = (
         paint: {
           'circle-color': [
             'match',
-            ['get', 'damage_level'], 
-            1, '#ffebee',
-            2, '#ffcdd2',      
-            3, '#ef9a9a',       
-            4, '#e57373',        
-            5, '#ef5350',
-            fillColor 
+            ['get', 'damage_level'],
+            1,
+            '#ffebee',
+            2,
+            '#ffcdd2',
+            3,
+            '#ef9a9a',
+            4,
+            '#e57373',
+            5,
+            '#ef5350',
+            fillColor,
           ],
           'circle-stroke-color': [
             'match',
-            ['get', 'damage_level'], 
-            1, '#ffebee',
-            2, '#ffcdd2',      
-            3, '#ef9a9a',       
-            4, '#e57373',        
-            5, '#ef5350',
-            strokeColor 
+            ['get', 'damage_level'],
+            1,
+            '#ffebee',
+            2,
+            '#ffcdd2',
+            3,
+            '#ef9a9a',
+            4,
+            '#e57373',
+            5,
+            '#ef5350',
+            strokeColor,
           ],
           'circle-radius': 5,
           'circle-stroke-width': 1,
@@ -299,23 +307,33 @@ const createSarPolygonLayers = (
         paint: {
           'fill-color': [
             'match',
-            ['get', 'damage_level'], 
-            1, '#f44336',      
-            2, '#e53935',       
-            3, '#d32f2f',        
-            4, '#c62828',
-            5, '#b71c1c',
-            fillColor 
+            ['get', 'damage_level'],
+            1,
+            '#f44336',
+            2,
+            '#e53935',
+            3,
+            '#d32f2f',
+            4,
+            '#c62828',
+            5,
+            '#b71c1c',
+            fillColor,
           ],
           'fill-outline-color': [
             'match',
-            ['get', 'damage_level'], 
-            1, '#f44336',      
-            2, '#e53935',       
-            3, '#d32f2f',        
-            4, '#c62828',
-            5, '#b71c1c',
-            strokeColor 
+            ['get', 'damage_level'],
+            1,
+            '#f44336',
+            2,
+            '#e53935',
+            3,
+            '#d32f2f',
+            4,
+            '#c62828',
+            5,
+            '#b71c1c',
+            strokeColor,
           ],
           'fill-opacity': 0.8,
         },
@@ -340,13 +358,18 @@ const createSarPolygonLayers = (
         paint: {
           'line-color': [
             'match',
-            ['get', 'damage_level'], 
-            1, '#f44336',      
-            2, '#e53935',       
-            3, '#d32f2f',        
-            4, '#c62828',
-            5, '#b71c1c',
-            strokeColor 
+            ['get', 'damage_level'],
+            1,
+            '#f44336',
+            2,
+            '#e53935',
+            3,
+            '#d32f2f',
+            4,
+            '#c62828',
+            5,
+            '#b71c1c',
+            strokeColor,
           ],
           'line-width': 1.2,
         },
@@ -790,6 +813,235 @@ const createGeoJsonLayers = (
   }
 }
 
+const addVectorLayersByAssetKey = (
+  map: maplibregl.Map,
+  cfg: VectorLayerConfig,
+  id: string,
+  sourceId: string,
+  filter: maplibregl.ExpressionSpecification,
+  visible: boolean,
+  fillColor: string,
+  strokeColor: string,
+  getClickInfo?: (lngLat: [number, number] | undefined, object: Record<string, unknown> | null) => void,
+): { layerIds: string[]; handler?: () => void } => {
+  if (cfg.assetKey === SARBattleDamageKey) {
+    return createSarPolygonLayers(map, cfg, id, sourceId, filter, visible, fillColor, strokeColor, getClickInfo)
+  }
+
+  if (cfg.assetKey === SARChangeDetectionKey) {
+    const { layerId, handler } = createSARPointLayer(
+      map,
+      cfg,
+      id,
+      sourceId,
+      filter,
+      visible,
+      fillColor,
+      strokeColor,
+      getClickInfo,
+    )
+    return { layerIds: [layerId], handler }
+  }
+
+  return createRegularVectorLayers(map, cfg, id, sourceId, filter, visible, fillColor, strokeColor, getClickInfo)
+}
+
+const ensureVectorLayersOnStyleReload = (
+  m: maplibregl.Map,
+  cfg: VectorLayerConfig,
+  id: string,
+  sourceId: string,
+  data: string | string[],
+  filter: maplibregl.ExpressionSpecification,
+  fillColor: string,
+  strokeColor: string,
+) => {
+  if (!m.getSource(sourceId)) {
+    m.addSource(sourceId, {
+      type: 'vector',
+      tiles: Array.isArray(data) ? data : [data],
+      minzoom: 10,
+    })
+  }
+
+  if (cfg.assetKey === SARBattleDamageKey) {
+    const fillLayerId = `${id}-fill`
+    if (!m.getLayer(fillLayerId)) {
+      m.addLayer(
+        {
+          id: fillLayerId,
+          type: 'fill',
+          source: sourceId,
+          'source-layer': 'default',
+          minzoom: 10,
+          filter,
+          layout: { visibility: 'visible' },
+          paint: {
+            'fill-color': [
+              'match',
+              ['get', 'damage_level'],
+              1,
+              '#f44336',
+              2,
+              '#e53935',
+              3,
+              '#d32f2f',
+              4,
+              '#c62828',
+              5,
+              '#b71c1c',
+              fillColor,
+            ],
+            'fill-outline-color': [
+              'match',
+              ['get', 'damage_level'],
+              1,
+              '#f44336',
+              2,
+              '#e53935',
+              3,
+              '#d32f2f',
+              4,
+              '#c62828',
+              5,
+              '#b71c1c',
+              strokeColor,
+            ],
+            'fill-opacity': 0.8,
+          },
+        },
+        layerIdConfig.customReferer,
+      )
+    }
+    const lineLayerId = `${id}-line`
+    if (!m.getLayer(lineLayerId)) {
+      m.addLayer(
+        {
+          id: lineLayerId,
+          type: 'line',
+          source: sourceId,
+          'source-layer': 'default',
+          minzoom: 10,
+          filter,
+          layout: { visibility: 'visible' },
+          paint: {
+            'line-color': [
+              'match',
+              ['get', 'damage_level'],
+              1,
+              '#f44336',
+              2,
+              '#e53935',
+              3,
+              '#d32f2f',
+              4,
+              '#c62828',
+              5,
+              '#b71c1c',
+              strokeColor,
+            ],
+            'line-width': 1.2,
+          },
+        },
+        layerIdConfig.customReferer,
+      )
+    }
+    return
+  } else if (cfg.assetKey === SARChangeDetectionKey) {
+    const pointLayerId = `${id}-point`
+    if (!m.getLayer(pointLayerId)) {
+      m.addLayer(
+        {
+          id: pointLayerId,
+          type: 'circle',
+          source: sourceId,
+          'source-layer': 'default',
+          minzoom: 10,
+          filter,
+          layout: { visibility: 'visible' },
+          paint: {
+            'circle-color': [
+              'match',
+              ['get', 'damage_level'],
+              1,
+              '#ffebee',
+              2,
+              '#ffcdd2',
+              3,
+              '#ef9a9a',
+              4,
+              '#e57373',
+              5,
+              '#ef5350',
+              fillColor,
+            ],
+            'circle-stroke-color': [
+              'match',
+              ['get', 'damage_level'],
+              1,
+              '#ffebee',
+              2,
+              '#ffcdd2',
+              3,
+              '#ef9a9a',
+              4,
+              '#e57373',
+              5,
+              '#ef5350',
+              strokeColor,
+            ],
+            'circle-radius': 5,
+            'circle-stroke-width': 1,
+            'circle-opacity': 0.8,
+          },
+        },
+        layerIdConfig.customReferer,
+      )
+    }
+    return
+  }
+
+  const fillLayerId = `${id}-fill`
+  if (!m.getLayer(fillLayerId)) {
+    m.addLayer(
+      {
+        id: fillLayerId,
+        type: 'fill',
+        source: sourceId,
+        'source-layer': 'default',
+        minzoom: 10,
+        filter,
+        layout: { visibility: 'visible' },
+        paint: {
+          'fill-color': fillColor,
+          'fill-opacity': 0.6,
+          'fill-outline-color': strokeColor,
+        },
+      },
+      layerIdConfig.customReferer,
+    )
+  }
+  const lineLayerId = `${id}-line`
+  if (!m.getLayer(lineLayerId)) {
+    m.addLayer(
+      {
+        id: lineLayerId,
+        type: 'line',
+        source: sourceId,
+        'source-layer': 'default',
+        minzoom: 10,
+        filter,
+        layout: { visibility: 'visible' },
+        paint: {
+          'line-color': strokeColor,
+          'line-width': 1.2,
+        },
+      },
+      layerIdConfig.customReferer,
+    )
+  }
+}
+
 const createVectorLayers = (
   cfg: VectorLayerConfig,
   map: maplibregl.Map,
@@ -834,49 +1086,20 @@ const createVectorLayers = (
   const lineColorArr = color_code ? hexToRGBAArray(color_code) : hexToRGBAArray(getColorByModelId(assetKey ?? ''))
   const fillColor = rgbaArrayToCss(baseColorArr, 'rgba(255,0,0,0.6)')
   const strokeColor = rgbaArrayToCss(lineColorArr, 'rgba(255,0,0,1)')
-  if ( assetKey === SARBattleDamageKey ) {
-    const { layerIds, handler } = createSarPolygonLayers(
-      map,
-      cfg,
-      id,
-      sourceId,
-      filter,
-      visible,
-      fillColor,
-      strokeColor,
-      getClickInfo,
-    )
-    createdLayers.push(...layerIds)
-    if (handler) removeHandlers.push(handler)
-  } else if (assetKey === SARChangeDetectionKey) {
-    const { layerId, handler } = createSARPointLayer(
-      map,
-      cfg,
-      id,
-      sourceId,
-      filter,
-      visible,
-      fillColor,
-      strokeColor,
-      getClickInfo,
-    )
-    createdLayers.push(layerId)
-    if (handler) removeHandlers.push(handler)
-  } else {
-    const { layerIds, handler } = createRegularVectorLayers(
-      map,
-      cfg,
-      id,
-      sourceId,
-      filter,
-      visible,
-      fillColor,
-      strokeColor,
-      getClickInfo,
-    )
-    createdLayers.push(...layerIds)
-    if (handler) removeHandlers.push(handler)
-  }
+
+  const { layerIds, handler } = addVectorLayersByAssetKey(
+    map,
+    cfg,
+    id,
+    sourceId,
+    filter,
+    visible,
+    fillColor,
+    strokeColor,
+    getClickInfo,
+  )
+  createdLayers.push(...layerIds)
+  if (handler) removeHandlers.push(handler)
 
   // register style-data handler to recreate vector source/layers after style reload
   try {
@@ -885,164 +1108,7 @@ const createVectorLayers = (
     const unregister = useMapStore.getState().unregisterStyleDataHandler
     const handler = (m: maplibregl.Map) => {
       try {
-        if (!m.getSource(sourceId)) {
-          m.addSource(sourceId, {
-            type: 'vector',
-            tiles: Array.isArray(data) ? data : [data],
-            minzoom: 10,
-          })
-        }
-        if (assetKey === SARBattleDamageKey) {
-          const fillLayerId = `${id}-fill`
-          if (!m.getLayer(fillLayerId)) {
-            m.addLayer(
-              {
-                id: fillLayerId,
-                type: 'fill',
-                source: sourceId,
-                'source-layer': 'default',
-                minzoom: 10,
-                filter,
-                layout: { visibility: 'visible' },
-                paint: {
-                  'fill-color': [
-                    'match',
-                    ['get', 'damage_level'], 
-                    1, '#f44336',      
-                    2, '#e53935',       
-                    3, '#d32f2f',        
-                    4, '#c62828',
-                    5, '#b71c1c',
-                    fillColor 
-                  ],
-                  'fill-outline-color': [
-                    'match',
-                    ['get', 'damage_level'], 
-                    1, '#f44336',      
-                    2, '#e53935',       
-                    3, '#d32f2f',        
-                    4, '#c62828',
-                    5, '#b71c1c',
-                    strokeColor 
-                  ],
-                  'fill-opacity': 0.8,
-                },
-              },
-              layerIdConfig.customReferer,
-            )
-          }
-          const lineLayerId = `${id}-line`
-          if (!m.getLayer(lineLayerId)) {
-            m.addLayer(
-              {
-                id: lineLayerId,
-                type: 'line',
-                source: sourceId,
-                'source-layer': 'default',
-                minzoom: 10,
-                filter,
-                layout: { visibility: 'visible' },
-                paint: {
-                  'line-color': [
-                    'match',
-                    ['get', 'damage_level'], 
-                    1, '#f44336',      
-                    2, '#e53935',       
-                    3, '#d32f2f',        
-                    4, '#c62828',
-                    5, '#b71c1c',
-                    strokeColor 
-                  ],
-                  'line-width': 1.2,
-                },
-              },
-              layerIdConfig.customReferer,
-            )
-          }
-        } else if (assetKey === SARChangeDetectionKey) {
-          const pointLayerId = `${id}-point`
-          if (!m.getLayer(pointLayerId)) {
-            m.addLayer(
-              {
-                id: pointLayerId,
-                type: 'circle',
-                source: sourceId,
-                'source-layer': 'default',
-                minzoom: 10,
-                filter,
-                layout: { visibility: 'visible' },
-                paint: {
-                  'circle-color': [
-                    'match',
-                    ['get', 'damage_level'], 
-                    1, '#ffebee',
-                    2, '#ffcdd2',      
-                    3, '#ef9a9a',       
-                    4, '#e57373',        
-                    5, '#ef5350',
-                    fillColor
-                  ],
-                  'circle-stroke-color': [
-                    'match',
-                    ['get', 'damage_level'], 
-                    1, '#ffebee',
-                    2, '#ffcdd2',      
-                    3, '#ef9a9a',       
-                    4, '#e57373',        
-                    5, '#ef5350',
-                    strokeColor
-                  ],
-                  'circle-radius': 5,
-                  'circle-stroke-width': 1,
-                  'circle-opacity': 0.8,
-                },
-              },
-              layerIdConfig.customReferer,
-            )
-          } else {
-            // let hook handle filter via updateVectorLayerFilters
-          }
-        } else {
-          const fillLayerId = `${id}-fill`
-          if (!m.getLayer(fillLayerId)) {
-            m.addLayer(
-              {
-                id: fillLayerId,
-                type: 'fill',
-                source: sourceId,
-                'source-layer': 'default',
-                minzoom: 10,
-                filter,
-                layout: { visibility: 'visible' },
-                paint: {
-                  'fill-color': fillColor,
-                  'fill-opacity': 0.6,
-                  'fill-outline-color': strokeColor,
-                },
-              },
-              layerIdConfig.customReferer,
-            )
-          }
-          const lineLayerId = `${id}-line`
-          if (!m.getLayer(lineLayerId)) {
-            m.addLayer(
-              {
-                id: lineLayerId,
-                type: 'line',
-                source: sourceId,
-                'source-layer': 'default',
-                minzoom: 10,
-                filter,
-                layout: { visibility: 'visible' },
-                paint: {
-                  'line-color': strokeColor,
-                  'line-width': 1.2,
-                },
-              },
-              layerIdConfig.customReferer,
-            )
-          }
-        }
+        ensureVectorLayersOnStyleReload(m, cfg, id, sourceId, data, filter, fillColor, strokeColor)
       } catch (e) {
         // eslint-disable-next-line no-console
         console.error('vector layer style-data handler error', e)

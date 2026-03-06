@@ -59,10 +59,7 @@ function resolveServiceId(
   if (typeValue === 'sar') return { serviceId: String(ServiceConfig.sar) }
 
   const matched = services.find((s) => {
-    return (
-      (s.name || '').toLowerCase() === typeValue ||
-      (s.nameEn || '').toLowerCase() === typeValue
-    )
+    return (s.name || '').toLowerCase() === typeValue || (s.nameEn || '').toLowerCase() === typeValue
   })
   return matched ? { serviceId: String(matched.id) } : { fallbackKeyword: typeValue }
 }
@@ -260,7 +257,15 @@ const SearchPanel = ({ onChange, loading = false, children }: SearchPanelProps) 
         }, 1000)
       }
     },
-    [resolveOptionsForInput, shouldTriggerSearch, onChange, processSearchValues, searchValue, defaultOption, inputValue],
+    [
+      resolveOptionsForInput,
+      shouldTriggerSearch,
+      onChange,
+      processSearchValues,
+      searchValue,
+      defaultOption,
+      inputValue,
+    ],
   )
 
   const filterOptions = useCallback((options: OptionType[], params: any) => {

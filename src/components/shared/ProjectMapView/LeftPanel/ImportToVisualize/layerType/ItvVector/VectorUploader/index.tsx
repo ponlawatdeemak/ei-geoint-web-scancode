@@ -132,8 +132,11 @@ const VectorUploader: FC<Props> = ({ layerInfo, setLayerInfo, onUpdateItvLayers,
         let aborted = false
         for (const file of Array.from(files)) {
           const result = await processSingleFile(file, layerInfo.id, tempFeature, newIdList)
-          if (result === 'invalid') return  // original: `return` — skip commit entirely
-          if (result === 'limit') { aborted = true; break }  // original: `break` — commit what was collected
+          if (result === 'invalid') return // original: `return` — skip commit entirely
+          if (result === 'limit') {
+            aborted = true
+            break
+          } // original: `break` — commit what was collected
         }
         if (aborted && tempFeature.length === 0) return
 

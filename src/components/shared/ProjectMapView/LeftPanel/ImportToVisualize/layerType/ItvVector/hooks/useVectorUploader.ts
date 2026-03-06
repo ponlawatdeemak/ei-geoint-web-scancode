@@ -53,11 +53,7 @@ const collectGeometries = (json: any): VectorGeometry[] => {
   return []
 }
 
-const buildPointItem = (
-  geometry: VectorGeometry,
-  sourceType?: string,
-  sourcePayload?: any,
-): VectorFeatureItem => {
+const buildPointItem = (geometry: VectorGeometry, sourceType?: string, sourcePayload?: any): VectorFeatureItem => {
   const center = turf.center(geometry)
   return {
     id: getId(),
@@ -84,10 +80,7 @@ const calcPolygonArea = (geometry: VectorGeometry & { type: 'Polygon' | 'MultiPo
   if (geometry.type === 'Polygon') {
     return turf.area(turf.polygon(geometry.coordinates))
   }
-  return (geometry.coordinates as Position[][][]).reduce(
-    (acc, coords) => acc + turf.area(turf.polygon(coords)),
-    0,
-  )
+  return (geometry.coordinates as Position[][][]).reduce((acc, coords) => acc + turf.area(turf.polygon(coords)), 0)
 }
 
 const buildLineItem = (
@@ -131,7 +124,6 @@ const buildPolygonItem = (
 // ─── KML helpers ──────────────────────────────────────────────────────────────
 
 const isDefined = <T>(v: T | null | undefined): v is T => v != null
-
 
 const parseMultiGeometryItems = (
   multiGeom: Element,
@@ -305,7 +297,11 @@ const parsePlacemarkItems = (
 
 const parseGeoJSONFile = async (
   file: File,
-  extractGeoJSONFeatures: (json: unknown, sourceType?: string, sourcePayload?: any) => { items: VectorFeatureItem[]; excludedByArea: number },
+  extractGeoJSONFeatures: (
+    json: unknown,
+    sourceType?: string,
+    sourcePayload?: any,
+  ) => { items: VectorFeatureItem[]; excludedByArea: number },
 ): Promise<VectorFeatureItem[] | null> => {
   try {
     const text = await file.text()
@@ -320,7 +316,11 @@ const parseGeoJSONFile = async (
 
 const parseKmlFile = async (
   file: File,
-  parseKml: (kmlText: string, sourceType?: string, sourcePayload?: any) => { items: VectorFeatureItem[]; excludedByArea: number },
+  parseKml: (
+    kmlText: string,
+    sourceType?: string,
+    sourcePayload?: any,
+  ) => { items: VectorFeatureItem[]; excludedByArea: number },
 ): Promise<VectorFeatureItem[] | null> => {
   try {
     const text = await file.text()
@@ -333,7 +333,11 @@ const parseKmlFile = async (
 
 const parseKmzFile = async (
   file: File,
-  parseKml: (kmlText: string, sourceType?: string, sourcePayload?: any) => { items: VectorFeatureItem[]; excludedByArea: number },
+  parseKml: (
+    kmlText: string,
+    sourceType?: string,
+    sourcePayload?: any,
+  ) => { items: VectorFeatureItem[]; excludedByArea: number },
 ): Promise<VectorFeatureItem[] | null> => {
   try {
     const arrayBuffer = await file.arrayBuffer()
@@ -354,7 +358,11 @@ const parseKmzFile = async (
 
 const parseShapefileZip = async (
   file: File,
-  extractGeoJSONFeatures: (json: unknown, sourceType?: string, sourcePayload?: any) => { items: VectorFeatureItem[]; excludedByArea: number },
+  extractGeoJSONFeatures: (
+    json: unknown,
+    sourceType?: string,
+    sourcePayload?: any,
+  ) => { items: VectorFeatureItem[]; excludedByArea: number },
 ): Promise<VectorFeatureItem[] | null> => {
   try {
     const arrayBuffer = await file.arrayBuffer()
@@ -440,25 +448,37 @@ export const useVectorUploader = () => {
 
         if (name.endsWith('.geojson') || name.endsWith('.json')) {
           const items = await parseGeoJSONFile(file, extractGeoJSONFeatures)
-          if (!items) { showImportError(); return [] }
+          if (!items) {
+            showImportError()
+            return []
+          }
           return items
         }
 
         if (name.endsWith('.kml')) {
           const items = await parseKmlFile(file, parseKml)
-          if (!items) { showImportError(); return [] }
+          if (!items) {
+            showImportError()
+            return []
+          }
           return items
         }
 
         if (name.endsWith('.kmz')) {
           const items = await parseKmzFile(file, parseKml)
-          if (!items) { showImportError(); return [] }
+          if (!items) {
+            showImportError()
+            return []
+          }
           return items
         }
 
         if (name.endsWith('.zip')) {
           const items = await parseShapefileZip(file, extractGeoJSONFeatures)
-          if (!items) { showImportError(); return [] }
+          if (!items) {
+            showImportError()
+            return []
+          }
           return items
         }
 
