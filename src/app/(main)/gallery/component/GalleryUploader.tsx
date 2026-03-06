@@ -25,23 +25,19 @@ import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 import { useTranslation } from 'react-i18next'
-import thaicom from '@/api/thaicom'
 import image from '@/api/image'
-import axios from 'axios'
 import MetadataEditor from '@/components/common/editor/MetadataEditor'
-import { ImageStatus, ServiceConfig } from '@interfaces/config'
+import { ServiceConfig } from '@interfaces/config'
 import { useGlobalUI } from '@/providers/global-ui/GlobalUIContext'
 import Autocomplete from '@mui/material/Autocomplete'
-// Checkbox removed - not used in this component anymore
 import ListItemText from '@mui/material/ListItemText'
-import { useProfileStore } from '@/hook/useProfileStore'
-import { formatDateTimeFromMillis } from '@/utils/formatDate'
 import { useImages } from '@/components/common/images/use-images'
 import { ImageUploadStep } from '@/components/common/images/images'
-import { SearchImagesResultItem } from '@interfaces/dto/images'
 import LinearProgressWithLabel from '@/components/common/display/UploadProgress/LinearProgressWithLabel'
+import { useGalleryUpload } from './hooks/useGalleryUpload'
+import { toSelectedFile, clearResumeState } from './utils/galleryUploader.utils'
 import { ThaicomImageStatus } from '@interfaces/config/thaicom.config'
-import { nanoid } from 'nanoid'
+import { SearchImagesResultItem } from '@interfaces/dto/images'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -67,79 +63,18 @@ interface GalleryUploaderProps {
   onClose: () => void
   searchParamsOrgId?: string | null
 }
-// 100MB
-const MULTIPART_THRESHOLD = 100 * 1024 * 1024 // 100MB
-const DEFAULT_CHUNK_SIZE = 128 * 1024 * 1024 // 128MB
-// run with concurrency pool of at least 10
-const CONCURRENCY = 4
-const MAX_PART_RETRIES = 3 // Max retry attempts per part
-
-interface ResumeState {
-  uploadId: string
-  itemId: string
-  imageId: string
-  serviceId: string
-  chunkSize: number
-  completedParts: { ETag: string; PartNumber: number }[]
-}
-
-const getResumeKey = (userId: string, file: File) =>
-  `gallery_uploader_resume_${userId}_${file.name}_${file.size}_${file.lastModified}`
-
-const getResumeState = (key: string): ResumeState | null => {
-  try {
-    const s = localStorage.getItem(key)
-    return s ? (JSON.parse(s) as ResumeState) : null
-  } catch {
-    return null
-  }
-}
-
-const saveResumeState = (key: string, state: ResumeState) => {
-  localStorage.setItem(key, JSON.stringify(state))
-}
-
-const clearResumeState = (key: string) => {
-  // clear on complete
-  // clear on cancel
-  // clear on new upload with another file
-  localStorage.removeItem(key)
-}
-
-const clearAllResumeStates = () => {
-  if (typeof window === 'undefined') return
-  const keysToRemove: string[] = []
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i)
-    if (key?.startsWith('gallery_uploader_resume_')) {
-      keysToRemove.push(key)
-    }
-  }
-  keysToRemove.forEach((key) => {
-    localStorage.removeItem(key)
-  })
-}
 
 const GalleryUploader: React.FC<GalleryUploaderProps> = ({ serviceId, open, onClose, searchParamsOrgId }) => {
   const inputId = useId()
   const theme = useTheme()
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('md'))
   const [files, setFiles] = useState<SelectedFile[]>([])
-  const [loading, setLoading] = useState(false)
-  const [isUploadingFiles, setIsUploadingFiles] = useState(false)
-  const [tempResumeKey, setTempResumeKey] = useState<string | null>(null)
+  const [tagSuggestions, setTagSuggestions] = useState<Array<{ id: string; name: string }>>([])
+  const tagFetchTimerRef = useRef<number | null>(null)
+  const createdUrlsRef = useRef<string[]>([])
+  const inputRef = useRef<HTMLInputElement | null>(null)
 
-  const [imageCreateParam, setImageCreateParam] = useState<any>(null)
 
-  const abortControllerRef = useRef<AbortController | null>(null)
-  // Track the current multipart upload so we can abort it server-side if user cancels
-  const currentMultipartRef = useRef<{
-    uploadId?: string
-    fileName?: string
-    imageId?: string
-  } | null>(null)
-  // Flag to indicate cancel was initiated by user to avoid marking image as failed
-  const abortedByUserRef = useRef(false)
   const { showAlert, showLoading, hideLoading } = useGlobalUI()
   const {
     uploadStep,
@@ -149,29 +84,44 @@ const GalleryUploader: React.FC<GalleryUploaderProps> = ({ serviceId, open, onCl
     setSelectSearchItem,
     searchInProgressImage,
     setCancelUpload,
-    imageProcessData,
-    setImageProcessData,
     searchImage,
     setAction,
     setSelectedImage,
     wssImageData,
-    setWssImageData,
     selectedImage,
   } = useImages()
 
-  const accept = '.tiff,.tif,.zip'
-  const createdUrlsRef = useRef<string[]>([])
-  const inputRef = useRef<HTMLInputElement | null>(null)
-  const [tagSuggestions, setTagSuggestions] = useState<Array<{ id: string; name: string }>>([])
-  const tagFetchTimerRef = useRef<number | null>(null)
-  const profile = useProfileStore((state) => state.profile)
   const { t, i18n } = useTranslation('common')
+
+  const updateMeta = useCallback((id: string, patch: Partial<SelectedFile>) => {
+    setFiles((s) => s.map((f) => (f.id === id ? { ...f, ...patch } : f)))
+  }, [])
+
+
+  const {
+    handleUpload,
+    cancelValidate,
+    abortControllerRef,
+    currentMultipartRef,
+    abortedByUserRef,
+    imageCreateParam,
+    isUploadingFiles,
+    loading,
+    setLoading,
+    tempResumeKey,
+  } = useGalleryUpload({
+    serviceId: serviceId ?? undefined,
+    searchParamsOrgId: searchParamsOrgId ?? undefined,
+    files,
+    updateMeta,
+  })
 
   const serviceLabel =
     serviceId === ServiceConfig.optical
       ? `Optical ${t('gallery.uploadDialog.and')}${t('gallery.uploadDialog.aerial')}`
       : 'SAR'
 
+  const accept = '.tiff,.tif,.zip'
   const isUploading = useMemo(() => uploadStep !== null, [uploadStep])
 
   // Warn user before closing/refreshing browser during file upload
@@ -204,75 +154,21 @@ const GalleryUploader: React.FC<GalleryUploaderProps> = ({ serviceId, open, onCl
     }
   }, [])
 
-  /* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: TIFF decoding and preview logic requires branching; refactor later */
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const fileList = e.target.files
-    if (!fileList || fileList.length === 0) return
-    setLoading(true)
-    const newFiles: SelectedFile[] = []
+const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const fileList = e.target.files
+  if (!fileList || fileList.length === 0) return
+  setLoading(true)
+  const newFiles: SelectedFile[] = []
 
-    for (let i = 0; i < fileList.length; i++) {
-      const file = fileList[i]
-      const ext = file.name.split('.').pop()?.toLowerCase() || ''
-      const kind: SelectedFile['kind'] = ext === 'zip' ? 'zip' : ext === 'tiff' || ext === 'tif' ? 'tiff' : 'other'
-      const id = `${Date.now()}-${i}-${nanoid()}`
-
-      let url: string | undefined
-
-      if (kind === 'tiff') {
-        try {
-          const ab = await file.arrayBuffer()
-          const UTIF = await import('utif')
-          const ifds = UTIF.decode(ab)
-          if (ifds && ifds.length > 0) {
-            try {
-              UTIF.decodeImages(ab, ifds)
-            } catch (e) {
-              console.warn('Failed to decode TIFF images:', e)
-            }
-            const first = ifds[0]
-            const width = (first.width as number) || (first.t256 as number) || (first.ImageWidth as number) || 0
-            const height = (first.height as number) || (first.t257 as number) || (first.ImageLength as number) || 0
-            const raw = UTIF.toRGBA8(first) as Uint8Array
-            if (raw && width > 0 && height > 0) {
-              const clamped = new Uint8ClampedArray(raw)
-              const canvas = document.createElement('canvas')
-              canvas.width = width
-              canvas.height = height
-              const ctx = canvas.getContext('2d')
-              if (ctx) {
-                const imageData = new ImageData(clamped, width, height)
-                ctx.putImageData(imageData, 0, 0)
-                url = canvas.toDataURL()
-              }
-            }
-          }
-        } catch {
-          // decoding failed; we'll fall back to object URL below
-        }
-      }
-
-      if (!url) {
-        url = kind === 'zip' ? undefined : URL.createObjectURL(file)
-        if (url?.startsWith('blob:')) createdUrlsRef.current.push(url)
-      }
-      const imagingDate = formatDateTimeFromMillis(file.lastModified, false)
-      newFiles.push({
-        id,
-        file,
-        url,
-        kind,
-        imagingDate,
-        title: file.name,
-        metadata: '',
-      })
-    }
-
-    setFiles((s) => [...s, ...newFiles])
-    if (inputRef.current) inputRef.current.value = ''
-    setLoading(false)
+  for (let i = 0; i < fileList.length; i++) {
+    const file = fileList[i]
+    newFiles.push(await toSelectedFile(file, i, createdUrlsRef))
   }
 
+  setFiles((s) => [...s, ...newFiles])
+  if (inputRef.current) inputRef.current.value = ''
+  setLoading(false)
+}
   const removeFile = (id: string) => {
     setFiles((s) => {
       const toRemove = s.find((f) => f.id === id)
@@ -288,420 +184,6 @@ const GalleryUploader: React.FC<GalleryUploaderProps> = ({ serviceId, open, onCl
       if (updated.length === 0 && inputRef.current) inputRef.current.value = ''
       return updated
     })
-  }
-
-  const updateMeta = useCallback((id: string, patch: Partial<SelectedFile>) => {
-    setFiles((s) => s.map((f) => (f.id === id ? { ...f, ...patch } : f)))
-  }, [])
-
-  /* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Multipart orchestration is inherently multi-step; will modularize later */
-  const handleUpload = async () => {
-    if (files.length === 0) return
-    if (!serviceId) return
-
-    setUploadProgress(0)
-    setWssImageData(null)
-    setIsUploadingFiles(true)
-
-    let id = ''
-    setLoading(true)
-    try {
-      abortedByUserRef.current = false
-      if (!profile) {
-        showAlert({
-          status: 'error',
-          errorCode: t('gallery.uploadDialog.error.userNotFound'),
-        })
-        setUploadStep(null)
-        return
-      }
-      setUploadStep(ImageUploadStep.Upload)
-      const userId = profile.id
-      const orgId = searchParamsOrgId ? searchParamsOrgId : profile.organizationId
-
-      for (let i = 0; i < files.length; i++) {
-        const fileData = files[i]
-        const file = fileData.file
-
-        // Validate metadata if present: size limit and basic well-formed check
-        if (fileData.metadata) {
-          const metaSize = new Blob([fileData.metadata]).size
-          const MAX_META = 1024 * 1024 // 1MB
-          if (metaSize > MAX_META) {
-            showAlert({
-              status: 'error',
-              errorCode: t('gallery.uploadDialog.error.metadataTooLarge', {
-                size: Math.round(MAX_META / 1024),
-              }),
-            })
-            throw new Error('Metadata too large')
-          }
-          const mt = fileData.metadata.trim()
-          try {
-            if (mt.startsWith('{') || mt.startsWith('[')) {
-              JSON.parse(mt)
-            } else if (mt.startsWith('<')) {
-              const doc = new DOMParser().parseFromString(mt, 'application/xml')
-              const errs = doc.getElementsByTagName('parsererror')
-              if (errs && errs.length > 0) throw new Error('XML parse error')
-            }
-          } catch (e) {
-            showAlert({
-              status: 'error',
-              errorCode: t('gallery.uploadDialog.error.metadataInvalid'),
-            })
-            throw e
-          }
-        }
-
-        // Step 3: Check file size and choose flow
-        if (file.size >= MULTIPART_THRESHOLD) {
-          // ===== Multipart upload flow =====
-          const chunkSize = DEFAULT_CHUNK_SIZE
-          const totalParts = Math.ceil(file.size / chunkSize)
-          const storageKey = getResumeKey(userId, file)
-          setTempResumeKey(storageKey)
-          const resumeState = getResumeState(storageKey)
-
-          let uploadId: string
-          let itemId: string
-          // Track completed parts from resume state or start fresh
-          // Resume if we have a matching uploadId and completed parts
-          const isResumable =
-            resumeState && resumeState.serviceId === String(serviceId) && resumeState.chunkSize === chunkSize
-
-          let completedParts: { ETag: string; PartNumber: number }[] = []
-
-          if (isResumable) {
-            uploadId = resumeState.uploadId
-            itemId = resumeState.itemId
-            id = resumeState.imageId
-            completedParts = resumeState.completedParts || []
-
-            // Set for context (cancellation)
-            currentMultipartRef.current = {
-              uploadId,
-              fileName: file.name,
-              imageId: id,
-            }
-
-            // Restore Image Create Param for UI closure if needed
-            setImageCreateParam({
-              serviceId: String(serviceId),
-              name: fileData.title || file.name,
-              userId,
-              organizationId: orgId,
-              itemId: itemId,
-              uploadId: uploadId,
-              id: id,
-            })
-          } else {
-            if (imageProcessData) {
-              // cancel ของที่เคยอัปโหลดแต่โดน hard reload หรือ error ระหว่างอัปโหลดไฟล์
-              await cancelValidate()
-              setImageProcessData(null)
-            }
-            // Start multipart to receive upload_id and item_id
-            clearAllResumeStates()
-            const paramTC = {
-              file_name: file.name,
-              file_size: file.size,
-              file_type: file.type,
-              imaging_date: dayjs(fileData.imagingDate).utc().format() || formatDateTimeFromMillis(file.lastModified),
-              metadata: fileData.metadata || '',
-              image_type: serviceId,
-              name: fileData.title || file.name,
-              org_id: orgId,
-              tags: fileData.tags ? fileData.tags.split(',').map((t) => t.trim()) : [],
-              user_id: userId,
-              chunk_size: chunkSize,
-            }
-            const startRes = await thaicom.postUploadMultipartStart(paramTC)
-
-            uploadId = startRes.upload_id
-            itemId = startRes.item_id
-
-            // Create image entity (track status and parts)
-            const param = {
-              serviceId: String(serviceId),
-              name: fileData.title || file.name,
-              metadata: fileData.metadata || '',
-              photoDate: dayjs(fileData.imagingDate).utc().format() || formatDateTimeFromMillis(file.lastModified),
-              chunkSize: chunkSize,
-              chunkAmount: totalParts,
-              fileName: file.name,
-              fileSize: file.size,
-              fileType: file.type,
-              userId,
-              organizationId: orgId,
-              itemId: itemId,
-              uploadId: uploadId,
-              hashtags: fileData.tags ? fileData.tags.split(',').map((t) => t.trim()) : [],
-            }
-            const created = await image.postUpload(param)
-            setImageCreateParam({
-              ...param,
-              id: created.id,
-            })
-
-            id = created.id
-
-            // store current multipart upload info so cancel can call abort on server
-            currentMultipartRef.current = {
-              uploadId,
-              fileName: file.name,
-              imageId: id,
-            }
-
-            // Validate start state
-            saveResumeState(storageKey, {
-              uploadId,
-              itemId,
-              imageId: id,
-              serviceId: String(serviceId),
-              chunkSize,
-              completedParts: [],
-            })
-          }
-
-          const bytesByPart: Record<number, number> = {}
-
-          // Initialize progress for resumed parts
-          completedParts.forEach((p) => {
-            const isLast = p.PartNumber === totalParts
-            const size = isLast ? file.size % chunkSize || chunkSize : chunkSize
-            bytesByPart[p.PartNumber] = size
-          })
-
-          const uploadPart = async (partNumber: number, retryCount = 0): Promise<void> => {
-            try {
-              const start = (partNumber - 1) * chunkSize
-              const end = Math.min(start + chunkSize, file.size)
-              const chunk = file.slice(start, end)
-
-              const upRes = await thaicom.postUploadMultipartUpload({
-                file_name: file.name,
-                part_number: partNumber,
-                upload_id: uploadId,
-              })
-
-              const url = upRes.url
-              if (!abortControllerRef.current) {
-                abortControllerRef.current = new AbortController()
-              }
-              const putResp = await axios.put(url, chunk, {
-                headers: { 'Content-Type': 'application/octet-stream' },
-                signal: abortControllerRef.current.signal,
-                onUploadProgress: (ev) => {
-                  // track bytes uploaded per-part; ev.loaded is absolute for this request
-                  if (typeof ev.loaded === 'number') {
-                    bytesByPart[partNumber] = ev.loaded
-                    const totalLoaded = Object.values(bytesByPart).reduce((a, b) => a + b, 0)
-                    const fileFraction = totalLoaded / file.size
-                    const overall = Math.round(((i + fileFraction) / files.length) * 100)
-                    const progress = Math.min(99, overall)
-                    setUploadProgress(progress)
-                  }
-                },
-              })
-
-              const etag = (putResp.headers?.etag as string) || ''
-
-              await thaicom.postUploadMultipartConfirm({
-                etag,
-                file_name: file.name,
-                part_number: partNumber,
-                upload_id: uploadId,
-              })
-
-              if (etag) {
-                const partInfo = { ETag: etag, PartNumber: partNumber }
-                completedParts.push(partInfo)
-
-                // Save progress with read-modify-write to support concurrent updates
-                const currentResumeState = getResumeState(storageKey)
-                const existingParts = currentResumeState?.completedParts || []
-                const isExists = existingParts.some((p) => p.PartNumber === partNumber)
-
-                saveResumeState(storageKey, {
-                  uploadId,
-                  itemId,
-                  imageId: id,
-                  serviceId: String(serviceId),
-                  chunkSize,
-                  completedParts: isExists ? existingParts : [...existingParts, partInfo],
-                })
-              }
-            } catch (error: any) {
-              // Check if error is due to user abort
-              if (axios.isCancel(error) || error?.name === 'CanceledError' || abortedByUserRef.current) {
-                throw error
-              }
-
-              // Retry logic for part upload
-              if (retryCount < MAX_PART_RETRIES) {
-                console.warn(`Part ${partNumber} failed, retrying (${retryCount + 1}/${MAX_PART_RETRIES})...`, error)
-                // Exponential backoff: wait 1s, 2s, 4s before retry
-                await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** retryCount))
-                // Reset progress for this part before retry
-                bytesByPart[partNumber] = 0
-                return uploadPart(partNumber, retryCount + 1)
-              } else {
-                console.error(`Part ${partNumber} failed after ${MAX_PART_RETRIES} retries`)
-                throw error // Re-throw after max retries
-              }
-            }
-          }
-
-          const completedPartNumbers = new Set(completedParts.map((p) => p.PartNumber))
-          const remainingParts = Array.from({ length: totalParts }, (_, i) => i + 1).filter(
-            (num) => !completedPartNumbers.has(num),
-          )
-          searchInProgressImage?.()
-          setLoading(false) // enable close button
-          const workers = new Array(Math.min(CONCURRENCY, totalParts)).fill(null).map(async () => {
-            while (remainingParts.length > 0) {
-              const part = remainingParts.shift()
-              if (!part) break
-              await uploadPart(part)
-            }
-          })
-
-          await Promise.all(workers)
-
-          // Complete multipart
-          await thaicom.postUploadMultipartComplete({
-            file_name: file.name,
-            upload_id: uploadId,
-            parts: completedParts.sort((a, b) => a.PartNumber - b.PartNumber),
-          })
-
-          // clear current multipart tracking after completion
-          currentMultipartRef.current = null
-          clearResumeState(storageKey)
-
-          // Set to inProgress for backend pipeline
-          await image.updateStatus({
-            id,
-            statusId: String(ImageStatus.inProgress),
-          })
-
-          updateMeta(fileData.id, {
-            uploadProgress: 100,
-            uploadStatus: 'success',
-          })
-          continue // proceed to next file
-        } else {
-          if (imageProcessData) {
-            // cancel ของที่เคยอัปโหลดแต่โดน hard reload หรือ error ระหว่างอัปโหลดไฟล์
-            await cancelValidate()
-            setImageProcessData(null)
-          }
-          clearAllResumeStates()
-          currentMultipartRef.current = null
-          // Step 4: Get upload URL from API
-          const uploadResponse = await thaicom.postUpload({
-            file_name: file.name,
-            file_size: file.size,
-            file_type: file.type,
-            imaging_date: dayjs(fileData.imagingDate).utc().format() || formatDateTimeFromMillis(file.lastModified),
-            metadata: fileData.metadata || '',
-            image_type: serviceId,
-            name: fileData.title || file.name,
-            org_id: orgId,
-            tags: fileData.tags ? fileData.tags.split(',').map((t) => t.trim()) : [],
-            user_id: userId,
-          })
-
-          if (!uploadResponse?.data) {
-            throw new Error('Failed to get upload URL')
-          }
-
-          const { upload_id, url } = uploadResponse.data
-
-          // Step 5: Create entity in images (handled by backend in postUpload)
-          // The backend should create the record with status = uploadPending
-          const param = {
-            serviceId: String(serviceId),
-            name: fileData.title || file.name,
-            metadata: fileData.metadata || '',
-            photoDate: dayjs(fileData.imagingDate).utc().format() || formatDateTimeFromMillis(file.lastModified),
-            chunkSize: file.size,
-            chunkAmount: 1,
-            fileName: file.name,
-            fileSize: file.size,
-            fileType: file.type,
-            userId,
-            organizationId: orgId,
-            itemId: uploadResponse.data.item_id,
-            uploadId: uploadResponse.data.upload_id,
-            hashtags: fileData.tags ? fileData.tags.split(',').map((t) => t.trim()) : [],
-          }
-          const res = await image.postUpload(param)
-          setImageCreateParam({
-            ...param,
-            id: res.id,
-          })
-          id = res.id
-
-          searchInProgressImage?.()
-          // track that we've created the image entity (id) so cancel will update status
-          currentMultipartRef.current = {
-            uploadId: uploadResponse.data.upload_id,
-            fileName: file.name,
-            imageId: id,
-          }
-
-          // Step 6: Upload file to S3 using presigned URL
-          if (!abortControllerRef.current) {
-            abortControllerRef.current = new AbortController()
-          }
-          setLoading(false) // enable close button
-          await axios.put(url, file, {
-            headers: { 'Content-Type': file.type },
-            signal: abortControllerRef.current.signal,
-            onUploadProgress: (progressEvent) => {
-              if (progressEvent.total) {
-                const progress = Math.round(((i + progressEvent.loaded / progressEvent.total) / files.length) * 100)
-                setUploadProgress(progress)
-              }
-            },
-          })
-
-          await thaicom.postUploadComplete({ upload_id })
-          await image.updateStatus({
-            id,
-            statusId: String(ImageStatus.inProgress),
-          })
-          // Update file status
-          updateMeta(fileData.id, {
-            uploadProgress: 100,
-            uploadStatus: 'success',
-          })
-        }
-
-        setUploadProgress(100)
-      }
-
-      setUploadStep(ImageUploadStep.Validate)
-      searchInProgressImage?.()
-    } catch (error) {
-      console.error('Upload failed:', error)
-
-      // Step 8: Handle failure
-      if (id && !abortedByUserRef.current) {
-        await image.updateStatus({ id, statusId: String(ImageStatus.failed) })
-
-        showAlert({
-          status: 'error',
-          errorCode: t('gallery.uploadDialog.error.uploadFailed'),
-        })
-      }
-      setUploadStep(null)
-    } finally {
-      setUploadProgress(0)
-      setIsUploadingFiles(false)
-    }
   }
 
   const cancelUpload = useCallback(
@@ -773,22 +255,8 @@ const GalleryUploader: React.FC<GalleryUploaderProps> = ({ serviceId, open, onCl
         clearResumeState(tempResumeKey)
       }
     },
-    [updateMeta, files, showAlert, t, tempResumeKey],
+    [updateMeta, files, showAlert, t, tempResumeKey, abortControllerRef, currentMultipartRef, abortedByUserRef],
   )
-
-  const cancelValidate = useCallback(async () => {
-    if (imageProcessData?.id) {
-      try {
-        await image.abortImage(imageProcessData.id)
-      } catch (err: any) {
-        showAlert({
-          status: 'error',
-          errorCode: err?.message,
-        })
-      }
-    }
-  }, [imageProcessData, showAlert])
-
   const handleCancel = useCallback(() => {
     showAlert({
       status: 'confirm-cancel',
@@ -842,6 +310,28 @@ const GalleryUploader: React.FC<GalleryUploaderProps> = ({ serviceId, open, onCl
   useEffect(() => {
     setCancelUpload(handleCancel)
   }, [handleCancel, setCancelUpload])
+
+  const handleTagInputChange = useCallback(
+    (_: React.SyntheticEvent, inputValue: string, fileId: string) => {
+      if (tagFetchTimerRef.current) window.clearTimeout(tagFetchTimerRef.current)
+      if (!inputValue || inputValue.length < 2) {
+        setTagSuggestions([])
+        return
+      }
+      tagFetchTimerRef.current = window.setTimeout(async () => {
+        try {
+          const res = await image.getTags(inputValue)
+          const target = files.find((f) => f.id === fileId)
+          const existing = (target?.tags || '').split(',').map((v) => v.trim())
+          const filtered = (res || []).filter((r: { id: string; name: string }) => !existing.includes(r.name))
+          setTagSuggestions(filtered)
+        } catch (_) {
+          setTagSuggestions([])
+        }
+      }, 250)
+    },
+    [files],
+  )
 
   const handleClose = useCallback(() => {
     // Step 9: Reset state
@@ -1106,25 +596,7 @@ const GalleryUploader: React.FC<GalleryUploaderProps> = ({ serviceId, open, onCl
                               tags: normalized.map((n: { id: string; name: string }) => n.name).join(','),
                             })
                           }}
-                          onInputChange={(_, inputValue) => {
-                            if (tagFetchTimerRef.current) window.clearTimeout(tagFetchTimerRef.current)
-                            if (inputValue && inputValue.length >= 2) {
-                              tagFetchTimerRef.current = window.setTimeout(async () => {
-                                try {
-                                  const res = await image.getTags(inputValue)
-                                  const existing = (f.tags || '').split(',').map((v) => v.trim())
-                                  const filtered = (res || []).filter(
-                                    (r: { id: string; name: string }) => !existing.includes(r.name),
-                                  )
-                                  setTagSuggestions(filtered)
-                                } catch (_) {
-                                  setTagSuggestions([])
-                                }
-                              }, 250)
-                            } else {
-                              setTagSuggestions([])
-                            }
-                          }}
+                          onInputChange={(_, inputValue) => handleTagInputChange(_, inputValue, f.id)}
                           renderOption={(props, option: TagOption) => (
                             <li
                               {...props}
