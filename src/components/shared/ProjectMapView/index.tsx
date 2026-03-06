@@ -563,6 +563,7 @@ const ProjectMapView = forwardRef<ProjectMapViewRef, ProjectMapViewProps>(
           <Box className={getPanelClassName()} sx={getPanelSx()}>
             <LeftPanel
               isMobile={isMobile}
+              orgId={project?.organization?.id ?? ''}
               showPanelLeft={showPanelLeft}
               setShowPanelLeft={setShowPanelLeft}
               activeView={activeView}

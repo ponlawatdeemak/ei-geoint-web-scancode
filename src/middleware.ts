@@ -134,6 +134,12 @@ const styleHashes = [
   'sha256-ebHzl9LQajvcz3UGiFGniwzSnplk9aKt9nTI22jDhVI=',
   'sha256-gXxjdiYSZwwhWXu6tDWrAfllm65l3vLpk8SeNrPJkYA=',
   'sha256-RR5bZAbtprw9QaChJzw/vYL4UtHmk0xoZk+UDLjC43g=',
+  'sha256-iYV3Ue//ZuU0aVWkLry7e13bdcYqVNYPUCVDQxpsqPc=',
+  'sha256-OH7Ms3zoAWymGasL1YLH28LHxioE90WI5PljYn4v5xk=',
+  'sha256-XLv/viGJ1zpokFyxBwzmE4EdAoa/VglKPVrX4+mT+Pg=',
+  'sha256-+X68YmfleG8XLQLFe2gtXqsjdVgtuMH2AxBCC45YJ28=',
+  'sha256-ogaTuq3AGPvdbSQXddkNhquyQKoTepNQ2NGCtWRhPC8=',
+  'sha256-MxEU1dXa7GYcXvupHvw/RmCpkbBlmkrMdjBrU459okg=',
 
   // useCreateMapThumbnail
   'sha256-/wJmSePBiR4Sj69gCal+ywTKDr2hXVmtsVgo3Z7ufIc=',

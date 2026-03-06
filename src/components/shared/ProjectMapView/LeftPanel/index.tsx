@@ -37,6 +37,7 @@ import service from '@/api'
 
 export type LeftPanelProps = {
   isMobile: boolean
+  orgId: string
   showPanelLeft: boolean
   setShowPanelLeft: (v: boolean) => void
   activeView: number
@@ -80,6 +81,7 @@ export type LeftPanelProps = {
 
 const LeftPanel: React.FC<LeftPanelProps> = ({
   isMobile,
+  orgId,
   showPanelLeft,
   setShowPanelLeft,
   activeView,
@@ -488,8 +490,9 @@ const LeftPanel: React.FC<LeftPanelProps> = ({
 
         <div className='min-h-0 flex-1 overflow-y-auto'>
           <ImportToVisualize
-            onBack={onBack}
             projectId={task?.projectId || ''}
+            orgId={orgId}
+            onBack={onBack}
             layerType={currentItv}
             onSaveComplete={onSaveComplete}
             layerInfo={layerInfo}

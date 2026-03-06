@@ -16,6 +16,7 @@ import ItvAnnotation from './layerType/ItvAnnotation'
 import { useTranslation } from 'react-i18next'
 interface ImportToVisualizeProps {
   projectId: string
+  orgId: string
   onBack: () => void
   layerInfo?: ItvLayer
   setLayerInfo: Dispatch<SetStateAction<ItvLayer | undefined>>
@@ -29,6 +30,7 @@ interface ImportToVisualizeProps {
 }
 const ImportToVisualize: FC<ImportToVisualizeProps> = ({
   projectId,
+  orgId,
   onBack,
   layerInfo,
   setLayerInfo,
@@ -79,7 +81,7 @@ const ImportToVisualize: FC<ImportToVisualizeProps> = ({
         className={`${(itvMode === null || itvMode === ItvMode.Add) || (itvMode === ItvMode.Edit && (currentItv === ItvLayerType.RASTER_TILE || currentItv === ItvLayerType.VECTOR_TILE)) ? '' : 'flex-1 overflow-hidden'}`}
       >
         {layerType === ItvLayerType.GALLERY && (
-          <ItvGallery onClose={onBack} projectId={projectId} onSaveComplete={onSaveComplete} />
+          <ItvGallery onClose={onBack} projectId={projectId} orgId={orgId} onSaveComplete={onSaveComplete} />
         )}
         {layerType === ItvLayerType.VECTOR_TILE && (
           <ItvVectorTile

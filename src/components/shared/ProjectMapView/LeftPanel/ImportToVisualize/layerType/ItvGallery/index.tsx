@@ -11,11 +11,12 @@ import { useTranslation } from 'react-i18next'
 
 interface Props {
   projectId: string
+  orgId: string
   onClose: () => void
   onSaveComplete?: () => void
 }
 
-const ItvGallery: FC<Props> = ({ projectId, onClose, onSaveComplete }) => {
+const ItvGallery: FC<Props> = ({ projectId, orgId, onClose, onSaveComplete }) => {
   const theme = useTheme()
   const isFullScreen = useMediaQuery(theme.breakpoints.down('md'))
   const [selectedImage, setSelectedImage] = useState<GetByItemIdImageDtoOut | null>(null)
@@ -52,7 +53,13 @@ const ItvGallery: FC<Props> = ({ projectId, onClose, onSaveComplete }) => {
     >
       <DialogTitle>{t('menu.gallery')}</DialogTitle>
       <DialogContent className='p-0!'>
-        <ImagesSelector mode={ImagesMode.Selector} projectId={projectId} onSelect={setSelectedImage} pageUse='itv' />
+        <ImagesSelector
+          mode={ImagesMode.Selector}
+          projectId={projectId}
+          externalOrgId={orgId}
+          onSelect={setSelectedImage}
+          pageUse='itv'
+        />
       </DialogContent>
       <DialogActions>
         <Button color='inherit' onClick={onClose}>

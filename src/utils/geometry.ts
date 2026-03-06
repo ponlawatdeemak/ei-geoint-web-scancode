@@ -145,7 +145,7 @@ export function zoomToThaiExtent(map: maplibregl.Map | null): void {
 }
 
 export function formatMGRS(mgrs: string): string {
-  const clean = mgrs.replace(/\s+/g, '').toUpperCase()
+  const clean = mgrs.replaceAll(/\s+/g, '').toUpperCase()
 
   const match = clean.match(/^(\d{1,2}[A-Z])([A-Z]{2})(\d+)$/)
   if (!match) return mgrs
