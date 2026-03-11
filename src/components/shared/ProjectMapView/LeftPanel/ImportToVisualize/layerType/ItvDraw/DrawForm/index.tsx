@@ -587,19 +587,25 @@ const DrawForm: FC<Props> = ({ mapId, drawType, setDrawType, editingFeature, onS
     }
 
     if (key.toLowerCase().includes('color')) {
-      const sketchStyle = {
-        picker: { zoom: 2 },
-      } as any
       return (
         <div key={key} className='flex flex-col space-y-2'>
           <InputLabel required>{t(`itv.draw.${key}`) || key}</InputLabel>
-          <div className='flex justify-center'>
+          <div className='w-full'>
             <SketchPicker
-              disableAlpha={true}
-              styles={sketchStyle}
-              className='w-[84%]! pb-5! shadow-none! 2k:[&.sketch-picker>div:first-child]:pointer-events-none 2k:[&_.hue-horizontal]:pointer-events-none'
+              width='100%'
+              styles={{ default: { picker: { width: '100%', boxSizing: 'border-box', boxShadow: 'none' } } }}
               color={(formValues[key] as string) ?? '#000000'}
-              onChange={(color) => handleFieldChange(key, color.hex)}
+              onChange={(color) => {
+                const a = color.rgb.a !== undefined ? color.rgb.a : 1
+                const alphaHex =
+                  a < 1
+                    ? Math.round(a * 255)
+                        .toString(16)
+                        .padStart(2, '0')
+                    : ''
+                const hexColor = `${color.hex}${alphaHex}`
+                handleFieldChange(key, hexColor)
+              }}
             />
           </div>
         </div>

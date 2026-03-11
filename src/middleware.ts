@@ -4,11 +4,7 @@ import { authPathPrefix, Roles } from '@interfaces/index'
 
 export const config = {
   // Exclude _next/image, _next/static, and all media extensions except .txt and .xml
-  matcher: [
-    '/((?!_next/static|_next/image|.*\\.(?:ico|png|jpg|jpeg|svg|gif|webp|css|js|woff|woff2|ttf|eot)).*)',
-    '/',
-    '/(api|trpc)(.*)',
-  ],
+  matcher: ['/((?!_next|.*\\..*).*)'],
 }
 
 // Pre-generated hashes for inline styles (Emotion/MUI client-side injection)
@@ -156,10 +152,11 @@ const styleHashes = [
   'sha256-utcjSNsrLvghdVmiTb32QyL/7B3zPveVVrlSZ0J4eXk=',
   'sha256-imowdJiKtCrejAuaW2IdKJS7NwN5zsFhwxrts+QTZuU=',
   'sha256-fVU67Hs9AhjRiq8YSPGEeI0ViXUB8Jd8B5FsRjzZmPM=',
-]
 
-// Debug: Log the matcher configuration
-console.log('🔧 [MIDDLEWARE CONFIG] Matcher patterns:', config.matcher)
+  // color-panel
+  'sha256-LA4KTjHIvt/e0fK4wBIK0x4Rx0vUv3/rVZ6n+vpT+GM=',
+  'sha256-d8+FRLATLC2M5M7tg4DHE7TNYGW0kr6ijwsDc7+G6DI=',
+]
 
 const loginPath = '/auth/login'
 const publicPaths = ['/error', '/auth', '/api/auth']
@@ -176,10 +173,6 @@ const protectedPaths = {
 export async function middleware(req: NextRequest) {
   const { pathname, origin } = req.nextUrl
 
-  console.log('🔧 [MIDDLEWARE] Starting middleware for:', pathname)
-  console.log('🔧 [MIDDLEWARE] Origin:', origin)
-  console.log('🔧 [MIDDLEWARE] Method:', req.method)
-
   // --- CSP: Generate nonce ---
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
 
@@ -195,6 +188,9 @@ export async function middleware(req: NextRequest) {
   const mapApiOrigin = getOrigin(process.env.API_URL_MAP)
   const thaicomApiOrigin = getOrigin(process.env.THAICOM_API_URL)
   const wssUploadOrigin = getOrigin(process.env.NEXT_PUBLIC_WSS_UPLOAD_URL)
+  const allowedCSPDomainsString = process.env.NEXT_PUBLIC_ALLOWED_CSP_DOMAINS?.split(',')
+    .map((h) => `${h}`)
+    .join(' ')
   const styleHashesString = styleHashes.map((h) => `'${h}'`).join(' ')
 
   const cspDirectives = [
@@ -205,7 +201,7 @@ export async function middleware(req: NextRequest) {
     `style-src-attr 'self' ${styleHashesString}`,
     `img-src 'self' blob: data: ${apiOrigin} ${mapApiOrigin} ${thaicomApiOrigin} https://tile.googleapis.com https://mt1.google.com https://tile.openstreetmap.org https://api.maptiler.com https://basemaps.cartocdn.com https://iris-ap-southeast-7-811478435729.s3.ap-southeast-7.amazonaws.com`,
     `font-src 'self' https://fonts.gstatic.com data:`,
-    `connect-src 'self' ${apiOrigin} ${mapApiOrigin} ${thaicomApiOrigin} ${wssUploadOrigin} https://tile.googleapis.com https://places.googleapis.com https://mt1.google.com https://api.maptiler.com https://tile.openstreetmap.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://tiles-a.basemaps.cartocdn.com https://tiles-b.basemaps.cartocdn.com https://tiles-c.basemaps.cartocdn.com https://tiles-d.basemaps.cartocdn.com https://daaofj432k08z.cloudfront.net https://iris-ap-southeast-7-811478435729.s3.ap-southeast-7.amazonaws.com ${process.env.NODE_ENV === 'development' ? process.env.NEXTAUTH_URL : ''}`,
+    `connect-src 'self' ${apiOrigin} ${mapApiOrigin} ${thaicomApiOrigin} ${wssUploadOrigin} ${allowedCSPDomainsString} https://tile.googleapis.com https://places.googleapis.com https://mt1.google.com https://api.maptiler.com https://tile.openstreetmap.org https://basemaps.cartocdn.com https://tiles.basemaps.cartocdn.com https://tiles-a.basemaps.cartocdn.com https://tiles-b.basemaps.cartocdn.com https://tiles-c.basemaps.cartocdn.com https://tiles-d.basemaps.cartocdn.com https://daaofj432k08z.cloudfront.net https://iris-ap-southeast-7-811478435729.s3.ap-southeast-7.amazonaws.com ${process.env.NODE_ENV === 'development' ? process.env.NEXTAUTH_URL : ''}`,
     `worker-src 'self' blob:`,
     `frame-src 'self'`,
     `base-uri 'self'`,
@@ -241,8 +237,6 @@ export async function middleware(req: NextRequest) {
     req.method === 'POST' &&
     process.env.MIDDLEWARE_DEBUG === 'true'
   ) {
-    console.log('🔐 [MIDDLEWARE] Detected POST /api/auth/callback/credentials')
-    console.log('🔐 [MIDDLEWARE] Request headers:', Object.fromEntries(req.headers.entries()))
     try {
       await req.clone().text()
     } catch (error) {
@@ -257,32 +251,23 @@ export async function middleware(req: NextRequest) {
   if (pathname === resetPasswordPath || pathname.startsWith(`${resetPasswordPath}/`)) {
     return applyCSP(NextResponse.next({ request: { headers: requestHeaders } }))
   }
-  console.log('🔧 [MIDDLEWARE] Token exists:', !!token)
-  console.log('🔧 [MIDDLEWARE] User role:', token?.roleId || 'No role')
-  console.log('🔧 [MIDDLEWARE] User email:', token?.email || 'No email')
 
   // Prevent logged-in users from accessing /auth/*
   const isAuthPath = pathname === authPathPrefix || pathname.startsWith(`${authPathPrefix}/`)
-  console.log('🔧 [MIDDLEWARE] Is auth path:', isAuthPath)
 
   if (isAuthPath && token) {
-    console.log('🔧 [MIDDLEWARE] Redirecting logged-in user away from auth path')
     return applyCSP(NextResponse.redirect(new URL('/profile', origin)))
   }
 
   // Define public paths
   const isPublic = publicPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`))
-  console.log('🔧 [MIDDLEWARE] Is public path:', isPublic)
-  console.log('🔧 [MIDDLEWARE] Checked against public paths:', publicPaths)
 
   if (isPublic) {
-    console.log('🔧 [MIDDLEWARE] Allowing access to public path')
     return applyCSP(NextResponse.next({ request: { headers: requestHeaders } }))
   }
 
   if (!token) {
     const loginUrl = new URL(loginPath, origin)
-    console.log('🔧 [MIDDLEWARE] No token found, redirecting to login:', loginUrl.toString())
     return applyCSP(NextResponse.redirect(loginUrl))
   }
 
@@ -309,6 +294,5 @@ function handleRoleBasedAccess(
     return applyCSP(NextResponse.redirect(new URL('/project', origin)))
   }
 
-  console.log('🔧 [MIDDLEWARE] Access granted - continuing to requested path')
   return applyCSP(NextResponse.next({ request: { headers: requestHeaders } }))
 }

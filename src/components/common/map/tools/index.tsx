@@ -73,6 +73,7 @@ const MapTools: React.FC<MapToolsProps> = ({
     severity: 'success',
     message: '',
   })
+  const geolocationRequest = React.useRef<number | null>(null)
 
   const map = useMemo(() => mapLibre[mapId], [mapLibre, mapId])
 
@@ -108,62 +109,79 @@ const MapTools: React.FC<MapToolsProps> = ({
   }, [selectedImage, setShowImageDialog])
 
   const toggleCurrentLocation = useCallback(() => {
-    setShowCurrentLocation((prev) => {
-      if (map) {
-        const source = map.getSource(CURRENT_LOCATION_RESULT_SOURCE) as GeoJSONSource
-        const emptyData = {
-          type: 'FeatureCollection' as const,
-          features: [],
-        }
-        source?.setData(emptyData)
-        const _showCurrentLocation = !prev
-        if (_showCurrentLocation) {
-          if (!navigator.geolocation) {
-            showAlert({
-              status: 'error',
-              title: t('tools.currentLocationErrorTitle'),
-              content: t('tools.locationServicesDisabled'),
-            })
-            return false
-          }
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              const { latitude, longitude, accuracy } = position.coords
-              const point = turf.point([longitude, latitude])
-              const circle = turf.circle(point, accuracy, {
-                steps: 64,
-                units: 'meters',
-              })
-              const locationData = {
-                type: 'FeatureCollection' as const,
-                features: [point, circle],
-              }
-              currentLocationFeaturesRef.current = locationData
-              source?.setData(locationData)
-              map.easeTo({ center: [longitude, latitude], zoom: 14 })
-              onGetLocation?.(position.coords)
-            },
-            () => {
-              showAlert({
-                status: 'error',
-                title: t('tools.currentLocationErrorTitle'),
-                content: t('tools.cannotGetLocation'),
-              })
-              setShowCurrentLocation(false)
-            },
-            {
-              timeout: 10000,
-            },
-          )
-        } else {
-          currentLocationFeaturesRef.current = null
-        }
-        return _showCurrentLocation
-      } else {
-        return false
+    if (!map) return
+
+    const source = map.getSource(CURRENT_LOCATION_RESULT_SOURCE) as GeoJSONSource
+    const emptyData = {
+      type: 'FeatureCollection' as const,
+      features: [],
+    }
+
+    if (showCurrentLocation) {
+      // Disable location
+      if (geolocationRequest.current !== null) {
+        navigator.geolocation.clearWatch(geolocationRequest.current)
+        geolocationRequest.current = null
       }
-    })
-  }, [t, showAlert, map, onGetLocation])
+      source?.setData(emptyData)
+      currentLocationFeaturesRef.current = null
+      setShowCurrentLocation(false)
+    } else {
+      // Enable location
+      if (!navigator.geolocation) {
+        showAlert({
+          status: 'error',
+          title: t('tools.currentLocationErrorTitle'),
+          content: t('tools.locationServicesDisabled'),
+        })
+        return
+      }
+
+      setShowCurrentLocation(true)
+
+      geolocationRequest.current = navigator.geolocation.watchPosition(
+        (position) => {
+          const { latitude, longitude, accuracy } = position.coords
+          const point = turf.point([longitude, latitude])
+          const circle = turf.circle(point, accuracy, {
+            steps: 64,
+            units: 'meters',
+          })
+          const locationData = {
+            type: 'FeatureCollection' as const,
+            features: [point, circle],
+          }
+          currentLocationFeaturesRef.current = locationData
+          source?.setData(locationData)
+          map.easeTo({ center: [longitude, latitude], zoom: 14 })
+          onGetLocation?.(position.coords)
+        },
+        (error) => {
+          setShowCurrentLocation(false)
+          geolocationRequest.current = null
+
+          let errorMessage = t('tools.cannotGetLocation')
+          if (error.code === error.PERMISSION_DENIED) {
+            errorMessage = t('tools.locationPermissionDenied') || 'Location permission denied'
+          } else if (error.code === error.POSITION_UNAVAILABLE) {
+            errorMessage = t('tools.locationUnavailable') || 'Location unavailable'
+          } else if (error.code === error.TIMEOUT) {
+            errorMessage = t('tools.locationTimeout') || 'Location request timed out'
+          }
+
+          showAlert({
+            status: 'error',
+            title: t('tools.currentLocationErrorTitle'),
+            content: errorMessage,
+          })
+        },
+        {
+          timeout: 10000,
+          enableHighAccuracy: true,
+        },
+      )
+    }
+  }, [map, showCurrentLocation, t, showAlert, onGetLocation])
 
   useEffect(() => {
     if (!map) return
@@ -261,6 +279,11 @@ const MapTools: React.FC<MapToolsProps> = ({
         map.removeLayer(`${CURRENT_LOCATION_RESULT_LAYER}-circle`)
       if (map.getSource(CURRENT_LOCATION_RESULT_SOURCE)) map.removeSource(CURRENT_LOCATION_RESULT_SOURCE)
       unregisterStyleDataHandler(map, `map-tools-${mapId}`)
+      // Cleanup geolocation watch
+      if (geolocationRequest.current !== null) {
+        navigator.geolocation.clearWatch(geolocationRequest.current)
+        geolocationRequest.current = null
+      }
     }
   }, [map, registerStyleDataHandler, unregisterStyleDataHandler, mapId])
 

@@ -134,7 +134,7 @@ const MenuRenderer: React.FC<MenuRendererProps> = ({
   const handleClick = (item: MenuItemConfig) => {
     switch (item.id) {
       case 'menu.management':
-        if ([Roles.superAdmin, Roles.admin].includes(profile.roleId)) {
+        if ([Roles.superAdmin].includes(profile.roleId)) {
           menuConfig.manageSubscription.path && router.push(menuConfig.manageSubscription.path)
         } else {
           menuConfig.manageUser.path && router.push(menuConfig.manageUser.path)

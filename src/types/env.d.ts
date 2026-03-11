@@ -12,5 +12,6 @@ namespace NodeJS {
 		NEXT_PUBLIC_MAPTILER_API_KEY: string
 		THAICOM_API_URL: string
 		NEXT_PUBLIC_WSS_UPLOAD_URL: string
+		NEXT_PUBLIC_ALLOWED_CSP_DOMAINS: string
 	}
 }
