@@ -139,6 +139,7 @@ const MapTools: React.FC<MapToolsProps> = ({
 
       setShowCurrentLocation(true)
 
+      // Geolocation is required to show the user's real-time position on the map.
       geolocationRequest.current = navigator.geolocation.watchPosition(
         (position) => {
           const { latitude, longitude, accuracy } = position.coords

@@ -670,13 +670,7 @@
       "orgName": "Organization",
       "coordinateType": "Coordinate Type"
     },
-    "sarDamageLevel": [
-      "Slight Damage",
-      "Moderate Damage",
-      "Substantial Damage",
-      "Grievous Damage",
-      "Destroyed"
-    ],
+    "sarDamageLevel": ["Slight Damage", "Moderate Damage", "Substantial Damage", "Grievous Damage", "Destroyed"],
     "weeklyChart": "Weekly Chart"
   },
   "map": {
