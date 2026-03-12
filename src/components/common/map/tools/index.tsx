@@ -139,48 +139,62 @@ const MapTools: React.FC<MapToolsProps> = ({
 
       setShowCurrentLocation(true)
 
-      // Geolocation is required to show the user's real-time position on the map.
-      geolocationRequest.current = navigator.geolocation.watchPosition(
-        (position) => {
-          const { latitude, longitude, accuracy } = position.coords
-          const point = turf.point([longitude, latitude])
-          const circle = turf.circle(point, accuracy, {
-            steps: 64,
-            units: 'meters',
-          })
-          const locationData = {
-            type: 'FeatureCollection' as const,
-            features: [point, circle],
-          }
-          currentLocationFeaturesRef.current = locationData
-          source?.setData(locationData)
-          map.easeTo({ center: [longitude, latitude], zoom: 14 })
-          onGetLocation?.(position.coords)
-        },
-        (error) => {
+      const startWatch = () => {
+        geolocationRequest.current = navigator.geolocation.watchPosition(
+          (position) => {
+            const { latitude, longitude, accuracy } = position.coords
+            const point = turf.point([longitude, latitude])
+            const circle = turf.circle(point, accuracy, {
+              steps: 64,
+              units: 'meters',
+            })
+            const locationData = {
+              type: 'FeatureCollection' as const,
+              features: [point, circle],
+            }
+            currentLocationFeaturesRef.current = locationData
+            source?.setData(locationData)
+            map.easeTo({ center: [longitude, latitude], zoom: 14 })
+            onGetLocation?.(position.coords)
+          },
+          (error) => {
+            setShowCurrentLocation(false)
+            geolocationRequest.current = null
+
+            let errorMessage = t('tools.cannotGetLocation')
+            if (error.code === error.PERMISSION_DENIED) {
+              errorMessage = t('tools.locationPermissionDenied') || 'Location permission denied'
+            } else if (error.code === error.POSITION_UNAVAILABLE) {
+              errorMessage = t('tools.locationUnavailable') || 'Location unavailable'
+            } else if (error.code === error.TIMEOUT) {
+              errorMessage = t('tools.locationTimeout') || 'Location request timed out'
+            }
+
+            showAlert({
+              status: 'error',
+              title: t('tools.currentLocationErrorTitle'),
+              content: errorMessage,
+            })
+          },
+          {
+            timeout: 10000,
+            enableHighAccuracy: true,
+          },
+        )
+      }
+
+      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+        if (result.state === 'granted' || result.state === 'prompt') {
+          startWatch()
+        } else {
           setShowCurrentLocation(false)
-          geolocationRequest.current = null
-
-          let errorMessage = t('tools.cannotGetLocation')
-          if (error.code === error.PERMISSION_DENIED) {
-            errorMessage = t('tools.locationPermissionDenied') || 'Location permission denied'
-          } else if (error.code === error.POSITION_UNAVAILABLE) {
-            errorMessage = t('tools.locationUnavailable') || 'Location unavailable'
-          } else if (error.code === error.TIMEOUT) {
-            errorMessage = t('tools.locationTimeout') || 'Location request timed out'
-          }
-
           showAlert({
             status: 'error',
             title: t('tools.currentLocationErrorTitle'),
-            content: errorMessage,
+            content: t('tools.locationPermissionDenied') || 'Location permission denied',
           })
-        },
-        {
-          timeout: 10000,
-          enableHighAccuracy: true,
-        },
-      )
+        }
+      })
     }
   }, [map, showCurrentLocation, t, showAlert, onGetLocation])
 
