@@ -123,80 +123,80 @@ const MapTools: React.FC<MapToolsProps> = ({
     geolocateContainerRef.current?.appendChild(controlElement)
   }, [map])
 
-  const toggleCurrentLocation = useCallback(() => {
-    if (!map) return
+  // const toggleCurrentLocation = useCallback(() => {
+  //   if (!map) return
 
-    const source = map.getSource(CURRENT_LOCATION_RESULT_SOURCE) as GeoJSONSource
-    const emptyData = {
-      type: 'FeatureCollection' as const,
-      features: [],
-    }
+  //   const source = map.getSource(CURRENT_LOCATION_RESULT_SOURCE) as GeoJSONSource
+  //   const emptyData = {
+  //     type: 'FeatureCollection' as const,
+  //     features: [],
+  //   }
 
-    if (showCurrentLocation) {
-      // Disable location
-      if (geolocationRequest.current !== null) {
-        navigator.geolocation.clearWatch(geolocationRequest.current)
-        geolocationRequest.current = null
-      }
-      source?.setData(emptyData)
-      currentLocationFeaturesRef.current = null
-      setShowCurrentLocation(false)
-    } else {
-      // Enable location
-      if (!navigator.geolocation) {
-        showAlert({
-          status: 'error',
-          title: t('tools.currentLocationErrorTitle'),
-          content: t('tools.locationServicesDisabled'),
-        })
-        return
-      }
+  //   if (showCurrentLocation) {
+  //     // Disable location
+  //     if (geolocationRequest.current !== null) {
+  //       navigator.geolocation.clearWatch(geolocationRequest.current)
+  //       geolocationRequest.current = null
+  //     }
+  //     source?.setData(emptyData)
+  //     currentLocationFeaturesRef.current = null
+  //     setShowCurrentLocation(false)
+  //   } else {
+  //     // Enable location
+  //     if (!navigator.geolocation) {
+  //       showAlert({
+  //         status: 'error',
+  //         title: t('tools.currentLocationErrorTitle'),
+  //         content: t('tools.locationServicesDisabled'),
+  //       })
+  //       return
+  //     }
 
-      setShowCurrentLocation(true)
+  //     setShowCurrentLocation(true)
 
-      geolocationRequest.current = navigator.geolocation.watchPosition(
-        (position) => {
-          const { latitude, longitude, accuracy } = position.coords
-          const point = turf.point([longitude, latitude])
-          const circle = turf.circle(point, accuracy, {
-            steps: 64,
-            units: 'meters',
-          })
-          const locationData = {
-            type: 'FeatureCollection' as const,
-            features: [point, circle],
-          }
-          currentLocationFeaturesRef.current = locationData
-          source?.setData(locationData)
-          map.easeTo({ center: [longitude, latitude], zoom: 14 })
-          onGetLocation?.(position.coords)
-        },
-        (error) => {
-          setShowCurrentLocation(false)
-          geolocationRequest.current = null
+  //     geolocationRequest.current = navigator.geolocation.watchPosition(
+  //       (position) => {
+  //         const { latitude, longitude, accuracy } = position.coords
+  //         const point = turf.point([longitude, latitude])
+  //         const circle = turf.circle(point, accuracy, {
+  //           steps: 64,
+  //           units: 'meters',
+  //         })
+  //         const locationData = {
+  //           type: 'FeatureCollection' as const,
+  //           features: [point, circle],
+  //         }
+  //         currentLocationFeaturesRef.current = locationData
+  //         source?.setData(locationData)
+  //         map.easeTo({ center: [longitude, latitude], zoom: 14 })
+  //         onGetLocation?.(position.coords)
+  //       },
+  //       (error) => {
+  //         setShowCurrentLocation(false)
+  //         geolocationRequest.current = null
 
-          let errorMessage = t('tools.cannotGetLocation')
-          if (error.code === error.PERMISSION_DENIED) {
-            errorMessage = t('tools.locationPermissionDenied') || 'Location permission denied'
-          } else if (error.code === error.POSITION_UNAVAILABLE) {
-            errorMessage = t('tools.locationUnavailable') || 'Location unavailable'
-          } else if (error.code === error.TIMEOUT) {
-            errorMessage = t('tools.locationTimeout') || 'Location request timed out'
-          }
+  //         let errorMessage = t('tools.cannotGetLocation')
+  //         if (error.code === error.PERMISSION_DENIED) {
+  //           errorMessage = t('tools.locationPermissionDenied') || 'Location permission denied'
+  //         } else if (error.code === error.POSITION_UNAVAILABLE) {
+  //           errorMessage = t('tools.locationUnavailable') || 'Location unavailable'
+  //         } else if (error.code === error.TIMEOUT) {
+  //           errorMessage = t('tools.locationTimeout') || 'Location request timed out'
+  //         }
 
-          showAlert({
-            status: 'error',
-            title: t('tools.currentLocationErrorTitle'),
-            content: errorMessage,
-          })
-        },
-        {
-          timeout: 10000,
-          enableHighAccuracy: true,
-        },
-      )
-    }
-  }, [map, showCurrentLocation, t, showAlert, onGetLocation])
+  //         showAlert({
+  //           status: 'error',
+  //           title: t('tools.currentLocationErrorTitle'),
+  //           content: errorMessage,
+  //         })
+  //       },
+  //       {
+  //         timeout: 10000,
+  //         enableHighAccuracy: true,
+  //       },
+  //     )
+  //   }
+  // }, [map, showCurrentLocation, t, showAlert, onGetLocation])
 
   useEffect(() => {
     if (!map) return
