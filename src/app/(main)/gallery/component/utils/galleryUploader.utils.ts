@@ -160,15 +160,22 @@ export type UploadPartContext = {
   setUploadProgress: (p: number) => void
 }
 
-export const uploadPart = async (
-  partNumber: number,
-  ctx: UploadPartContext,
-  retryCount = 0,
-): Promise<void> => {
+export const uploadPart = async (partNumber: number, ctx: UploadPartContext, retryCount = 0): Promise<void> => {
   const {
-    file, uploadId, chunkSize, fileIndex, filesLength,
-    bytesByPart, completedParts, storageKey, itemId, imageId,
-    serviceId, abortControllerRef, abortedByUserRef, setUploadProgress,
+    file,
+    uploadId,
+    chunkSize,
+    fileIndex,
+    filesLength,
+    bytesByPart,
+    completedParts,
+    storageKey,
+    itemId,
+    imageId,
+    serviceId,
+    abortControllerRef,
+    abortedByUserRef,
+    setUploadProgress,
   } = ctx
 
   try {
@@ -218,7 +225,11 @@ export const uploadPart = async (
       const isExists = existingParts.some((p) => p.PartNumber === partNumber)
 
       saveResumeState(storageKey, {
-        uploadId, itemId, imageId, serviceId, chunkSize,
+        uploadId,
+        itemId,
+        imageId,
+        serviceId,
+        chunkSize,
         completedParts: isExists ? existingParts : [...existingParts, partInfo],
       })
     }

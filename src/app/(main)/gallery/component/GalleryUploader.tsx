@@ -74,7 +74,6 @@ const GalleryUploader: React.FC<GalleryUploaderProps> = ({ serviceId, open, onCl
   const createdUrlsRef = useRef<string[]>([])
   const inputRef = useRef<HTMLInputElement | null>(null)
 
-
   const { showAlert, showLoading, hideLoading } = useGlobalUI()
   const {
     uploadStep,
@@ -96,7 +95,6 @@ const GalleryUploader: React.FC<GalleryUploaderProps> = ({ serviceId, open, onCl
   const updateMeta = useCallback((id: string, patch: Partial<SelectedFile>) => {
     setFiles((s) => s.map((f) => (f.id === id ? { ...f, ...patch } : f)))
   }, [])
-
 
   const {
     handleUpload,
@@ -154,21 +152,21 @@ const GalleryUploader: React.FC<GalleryUploaderProps> = ({ serviceId, open, onCl
     }
   }, [])
 
-const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  const fileList = e.target.files
-  if (!fileList || fileList.length === 0) return
-  setLoading(true)
-  const newFiles: SelectedFile[] = []
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = e.target.files
+    if (!fileList || fileList.length === 0) return
+    setLoading(true)
+    const newFiles: SelectedFile[] = []
 
-  for (let i = 0; i < fileList.length; i++) {
-    const file = fileList[i]
-    newFiles.push(await toSelectedFile(file, i, createdUrlsRef))
+    for (let i = 0; i < fileList.length; i++) {
+      const file = fileList[i]
+      newFiles.push(await toSelectedFile(file, i, createdUrlsRef))
+    }
+
+    setFiles((s) => [...s, ...newFiles])
+    if (inputRef.current) inputRef.current.value = ''
+    setLoading(false)
   }
-
-  setFiles((s) => [...s, ...newFiles])
-  if (inputRef.current) inputRef.current.value = ''
-  setLoading(false)
-}
   const removeFile = (id: string) => {
     setFiles((s) => {
       const toRemove = s.find((f) => f.id === id)

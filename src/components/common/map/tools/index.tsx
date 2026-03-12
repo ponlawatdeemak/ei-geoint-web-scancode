@@ -14,7 +14,7 @@ import * as turf from '@turf/turf'
 import { MeasurementIcon, SearchCoordinateIcon, CurrentLocationIcon, ThreeDIconMap } from '@/icons'
 import PinPlacer from '@/components/map/PinPlacer'
 import { useGlobalUI } from '@/providers/global-ui/GlobalUIContext'
-import type maplibregl from 'maplibre-gl'
+import maplibregl from 'maplibre-gl'
 import type { GeoJSONSource, LngLatBoundsLike } from 'maplibre-gl'
 import CursorCoordinate from '@/components/map/CursorCoordinate'
 import LayersIcon from '@mui/icons-material/Layers'
@@ -74,6 +74,7 @@ const MapTools: React.FC<MapToolsProps> = ({
     message: '',
   })
   const geolocationRequest = React.useRef<number | null>(null)
+  const geolocateContainerRef = React.useRef<HTMLDivElement | null>(null)
 
   const map = useMemo(() => mapLibre[mapId], [mapLibre, mapId])
 
@@ -108,6 +109,20 @@ const MapTools: React.FC<MapToolsProps> = ({
     }
   }, [selectedImage, setShowImageDialog])
 
+  useEffect(() => {
+    if (!map) return
+
+    const geolocationControl = new maplibregl.GeolocateControl({
+      positionOptions: { enableHighAccuracy: true },
+      trackUserLocation: true,
+    })
+
+    map.addControl(geolocationControl)
+
+    const controlElement = geolocationControl._container
+    geolocateContainerRef.current?.appendChild(controlElement)
+  }, [map])
+
   const toggleCurrentLocation = useCallback(() => {
     if (!map) return
 
@@ -139,62 +154,47 @@ const MapTools: React.FC<MapToolsProps> = ({
 
       setShowCurrentLocation(true)
 
-      const startWatch = () => {
-        geolocationRequest.current = navigator.geolocation.watchPosition(
-          (position) => {
-            const { latitude, longitude, accuracy } = position.coords
-            const point = turf.point([longitude, latitude])
-            const circle = turf.circle(point, accuracy, {
-              steps: 64,
-              units: 'meters',
-            })
-            const locationData = {
-              type: 'FeatureCollection' as const,
-              features: [point, circle],
-            }
-            currentLocationFeaturesRef.current = locationData
-            source?.setData(locationData)
-            map.easeTo({ center: [longitude, latitude], zoom: 14 })
-            onGetLocation?.(position.coords)
-          },
-          (error) => {
-            setShowCurrentLocation(false)
-            geolocationRequest.current = null
-
-            let errorMessage = t('tools.cannotGetLocation')
-            if (error.code === error.PERMISSION_DENIED) {
-              errorMessage = t('tools.locationPermissionDenied') || 'Location permission denied'
-            } else if (error.code === error.POSITION_UNAVAILABLE) {
-              errorMessage = t('tools.locationUnavailable') || 'Location unavailable'
-            } else if (error.code === error.TIMEOUT) {
-              errorMessage = t('tools.locationTimeout') || 'Location request timed out'
-            }
-
-            showAlert({
-              status: 'error',
-              title: t('tools.currentLocationErrorTitle'),
-              content: errorMessage,
-            })
-          },
-          {
-            timeout: 10000,
-            enableHighAccuracy: true,
-          },
-        )
-      }
-
-      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
-        if (result.state === 'granted' || result.state === 'prompt') {
-          startWatch()
-        } else {
+      geolocationRequest.current = navigator.geolocation.watchPosition(
+        (position) => {
+          const { latitude, longitude, accuracy } = position.coords
+          const point = turf.point([longitude, latitude])
+          const circle = turf.circle(point, accuracy, {
+            steps: 64,
+            units: 'meters',
+          })
+          const locationData = {
+            type: 'FeatureCollection' as const,
+            features: [point, circle],
+          }
+          currentLocationFeaturesRef.current = locationData
+          source?.setData(locationData)
+          map.easeTo({ center: [longitude, latitude], zoom: 14 })
+          onGetLocation?.(position.coords)
+        },
+        (error) => {
           setShowCurrentLocation(false)
+          geolocationRequest.current = null
+
+          let errorMessage = t('tools.cannotGetLocation')
+          if (error.code === error.PERMISSION_DENIED) {
+            errorMessage = t('tools.locationPermissionDenied') || 'Location permission denied'
+          } else if (error.code === error.POSITION_UNAVAILABLE) {
+            errorMessage = t('tools.locationUnavailable') || 'Location unavailable'
+          } else if (error.code === error.TIMEOUT) {
+            errorMessage = t('tools.locationTimeout') || 'Location request timed out'
+          }
+
           showAlert({
             status: 'error',
             title: t('tools.currentLocationErrorTitle'),
-            content: t('tools.locationPermissionDenied') || 'Location permission denied',
+            content: errorMessage,
           })
-        }
-      })
+        },
+        {
+          timeout: 10000,
+          enableHighAccuracy: true,
+        },
+      )
     }
   }, [map, showCurrentLocation, t, showAlert, onGetLocation])
 
@@ -400,11 +400,11 @@ const MapTools: React.FC<MapToolsProps> = ({
                 placement='left'
                 arrow
               >
-                <Box className='group !h-8 !w-8 !rounded-[3px] !bg-white !shadow-sm flex overflow-hidden transition-colors hover:bg-background-dark-blue'>
-                  <IconButton className='!h-8 !w-8 !rounded-none !p-1.5 !bg-transparent grow' onClick={handleShowImage}>
+                <Box className='group flex h-8! w-8! overflow-hidden rounded-[3px]! bg-white! shadow-sm! transition-colors hover:bg-background-dark-blue'>
+                  <IconButton className='h-8! w-8! grow rounded-none! bg-transparent! p-1.5!' onClick={handleShowImage}>
                     <InfoIcon
                       sx={{ width: '1rem', height: '1rem', color: 'var(--color-text-icon-primary)' }}
-                      className='group-hover:!text-white'
+                      className='group-hover:text-white!'
                     />
                   </IconButton>
                 </Box>
@@ -414,7 +414,7 @@ const MapTools: React.FC<MapToolsProps> = ({
               <Tooltip className='pointer-events-auto' title={t('tools.home')} placement='left' arrow>
                 <div className='group rounded-[3px] bg-white shadow-sm transition-colors hover:bg-background-dark-blue'>
                   <IconButton
-                    className='!p-1.5 !bg-transparent h-8 w-8'
+                    className='h-8 w-8 bg-transparent! p-1.5!'
                     onClick={() => {
                       if (!map) return
 
@@ -426,7 +426,7 @@ const MapTools: React.FC<MapToolsProps> = ({
                   >
                     <HomeFilledIcon
                       sx={{ width: '1.1rem', height: '1.1rem', color: 'var(--color-text-icon-primary)' }}
-                      className={'group-hover:!text-white'}
+                      className={'group-hover:text-white!'}
                     />
                   </IconButton>
                 </div>
@@ -445,15 +445,15 @@ const MapTools: React.FC<MapToolsProps> = ({
                     )}
                   >
                     <IconButton
-                      className='!p-1.5 !bg-transparent h-8 w-8'
+                      className='h-8 w-8 bg-transparent! p-1.5!'
                       onClick={() => {
                         handleOpenPrintMap()
                       }}
                     >
                       <PrintIcon
                         sx={{ width: '1.1rem', height: '1.1rem', color: 'var(--color-text-icon-primary)' }}
-                        className={classNames('group-hover:!text-white', {
-                          '!text-white': showPrintMap,
+                        className={classNames('group-hover:text-white!', {
+                          'text-white!': showPrintMap,
                         })}
                       />
                     </IconButton>
@@ -485,7 +485,7 @@ const MapTools: React.FC<MapToolsProps> = ({
                 })}
               >
                 <IconButton
-                  className='!p-1.5 !bg-transparent h-8 w-8'
+                  className='h-8 w-8 bg-transparent! p-1.5!'
                   onClick={() => {
                     setShowMeasurement((prev) => !prev)
                     if (showMeasurement) {
@@ -497,8 +497,8 @@ const MapTools: React.FC<MapToolsProps> = ({
                   }}
                 >
                   <MeasurementIcon
-                    className={classNames('group-hover:!text-white', {
-                      '!text-white': showMeasurement,
+                    className={classNames('group-hover:text-white!', {
+                      'text-white!': showMeasurement,
                     })}
                     sx={{ width: '0.9rem', height: '0.9rem', color: 'var(--color-text-icon-primary)' }}
                   />
@@ -513,7 +513,7 @@ const MapTools: React.FC<MapToolsProps> = ({
                 })}
               >
                 <IconButton
-                  className='!p-1.5 !bg-transparent h-8 w-8'
+                  className='h-8 w-8 bg-transparent! p-1.5!'
                   onClick={() => {
                     setShowSearchCoordinate((prev) => !prev)
                     if (showSearchCoordinate) {
@@ -525,15 +525,15 @@ const MapTools: React.FC<MapToolsProps> = ({
                   }}
                 >
                   <SearchCoordinateIcon
-                    className={classNames('group-hover:!text-white', {
-                      '!text-white': showSearchCoordinate,
+                    className={classNames('group-hover:text-white!', {
+                      'text-white!': showSearchCoordinate,
                     })}
-                    sx={{ width: '1rem', height: '1rem', color: 'var(--color-text-icon-primary)' }}
+                    sx={{ width: '1.125rem', height: '1.125rem', color: 'var(--color-text-icon-primary)' }}
                   />
                 </IconButton>
               </div>
             </Tooltip>
-            <Tooltip className='pointer-events-auto' title={t('tools.currentLocation')} placement='left' arrow>
+            {/* <Tooltip className='pointer-events-auto' title={t('tools.currentLocation')} placement='left' arrow>
               <div
                 className={classNames('group rounded-[3px] shadow-sm transition-colors hover:bg-background-dark-blue', {
                   'bg-background-dark-blue': showCurrentLocation,
@@ -552,6 +552,10 @@ const MapTools: React.FC<MapToolsProps> = ({
                   />
                 </IconButton>
               </div>
+            </Tooltip> */}
+
+            <Tooltip className='pointer-events-auto' title={t('tools.currentLocation')} placement='left' arrow>
+              <div ref={geolocateContainerRef} className='btn-maplibre-current' />
             </Tooltip>
 
             <Tooltip className='pointer-events-auto' title={t('tools.3d')} placement='left' arrow>
@@ -562,7 +566,7 @@ const MapTools: React.FC<MapToolsProps> = ({
                 })}
               >
                 <IconButton
-                  className='!p-1.5 !bg-transparent h-8 w-8'
+                  className='h-8 w-8 bg-transparent! p-1.5!'
                   onClick={() => {
                     if (!map) return
                     setIs3D((prev) => {
@@ -578,8 +582,8 @@ const MapTools: React.FC<MapToolsProps> = ({
                 >
                   <ThreeDIconMap
                     sx={{ width: '1rem', height: '1rem', color: 'var(--color-text-icon-primary)' }}
-                    className={classNames('group-hover:!text-white', {
-                      '!text-white': is3D,
+                    className={classNames('group-hover:text-white!', {
+                      'text-white!': is3D,
                     })}
                   />
                 </IconButton>
@@ -594,7 +598,7 @@ const MapTools: React.FC<MapToolsProps> = ({
                 })}
               >
                 <IconButton
-                  className='!p-1.5 !bg-transparent h-8 w-8'
+                  className='h-8 w-8 bg-transparent! p-1.5!'
                   onClick={() => {
                     setShowBasemapSelector((prev) => !prev)
                     if (showBasemapSelector) {
@@ -606,8 +610,8 @@ const MapTools: React.FC<MapToolsProps> = ({
                   }}
                 >
                   <LayersIcon
-                    className={classNames('group-hover:!text-white', {
-                      '!text-white': showBasemapSelector,
+                    className={classNames('group-hover:text-white!', {
+                      'text-white!': showBasemapSelector,
                     })}
                     sx={{ width: '1.2rem', height: '1.2rem', color: 'var(--color-text-icon-primary)' }}
                   />
@@ -618,17 +622,17 @@ const MapTools: React.FC<MapToolsProps> = ({
           <Tooltip className='pointer-events-auto' title={t('tools.zoom')} placement='left' arrow>
             <ButtonGroup
               orientation='vertical'
-              className='!h-16 !w-8 !rounded-[3px] !bg-white !shadow-sm flex items-center divide-y divide-solid divide-gray overflow-hidden'
+              className='flex h-16! w-8! items-center divide-y divide-solid divide-gray overflow-hidden rounded-[3px]! bg-white! shadow-sm!'
             >
               <IconButton
-                className='!h-8 !w-8 !rounded-none !p-1.5 !bg-white hover:!bg-background-dark-blue hover:!text-white grow transition-colors'
+                className='h-8! w-8! grow rounded-none! bg-white! p-1.5! transition-colors hover:bg-background-dark-blue! hover:text-white!'
                 onClick={handleZoomIn}
                 sx={{ color: 'var(--color-text-icon-primary)' }}
               >
                 <MapZoomInIcon width={is2K ? 16 : 12} height={is2K ? 16 : 12} />
               </IconButton>
               <IconButton
-                className='!h-8 !w-8 !rounded-none !p-1.5 !bg-white hover:!bg-background-dark-blue hover:!text-white grow transition-colors'
+                className='h-8! w-8! grow rounded-none! bg-white! p-1.5! transition-colors hover:bg-background-dark-blue! hover:text-white!'
                 onClick={handleZoomOut}
                 sx={{ color: 'var(--color-text-icon-primary)' }}
               >

@@ -1,16 +1,16 @@
-import thaicom from "@/api/thaicom"
-import { ImageUploadStep } from "@/components/common/images/images"
-import { useImages } from "@/components/common/images/use-images"
-import { useProfileStore } from "@/hook/useProfileStore"
-import { useGlobalUI } from "@/providers/global-ui/GlobalUIContext"
-import { formatDateTimeFromMillis } from "@/utils/formatDate"
-import { ImageStatus } from "@interfaces/config"
-import axios from "axios"
-import dayjs from "dayjs"
-import image from "@/api/image"
-import { useCallback, useRef, useState } from "react"
-import { useTranslation } from "react-i18next"
-import { UploadPartContext, uploadPart, validateMetadata } from "../utils/galleryUploader.utils"
+import thaicom from '@/api/thaicom'
+import { ImageUploadStep } from '@/components/common/images/images'
+import { useImages } from '@/components/common/images/use-images'
+import { useProfileStore } from '@/hook/useProfileStore'
+import { useGlobalUI } from '@/providers/global-ui/GlobalUIContext'
+import { formatDateTimeFromMillis } from '@/utils/formatDate'
+import { ImageStatus } from '@interfaces/config'
+import axios from 'axios'
+import dayjs from 'dayjs'
+import image from '@/api/image'
+import { useCallback, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { UploadPartContext, uploadPart, validateMetadata } from '../utils/galleryUploader.utils'
 
 const MULTIPART_THRESHOLD = 100 * 1024 * 1024 // 100MB
 const DEFAULT_CHUNK_SIZE = 128 * 1024 * 1024 // 128MB
@@ -89,8 +89,12 @@ export const useGalleryUpload = ({
 }) => {
   const { showAlert } = useGlobalUI()
   const {
-    setUploadStep, setUploadProgress, searchInProgressImage,
-    imageProcessData, setImageProcessData, setUploadProgress: _sp,
+    setUploadStep,
+    setUploadProgress,
+    searchInProgressImage,
+    imageProcessData,
+    setImageProcessData,
+    setUploadProgress: _sp,
   } = useImages()
   const profile = useProfileStore((state) => state.profile)
   const { t } = useTranslation('common')
@@ -132,8 +136,13 @@ export const useGalleryUpload = ({
       completedParts = resumeState.completedParts || []
       currentMultipartRef.current = { uploadId, fileName: file.name, imageId: id }
       setImageCreateParam({
-        serviceId: String(serviceId), name: fileData.title || file.name,
-        userId, organizationId: orgId, itemId, uploadId, id,
+        serviceId: String(serviceId),
+        name: fileData.title || file.name,
+        userId,
+        organizationId: orgId,
+        itemId,
+        uploadId,
+        id,
       })
     } else {
       if (imageProcessData) {
@@ -143,23 +152,35 @@ export const useGalleryUpload = ({
       clearAllResumeStates()
 
       const startRes = await thaicom.postUploadMultipartStart({
-        file_name: file.name, file_size: file.size, file_type: file.type,
+        file_name: file.name,
+        file_size: file.size,
+        file_type: file.type,
         imaging_date: dayjs(fileData.imagingDate).utc().format() || formatDateTimeFromMillis(file.lastModified),
-        metadata: fileData.metadata || '', image_type: serviceId as number,
-        name: fileData.title || file.name, org_id: orgId,
+        metadata: fileData.metadata || '',
+        image_type: serviceId as number,
+        name: fileData.title || file.name,
+        org_id: orgId,
         tags: fileData.tags ? fileData.tags.split(',').map((t) => t.trim()) : [],
-        user_id: userId, chunk_size: chunkSize,
+        user_id: userId,
+        chunk_size: chunkSize,
       })
       uploadId = startRes.upload_id
       itemId = startRes.item_id
 
       const param = {
-        serviceId: String(serviceId), name: fileData.title || file.name,
+        serviceId: String(serviceId),
+        name: fileData.title || file.name,
         metadata: fileData.metadata || '',
         photoDate: dayjs(fileData.imagingDate).utc().format() || formatDateTimeFromMillis(file.lastModified),
-        chunkSize, chunkAmount: totalParts, fileName: file.name,
-        fileSize: file.size, fileType: file.type, userId, organizationId: orgId,
-        itemId, uploadId,
+        chunkSize,
+        chunkAmount: totalParts,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        userId,
+        organizationId: orgId,
+        itemId,
+        uploadId,
         hashtags: fileData.tags ? fileData.tags.split(',').map((t) => t.trim()) : [],
       }
       const created = await image.postUpload(param)
@@ -167,7 +188,12 @@ export const useGalleryUpload = ({
       id = created.id
       currentMultipartRef.current = { uploadId, fileName: file.name, imageId: id }
       saveResumeState(storageKey, {
-        uploadId, itemId, imageId: id, serviceId: String(serviceId), chunkSize, completedParts: [],
+        uploadId,
+        itemId,
+        imageId: id,
+        serviceId: String(serviceId),
+        chunkSize,
+        completedParts: [],
       })
     }
 
@@ -187,9 +213,20 @@ export const useGalleryUpload = ({
     setLoading(false)
 
     const partCtx: UploadPartContext = {
-      file, uploadId, chunkSize, fileIndex, filesLength: files.length,
-      bytesByPart, completedParts, storageKey, itemId, imageId: id,
-      serviceId: String(serviceId), abortControllerRef, abortedByUserRef, setUploadProgress,
+      file,
+      uploadId,
+      chunkSize,
+      fileIndex,
+      filesLength: files.length,
+      bytesByPart,
+      completedParts,
+      storageKey,
+      itemId,
+      imageId: id,
+      serviceId: String(serviceId),
+      abortControllerRef,
+      abortedByUserRef,
+      setUploadProgress,
     }
 
     const workers = new Array(Math.min(CONCURRENCY, totalParts)).fill(null).map(async () => {
@@ -203,7 +240,8 @@ export const useGalleryUpload = ({
     await Promise.all(workers)
 
     await thaicom.postUploadMultipartComplete({
-      file_name: file.name, upload_id: uploadId,
+      file_name: file.name,
+      upload_id: uploadId,
       parts: completedParts.sort((a, b) => a.PartNumber - b.PartNumber),
     })
 
@@ -230,10 +268,14 @@ export const useGalleryUpload = ({
     currentMultipartRef.current = null
 
     const uploadResponse = await thaicom.postUpload({
-      file_name: file.name, file_size: file.size, file_type: file.type,
+      file_name: file.name,
+      file_size: file.size,
+      file_type: file.type,
       imaging_date: dayjs(fileData.imagingDate).utc().format() || formatDateTimeFromMillis(file.lastModified),
-      metadata: fileData.metadata || '', image_type: serviceId as number,
-      name: fileData.title || file.name, org_id: orgId,
+      metadata: fileData.metadata || '',
+      image_type: serviceId as number,
+      name: fileData.title || file.name,
+      org_id: orgId,
       tags: fileData.tags ? fileData.tags.split(',').map((t) => t.trim()) : [],
       user_id: userId,
     })
@@ -243,12 +285,19 @@ export const useGalleryUpload = ({
     const { upload_id, url } = uploadResponse.data
 
     const param = {
-      serviceId: String(serviceId), name: fileData.title || file.name,
+      serviceId: String(serviceId),
+      name: fileData.title || file.name,
       metadata: fileData.metadata || '',
       photoDate: dayjs(fileData.imagingDate).utc().format() || formatDateTimeFromMillis(file.lastModified),
-      chunkSize: file.size, chunkAmount: 1, fileName: file.name,
-      fileSize: file.size, fileType: file.type, userId, organizationId: orgId,
-      itemId: uploadResponse.data.item_id, uploadId: uploadResponse.data.upload_id,
+      chunkSize: file.size,
+      chunkAmount: 1,
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+      userId,
+      organizationId: orgId,
+      itemId: uploadResponse.data.item_id,
+      uploadId: uploadResponse.data.upload_id,
       hashtags: fileData.tags ? fileData.tags.split(',').map((t) => t.trim()) : [],
     }
     const res = await image.postUpload(param)
@@ -341,8 +390,15 @@ export const useGalleryUpload = ({
   }
 
   return {
-    handleUpload, cancelValidate,
-    abortControllerRef, currentMultipartRef, abortedByUserRef,
-    imageCreateParam, isUploadingFiles, loading, setLoading, tempResumeKey,
+    handleUpload,
+    cancelValidate,
+    abortControllerRef,
+    currentMultipartRef,
+    abortedByUserRef,
+    imageCreateParam,
+    isUploadingFiles,
+    loading,
+    setLoading,
+    tempResumeKey,
   }
 }
